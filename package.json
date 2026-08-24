@@ -1,0 +1,18 @@
+{
+	"name": "course-studio",
+	"private": true,
+	"packageManager": "pnpm@11.23.0",
+	"scripts": {
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"start": "turbo run start",
+		"lint": "turbo run lint",
+		"format": "turbo run format",
+		"typecheck": "turbo run typecheck",
+		"check": "turbo run check typecheck"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.5",
+		"turbo": "^2"
+	}
+}

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+
+# pnpm workspace — guard against stray npm/yarn lockfiles
+package-lock.json
+yarn.lock
+
+# Build output
+dist
+dist-ssr
+.output
+
+# Caches / generated tooling
+.turbo
+.vite
+.cache
+.nitro
+.tanstack
+.vinxi
+.wrangler
+__unconfig*
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Test coverage
+coverage
+
+# OS
+.DS_Store
+
+# Local / personal
+*.local
+todos.json
+PROJECT.md
