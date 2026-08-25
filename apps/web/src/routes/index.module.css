@@ -1,0 +1,13 @@
+.home {
+	padding: var(--space-8);
+}
+
+.title {
+	font-size: 2.25rem;
+	font-weight: 700;
+}
+
+.description {
+	margin-top: var(--space-4);
+	font-size: 1.125rem;
+}
