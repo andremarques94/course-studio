@@ -1,4 +1,5 @@
-import { useDeferredValue, useEffect, useState } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useDeferredValue, useState } from "react";
 
 import { INITIAL_MARKDOWN } from "../../initial-markdown";
 import { MarkdownEditor } from "../MarkdownEditor";
@@ -9,26 +10,15 @@ import styles from "./Studio.module.css";
 export function Studio() {
 	const [markdown, setMarkdown] = useState(INITIAL_MARKDOWN);
 	const [previewFullscreen, setPreviewFullscreen] = useState(false);
-
-	useEffect(() => {
-		function onKeyDown(event: KeyboardEvent) {
-			const modifier = event.metaKey || event.ctrlKey;
-
-			if (modifier && event.shiftKey && event.key.toLowerCase() === "p") {
-				event.preventDefault();
-
-				setPreviewFullscreen((current) => !current);
-			}
-		}
-
-		window.addEventListener("keydown", onKeyDown);
-
-		return () => {
-			window.removeEventListener("keydown", onKeyDown);
-		};
-	}, []);
-
 	const previewMarkdown = useDeferredValue(markdown);
+
+	useHotkey(
+		"Mod+Shift+P",
+		() => {
+			setPreviewFullscreen((current) => !current);
+		},
+		{ stopPropagation: false },
+	);
 
 	return (
 		<div className={styles.studio}>

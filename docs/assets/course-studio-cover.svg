@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title description">
+  <title id="title">Course Studio</title>
+  <desc id="description">Course Studio cover showing a Markdown editor beside a slide preview.</desc>
+
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#242429" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="460" rx="18" fill="#0d0d10"/>
+  <rect width="1200" height="460" rx="18" fill="url(#grid)"/>
+  <path d="M0 390 L470 290 L620 460 L0 460 Z" fill="#ccff33"/>
+  <circle cx="1108" cy="54" r="8" fill="#ccff33"/>
+  <circle cx="1136" cy="54" r="8" fill="#ff6b55"/>
+  <circle cx="1164" cy="54" r="8" fill="#786cff"/>
+
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="60" y="68" fill="#9d9da5" font-size="14" font-weight="700" letter-spacing="3">COURSE AUTHORING / IN PROGRESS</text>
+    <text x="56" y="164" fill="#f7f7f2" font-size="82" font-weight="900" letter-spacing="-4">COURSE</text>
+    <text x="56" y="238" fill="#f7f7f2" font-size="82" font-weight="900" letter-spacing="-4">STUDIO</text>
+    <text x="60" y="290" fill="#b7b7bf" font-size="20">Write a lesson. See the slides.</text>
+    <text x="60" y="410" fill="#0d0d10" font-size="15" font-weight="800" letter-spacing="2">MARKDOWN IN / SLIDES OUT</text>
+  </g>
+
+  <g transform="translate(510 88)" filter="url(#shadow)">
+    <rect width="630" height="318" rx="10" fill="#f8f8f8" stroke="#3b3b42" stroke-width="2"/>
+    <path d="M0 10 Q0 0 10 0 H620 Q630 0 630 10 V48 H0 Z" fill="#18181c"/>
+    <text x="20" y="30" fill="#f7f7f2" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700">Course Studio</text>
+    <rect x="536" y="13" width="76" height="23" rx="4" fill="#2d2d33"/>
+    <text x="550" y="29" fill="#d7d7dc" font-family="Arial, Helvetica, sans-serif" font-size="10">Fullscreen</text>
+
+    <rect y="48" width="315" height="270" fill="#141418"/>
+    <rect x="315" y="48" width="315" height="270" fill="#eeeeea"/>
+    <line x1="315" y1="48" x2="315" y2="318" stroke="#3b3b42"/>
+    <line x1="0" y1="82" x2="630" y2="82" stroke="#34343a"/>
+    <text x="16" y="70" fill="#a5a5ad" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="1">MARKDOWN</text>
+    <text x="331" y="70" fill="#5f5f66" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="1">PREVIEW</text>
+
+    <g font-family="Courier New, monospace" font-size="12">
+      <text x="20" y="110" fill="#6f6f79">01</text>
+      <text x="50" y="110" fill="#ccff33"># React Fundamentals</text>
+      <text x="20" y="136" fill="#6f6f79">02</text>
+      <text x="50" y="136" fill="#b7b7bf">An introduction to React.</text>
+      <text x="20" y="176" fill="#6f6f79">03</text>
+      <text x="50" y="176" fill="#ff6b55">---</text>
+      <text x="20" y="216" fill="#6f6f79">04</text>
+      <text x="50" y="216" fill="#ccff33">## Components</text>
+      <text x="20" y="242" fill="#6f6f79">05</text>
+      <text x="50" y="242" fill="#b7b7bf">Reusable</text>
+      <text x="20" y="268" fill="#6f6f79">06</text>
+      <text x="50" y="268" fill="#b7b7bf">Composable</text>
+    </g>
+
+    <rect x="343" y="106" width="259" height="174" rx="3" fill="#ffffff" stroke="#d4d4d0"/>
+    <rect x="366" y="128" width="42" height="5" rx="2.5" fill="#786cff"/>
+    <text x="366" y="170" fill="#18181c" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="800">React</text>
+    <text x="366" y="197" fill="#18181c" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="800">Fundamentals</text>
+    <text x="366" y="226" fill="#71717a" font-family="Arial, Helvetica, sans-serif" font-size="11">An introduction to React.</text>
+    <text x="566" y="262" fill="#929299" font-family="Courier New, monospace" font-size="9">01 / 04</text>
+  </g>
+</svg>

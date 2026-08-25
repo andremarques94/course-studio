@@ -9,10 +9,16 @@
 		"lint": "turbo run lint",
 		"format": "turbo run format",
 		"typecheck": "turbo run typecheck",
-		"check": "turbo run check typecheck"
+		"check": "turbo run check typecheck",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.{js,jsx,cjs,mjs,ts,tsx,cts,mts,json,jsonc,css}": "biome check --write --no-errors-on-unmatched"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.3.0",
 		"turbo": "^2"
 	}
 }

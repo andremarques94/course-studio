@@ -11,7 +11,7 @@
 		"build": "vite build",
 		"start": "node .output/server/index.mjs",
 		"preview": "vite preview",
-		"typecheck": "tsr generate && tsc --noEmit",
+		"typecheck": "tsc --noEmit",
 		"format": "biome format",
 		"lint": "biome lint",
 		"check": "biome check"
@@ -21,6 +21,7 @@
 		"@course-studio/presentation": "workspace:*",
 		"@course-studio/ui": "workspace:*",
 		"@tanstack/react-devtools": "latest",
+		"@tanstack/react-hotkeys": "^0.10.0",
 		"@tanstack/react-query": "latest",
 		"@tanstack/react-query-devtools": "latest",
 		"@tanstack/react-router": "latest",
