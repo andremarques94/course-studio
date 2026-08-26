@@ -9,68 +9,95 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as StudioRouteImport } from './routes/studio'
+import { Route as StudioRouteRouteImport } from './routes/studio/route'
+import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as StudioIndexRouteImport } from './routes/studio/index'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StudioRoute = StudioRouteImport.update({
+const StudioRouteRoute = StudioRouteRouteImport.update({
   id: '/studio',
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const publicIndexRoute = publicIndexRouteImport.update({
+  id: '/(public)/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioIndexRoute = StudioIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudioRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/studio': typeof StudioRoute
+  '/studio': typeof StudioRouteRouteWithChildren
+  '/': typeof publicIndexRoute
+  '/studio/': typeof StudioIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/studio': typeof StudioRoute
+  '/': typeof publicIndexRoute
+  '/studio': typeof StudioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/studio': typeof StudioRoute
+  '/studio': typeof StudioRouteRouteWithChildren
+  '/(public)/': typeof publicIndexRoute
+  '/studio/': typeof StudioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/studio'
+  fullPaths: '/studio' | '/' | '/studio/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/studio'
-  id: '__root__' | '/' | '/studio'
+  id: '__root__' | '/studio' | '/(public)/' | '/studio/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  StudioRoute: typeof StudioRoute
+  StudioRouteRoute: typeof StudioRouteRouteWithChildren
+  publicIndexRoute: typeof publicIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/studio': {
       id: '/studio'
       path: '/studio'
       fullPath: '/studio'
-      preLoaderRoute: typeof StudioRouteImport
+      preLoaderRoute: typeof StudioRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/(public)/': {
+      id: '/(public)/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof publicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio/': {
+      id: '/studio/'
+      path: '/'
+      fullPath: '/studio/'
+      preLoaderRoute: typeof StudioIndexRouteImport
+      parentRoute: typeof StudioRouteRoute
     }
   }
 }
 
+interface StudioRouteRouteChildren {
+  StudioIndexRoute: typeof StudioIndexRoute
+}
+
+const StudioRouteRouteChildren: StudioRouteRouteChildren = {
+  StudioIndexRoute: StudioIndexRoute,
+}
+
+const StudioRouteRouteWithChildren = StudioRouteRoute._addFileChildren(
+  StudioRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  StudioRoute: StudioRoute,
+  StudioRouteRoute: StudioRouteRouteWithChildren,
+  publicIndexRoute: publicIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

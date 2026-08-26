@@ -15,12 +15,19 @@ export function ModeToggle() {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger>
-				<Button variant="outline" size="icon" className={styles.toggle}>
-					<Sun className={cn(styles.icon, styles.sun)} />
-					<Moon className={cn(styles.icon, styles.moon)} />
-					<span className={styles.srOnly}>Toggle theme</span>
-				</Button>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="outline"
+						size="icon"
+						className={styles.toggle}
+						aria-label="Choose color theme"
+					/>
+				}
+			>
+				<Sun className={cn(styles.icon, styles.sun)} />
+				<Moon className={cn(styles.icon, styles.moon)} />
+				<span className={styles.srOnly}>Choose color theme</span>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				<DropdownMenuItem onClick={() => setTheme("light")}>

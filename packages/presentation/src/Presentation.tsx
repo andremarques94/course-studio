@@ -11,7 +11,10 @@ export type PresentationProps = {
 export function Presentation({ markdown }: PresentationProps) {
 	return (
 		<div className={styles.presentation}>
-			<Deck className={styles.deck}>
+			<Deck
+				className={styles.deck}
+				config={{ embedded: true, keyboardCondition: "focused" }}
+			>
 				<Markdown>{markdown}</Markdown>
 			</Deck>
 		</div>

@@ -8,3 +8,8 @@ allowBuilds:
   unrs-resolver: true
   msw: false
 
+minimumReleaseAgeExclude:
+  - '@tanstack/router-ssr-query-core@1.169.2'
+
+overrides:
+  "@tanstack/router-ssr-query-core": 1.169.2

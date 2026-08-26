@@ -1,0 +1,97 @@
+.sidebar {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 0;
+	padding: 8px 0;
+	border-right: 1px solid var(--color-border);
+	background: color-mix(
+		in oklch,
+		var(--color-muted) 32%,
+		var(--color-background)
+	);
+}
+
+.primaryNavigation {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.tooltipTrigger {
+	display: contents;
+}
+
+.railButton {
+	position: relative;
+	display: grid;
+	width: 32px;
+	height: 32px;
+	place-items: center;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: transparent;
+	color: var(--color-muted-foreground);
+	transition:
+		background-color 120ms ease,
+		color 120ms ease;
+}
+
+.railButton:hover:not(:disabled),
+.railButton:focus-visible {
+	background: var(--color-muted);
+	color: var(--color-foreground);
+	outline: 2px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
+	outline-offset: -2px;
+}
+
+.railButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.42;
+}
+
+.railButton svg {
+	width: 16px;
+	height: 16px;
+	stroke-width: 1.7;
+}
+
+.active {
+	background: color-mix(in oklch, var(--color-primary) 13%, transparent);
+	color: var(--color-primary);
+}
+
+.activeIndicator {
+	position: absolute;
+	top: 7px;
+	left: -8px;
+	width: 2px;
+	height: 18px;
+	border-radius: 0 2px 2px 0;
+	background: var(--color-primary);
+	pointer-events: none;
+}
+
+@media (max-width: 767px) {
+	.sidebar {
+		flex-direction: row;
+		padding: 4px 8px;
+		border-right: 0;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.primaryNavigation {
+		flex-direction: row;
+	}
+
+	.activeIndicator {
+		top: auto;
+		bottom: -5px;
+		left: 7px;
+		width: 18px;
+		height: 2px;
+		border-radius: 2px 2px 0 0;
+	}
+}

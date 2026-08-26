@@ -7,6 +7,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { MotionConfig } from "motion/react";
 import { ThemeProvider } from "@/features/appearance";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 
@@ -25,10 +26,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "TanStack Start Starter",
+				title: "Course Studio",
+			},
+			{
+				name: "description",
+				content:
+					"Write course lessons in Markdown and preview slides as you type.",
 			},
 		],
 		links: [
+			{
+				rel: "icon",
+				type: "image/svg+xml",
+				href: "/favicon.svg",
+			},
 			{
 				rel: "stylesheet",
 				href: appCss,
@@ -40,24 +51,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>
 			<body>
-				<ThemeProvider>{children}</ThemeProvider>
-				<TanStackDevtools
-					config={{
-						position: "bottom-right",
-					}}
-					plugins={[
-						{
-							name: "Tanstack Router",
-							render: <TanStackRouterDevtoolsPanel />,
-						},
-						TanStackQueryDevtools,
-					]}
-				/>
+				<MotionConfig reducedMotion="user">
+					<ThemeProvider>{children}</ThemeProvider>
+					<TanStackDevtools
+						config={{
+							position: "bottom-right",
+						}}
+						plugins={[
+							{
+								name: "Tanstack Router",
+								render: <TanStackRouterDevtoolsPanel />,
+							},
+							TanStackQueryDevtools,
+						]}
+					/>
+				</MotionConfig>
 				<Scripts />
 			</body>
 		</html>

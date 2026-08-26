@@ -3,25 +3,26 @@
 </p>
 
 <p align="center">
-  <strong>Write course lessons in Markdown and see the slides as you type.</strong>
+  <strong>Build the lesson, not the slide deck.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-in_development-18181b?style=flat-square" alt="Status: in development" />
-  <img src="https://img.shields.io/badge/roadmap-milestone_2_complete-786cff?style=flat-square" alt="Roadmap: milestone 2 complete" />
+  <img src="https://img.shields.io/badge/status-pre--alpha-167e99?style=flat-square" alt="Status: pre-alpha" />
 </p>
 
-Course Studio is a work-in-progress course authoring app. The current build keeps the loop small: edit a Markdown lesson on the left, preview the presentation on the right.
+Course Studio is a Markdown-first course authoring app. Write lesson content in a focused editor and watch it become a navigable presentation in real time.
 
-## Right now
+## What works today
 
 - Markdown editing with CodeMirror
 - Live, navigable slide preview
-- New slides from `---` separators
-- Fullscreen preview with <kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
+- Slide creation with `---` separators
+- Resizable editor and preview workspace
+- Focused presentation mode with <kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
+- Responsive layout and light/dark appearance
 
 <p align="center">
-  <img src="./docs/assets/studio.png" alt="Course Studio editor and presentation preview" width="100%" />
+  <img src="./docs/assets/studio.png" alt="Course Studio landing page with a Markdown editor and presentation preview" width="100%" />
 </p>
 
 ## Run it locally
@@ -42,9 +43,17 @@ pnpm check
 pnpm build
 ```
 
+## Project structure
+
+```text
+apps/web               TanStack Start application and studio UI
+packages/presentation  Markdown presentation renderer
+packages/ui            Shared UI components and styles
+```
+
 ## Direction
 
-Development moves one milestone at a time. Presentation themes are next. Courses, persistence, publishing, and accounts are planned, but they are not part of the current build.
+Development moves one milestone at a time. Presentation themes are next, followed by the course and lesson model. Persistence, publishing, and accounts are intentionally outside the current pre-alpha.
 
 ## Contributing
 

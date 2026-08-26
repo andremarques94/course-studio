@@ -1,11 +1,87 @@
 .editor {
+	--editor-syntax-accent: color-mix(
+		in oklch,
+		var(--color-chart-4) 85%,
+		var(--color-foreground)
+	);
+	--editor-syntax-detail: color-mix(
+		in oklch,
+		var(--color-chart-3) 72%,
+		var(--color-foreground)
+	);
+	--editor-syntax-soft: color-mix(
+		in oklch,
+		var(--color-chart-2) 58%,
+		var(--color-foreground)
+	);
+	--editor-syntax-muted: var(--color-muted-foreground);
+	--editor-syntax-faint: color-mix(
+		in oklch,
+		var(--color-muted-foreground) 72%,
+		transparent
+	);
+
 	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+}
+
+:global(.dark) .editor {
+	--editor-syntax-accent: var(--color-chart-2);
+	--editor-syntax-detail: var(--color-chart-1);
+	--editor-syntax-soft: var(--color-chart-3);
+}
+
+.editor > div {
+	height: 100%;
+	min-height: 0;
 }
 
 .editor :global(.cm-editor) {
 	height: 100%;
+	min-height: 0;
+	background: var(--color-background);
+	color: var(--color-foreground);
+	font-size: 13px;
 }
 
 .editor :global(.cm-scroller) {
+	min-height: 0;
 	overflow: auto;
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	line-height: 1.65;
+}
+
+.editor :global(.cm-content) {
+	padding: 14px 0 32px;
+	caret-color: var(--color-primary);
+}
+
+.editor :global(.cm-line) {
+	padding: 0 20px 0 8px;
+}
+
+.editor :global(.cm-gutters) {
+	border-right: 1px solid
+		color-mix(in oklch, var(--color-border) 65%, transparent);
+	background: color-mix(
+		in oklch,
+		var(--color-muted) 20%,
+		var(--color-background)
+	);
+	color: color-mix(in oklch, var(--color-muted-foreground) 70%, transparent);
+}
+
+.editor :global(.cm-activeLine),
+.editor :global(.cm-activeLineGutter) {
+	background: color-mix(in oklch, var(--color-primary) 7%, transparent);
+}
+
+.editor :global(.cm-focused) {
+	outline: none;
+}
+
+.editor :global(.cm-focused .cm-selectionBackground),
+.editor :global(.cm-selectionBackground) {
+	background: color-mix(in oklch, var(--color-primary) 24%, transparent);
 }

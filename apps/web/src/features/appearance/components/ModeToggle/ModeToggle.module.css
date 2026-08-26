@@ -27,6 +27,12 @@
 	rotate: 0deg;
 }
 
+@media (prefers-reduced-motion: reduce) {
+	.icon {
+		transition: none;
+	}
+}
+
 .srOnly {
 	position: absolute;
 	width: 1px;

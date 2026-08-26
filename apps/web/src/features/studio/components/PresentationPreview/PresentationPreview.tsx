@@ -10,7 +10,9 @@ interface PresentationPreviewProps {
 function PresentationPreviewRoot({ markdown }: PresentationPreviewProps) {
 	return (
 		<div className={styles.preview}>
-			<Presentation markdown={markdown} />
+			<div className={styles.canvas}>
+				<Presentation markdown={markdown} />
+			</div>
 		</div>
 	);
 }

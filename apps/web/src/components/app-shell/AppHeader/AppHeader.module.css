@@ -1,0 +1,28 @@
+.header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	height: 52px;
+	padding: 0 12px 0 14px;
+	border-bottom: 1px solid var(--color-border);
+	background: color-mix(in oklch, var(--color-background) 94%, transparent);
+	backdrop-filter: blur(14px);
+}
+
+.divider {
+	width: 1px;
+	height: 18px;
+	background: var(--color-border);
+}
+
+@media (max-width: 640px) {
+	.header {
+		gap: 10px;
+		height: 48px;
+		padding: 0 8px 0 10px;
+	}
+
+	.header :global(a[aria-label="Course Studio home"]) > :last-child {
+		display: none;
+	}
+}

@@ -1,10 +1,55 @@
-.studioToolbar {
+.context {
 	display: flex;
+	min-width: 0;
+	flex: 1;
 	align-items: center;
-	justify-content: space-between;
+	gap: 8px;
+}
 
-	height: 52px;
-	padding: 0 var(--space-4);
+.lessonTitle {
+	overflow: hidden;
+	font-size: 13px;
+	font-weight: 520;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 
-	border-bottom: 1px solid var(--color-border);
+.localLabel {
+	color: var(--color-muted-foreground);
+	font-size: 11px;
+}
+
+.actions {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 6px;
+}
+
+.badge {
+	color: var(--color-muted-foreground);
+}
+
+.presentContent {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+@media (max-width: 720px) {
+	.localLabel,
+	.badge {
+		display: none;
+	}
+}
+
+@media (max-width: 480px) {
+	.presentLabel {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+	}
 }

@@ -1,0 +1,46 @@
+.brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	flex: none;
+	color: var(--color-foreground);
+	font-size: 14px;
+	font-weight: 650;
+	letter-spacing: -0.015em;
+	text-decoration: none;
+}
+
+.mark {
+	position: relative;
+	display: grid;
+	width: 22px;
+	height: 22px;
+	place-items: center;
+	border: 1px solid color-mix(in oklch, var(--color-primary) 68%, transparent);
+	border-radius: 5px;
+	background: color-mix(in oklch, var(--color-primary) 12%, transparent);
+	color: var(--color-primary);
+}
+
+.mark::before,
+.mark::after,
+.mark span {
+	position: absolute;
+	width: 4px;
+	height: 4px;
+	border-radius: 1px;
+	background: currentColor;
+	content: "";
+}
+
+.mark::before {
+	translate: -4px -4px;
+}
+
+.mark::after {
+	translate: 4px 4px;
+}
+
+.name {
+	white-space: nowrap;
+}
