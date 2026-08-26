@@ -1,0 +1,40 @@
+.toggle {
+	position: relative;
+}
+
+.icon {
+	transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sun {
+	scale: 1;
+	rotate: 0deg;
+}
+
+.moon {
+	position: absolute;
+	scale: 0;
+	rotate: 90deg;
+}
+
+:global(.dark) .sun {
+	scale: 0;
+	rotate: -90deg;
+}
+
+:global(.dark) .moon {
+	scale: 1;
+	rotate: 0deg;
+}
+
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}

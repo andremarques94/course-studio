@@ -5,5 +5,10 @@
 	"files": {
 		"ignoreUnknown": false,
 		"includes": ["src/**/*", "package.json"]
+	},
+		"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
 	}
 }

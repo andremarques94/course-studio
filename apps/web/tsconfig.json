@@ -3,8 +3,8 @@
 	"include": ["**/*.ts", "**/*.tsx"],
 	"compilerOptions": {
 		"paths": {
-			"#/*": ["./src/*"],
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@course-studio/ui/*": ["../../packages/ui/src/*"]
 		},
 		"types": ["vite/client"]
 	}

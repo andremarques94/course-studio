@@ -1,3 +1,4 @@
+import { Button } from "@course-studio/ui/components/button";
 import { createFileRoute } from "@tanstack/react-router";
 
 import styles from "./index.module.css";
@@ -11,6 +12,7 @@ function Home() {
 			<p className={styles.description}>
 				Edit <code>src/routes/index.tsx</code> to get started.
 			</p>
+			<Button variant="default">Go to Dashboard</Button>
 		</div>
 	);
 }
