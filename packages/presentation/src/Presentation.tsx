@@ -1,42 +1,36 @@
 import type { PresentationTheme } from "@course-studio/themes";
 import { Deck, Markdown } from "@revealjs/react";
-import { type Ref, useImperativeHandle, useRef } from "react";
-import type { RevealApi } from "reveal.js";
+import type { Ref } from "react";
 
 import "reveal.js/reveal.css";
 import "@course-studio/themes/styles.css";
 import "./reveal-adapter.css";
 import styles from "./Presentation.module.css";
 import { getThemeStyle } from "./theme-style";
+import {
+	type PresentationHandle,
+	usePresentationDeck,
+} from "./use-presentation-deck";
+
+export type { PresentationHandle } from "./use-presentation-deck";
 
 export type PresentationProps = {
 	markdown: string;
 	theme: PresentationTheme;
 	presentationRef?: Ref<PresentationHandle>;
+	onPdfReady?: () => void;
 };
-
-export interface PresentationHandle {
-	focus: () => void;
-}
 
 export function Presentation({
 	markdown,
 	theme,
 	presentationRef,
+	onPdfReady,
 }: PresentationProps) {
-	const deckRef = useRef<RevealApi | null>(null);
-
-	useImperativeHandle(presentationRef, () => ({
-		focus: () => {
-			if (document.activeElement instanceof HTMLElement) {
-				document.activeElement.blur();
-			}
-
-			deckRef.current
-				?.getRevealElement()
-				?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-		},
-	}));
+	const { deckRef, handleReady } = usePresentationDeck(
+		presentationRef,
+		onPdfReady,
+	);
 
 	return (
 		<div
@@ -47,6 +41,7 @@ export function Presentation({
 		>
 			<Deck
 				deckRef={deckRef}
+				onReady={handleReady}
 				className={`${styles.deck} course-studio-presentation`}
 				config={{
 					center: false,

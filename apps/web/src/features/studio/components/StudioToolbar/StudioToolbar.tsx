@@ -33,6 +33,7 @@ interface StudioToolbarProps {
 	themeId: BuiltinThemeId;
 	onThemeChange: (theme: BuiltinThemeId) => void;
 	onThemeSelectionComplete: () => void;
+	onExportPdf: () => void;
 	previewFocused: boolean;
 	onTogglePreview: () => void;
 }
@@ -41,6 +42,7 @@ export function StudioToolbar({
 	themeId,
 	onThemeChange,
 	onThemeSelectionComplete,
+	onExportPdf,
 	previewFocused,
 	onTogglePreview,
 }: StudioToolbarProps) {
@@ -146,7 +148,9 @@ export function StudioToolbar({
 						<DropdownMenuItem disabled>Rename lesson</DropdownMenuItem>
 						<DropdownMenuItem disabled>Duplicate lesson</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem disabled>Export PDF</DropdownMenuItem>
+						<DropdownMenuItem onClick={onExportPdf}>
+							Export PDF
+						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>

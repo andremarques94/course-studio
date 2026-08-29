@@ -11,6 +11,7 @@ import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useDeferredValue, useRef, useState } from "react";
 
 import { AppShell, AppSidebar } from "@/components/app-shell";
+import { openPdfExport } from "../../export-pdf";
 import { INITIAL_MARKDOWN } from "../../initial-markdown";
 import { EditorPane } from "../EditorPane";
 import { PreviewPane } from "../PreviewPane";
@@ -44,6 +45,7 @@ export function Studio() {
 					themeId={themeId}
 					onThemeChange={setThemeId}
 					onThemeSelectionComplete={() => presentationRef.current?.focus()}
+					onExportPdf={() => openPdfExport({ markdown, themeId })}
 					previewFocused={previewFocused}
 					onTogglePreview={togglePreview}
 				/>

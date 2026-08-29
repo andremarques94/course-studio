@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudioRouteRouteImport } from './routes/studio/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as StudioIndexRouteImport } from './routes/studio/index'
+import { Route as StudioPrintRouteImport } from './routes/studio/print'
 
 const StudioRouteRoute = StudioRouteRouteImport.update({
   id: '/studio',
@@ -28,28 +29,36 @@ const StudioIndexRoute = StudioIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StudioRouteRoute,
 } as any)
+const StudioPrintRoute = StudioPrintRouteImport.update({
+  id: '/print',
+  path: '/print',
+  getParentRoute: () => StudioRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/studio': typeof StudioRouteRouteWithChildren
+  '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
 }
 export interface FileRoutesByTo {
+  '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio': typeof StudioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/studio': typeof StudioRouteRouteWithChildren
+  '/studio/print': typeof StudioPrintRoute
   '/(public)/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/studio' | '/' | '/studio/'
+  fullPaths: '/studio' | '/studio/print' | '/' | '/studio/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/studio'
-  id: '__root__' | '/studio' | '/(public)/' | '/studio/'
+  to: '/studio/print' | '/' | '/studio'
+  id: '__root__' | '/studio' | '/studio/print' | '/(public)/' | '/studio/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -80,14 +89,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioIndexRouteImport
       parentRoute: typeof StudioRouteRoute
     }
+    '/studio/print': {
+      id: '/studio/print'
+      path: '/print'
+      fullPath: '/studio/print'
+      preLoaderRoute: typeof StudioPrintRouteImport
+      parentRoute: typeof StudioRouteRoute
+    }
   }
 }
 
 interface StudioRouteRouteChildren {
+  StudioPrintRoute: typeof StudioPrintRoute
   StudioIndexRoute: typeof StudioIndexRoute
 }
 
 const StudioRouteRouteChildren: StudioRouteRouteChildren = {
+  StudioPrintRoute: StudioPrintRoute,
   StudioIndexRoute: StudioIndexRoute,
 }
 

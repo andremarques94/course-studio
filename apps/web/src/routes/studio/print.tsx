@@ -1,0 +1,42 @@
+import { Presentation } from "@course-studio/presentation";
+import { getBuiltinTheme } from "@course-studio/themes";
+import { createFileRoute } from "@tanstack/react-router";
+import { readPdfExport } from "@/features/studio/export-pdf";
+
+import styles from "./print.module.css";
+
+export const Route = createFileRoute("/studio/print")({
+	ssr: false,
+	head: () => ({
+		meta: [{ title: "Export PDF | Course Studio" }],
+	}),
+	component: PdfExport,
+});
+
+function PdfExport() {
+	const payload = readPdfExport();
+
+	if (!payload) {
+		return (
+			<main className={styles.error} role="alert">
+				The presentation export is unavailable. Return to the studio and try
+				again.
+			</main>
+		);
+	}
+
+	const handlePdfReady = async () => {
+		await document.fonts.ready;
+		window.print();
+	};
+
+	return (
+		<main className={styles.export}>
+			<Presentation
+				markdown={payload.markdown}
+				theme={getBuiltinTheme(payload.themeId)}
+				onPdfReady={handlePdfReady}
+			/>
+		</main>
+	);
+}
