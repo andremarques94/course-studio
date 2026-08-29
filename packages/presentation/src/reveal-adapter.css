@@ -1,0 +1,166 @@
+.course-studio-presentation {
+	--r-background-color: var(--presentation-background);
+	--r-main-font: var(--presentation-body-font);
+	--r-main-font-size: var(--presentation-body-size);
+	--r-main-color: var(--presentation-foreground);
+	--r-heading-font: var(--presentation-heading-font);
+	--r-heading-color: var(--presentation-heading);
+	--r-heading-font-weight: var(--presentation-heading-weight);
+	--r-heading-letter-spacing: var(--presentation-heading-letter-spacing);
+	--r-heading-text-transform: none;
+	--r-heading1-size: var(--presentation-heading-1-size);
+	--r-heading2-size: var(--presentation-heading-2-size);
+	--r-heading3-size: var(--presentation-heading-3-size);
+	--r-link-color: var(--presentation-accent);
+	--r-link-color-hover: var(--presentation-accent-hover);
+	--r-selection-background-color: var(--presentation-selection-background);
+	--r-selection-color: var(--presentation-selection-foreground);
+	--r-code-font: var(--presentation-code-font);
+
+	color: var(--r-main-color);
+	background: var(--r-background-color);
+	font-family: var(--r-main-font);
+	font-size: var(--r-main-font-size);
+	font-weight: 400;
+	line-height: 1.35;
+}
+
+.course-studio-presentation .slides {
+	text-align: left;
+}
+
+.course-studio-presentation .slides section {
+	box-sizing: border-box;
+	height: 100%;
+	padding: var(--presentation-slide-padding);
+	overflow: hidden;
+	text-align: left;
+}
+
+.course-studio-presentation .slides section[data-presentation-slide]:has(> h1) {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.course-studio-presentation h1,
+.course-studio-presentation h2,
+.course-studio-presentation h3,
+.course-studio-presentation h4,
+.course-studio-presentation h5,
+.course-studio-presentation h6 {
+	margin: 0 0 0.55em;
+	color: var(--r-heading-color);
+	font-family: var(--r-heading-font);
+	font-weight: var(--r-heading-font-weight);
+	line-height: 0.98;
+	letter-spacing: var(--r-heading-letter-spacing);
+	text-transform: var(--r-heading-text-transform);
+	text-wrap: balance;
+}
+
+.course-studio-presentation h1 {
+	font-size: var(--r-heading1-size);
+}
+
+.course-studio-presentation h2 {
+	font-size: var(--r-heading2-size);
+}
+
+.course-studio-presentation h3 {
+	font-size: var(--r-heading3-size);
+}
+
+.course-studio-presentation p {
+	max-width: 32ch;
+	margin: 0.55em 0 0;
+	line-height: 1.45;
+}
+
+.course-studio-presentation a {
+	color: var(--r-link-color);
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.14em;
+}
+
+.course-studio-presentation a:hover {
+	color: var(--r-link-color-hover);
+}
+
+.course-studio-presentation ul,
+.course-studio-presentation ol {
+	display: block;
+	width: auto;
+	max-width: 30em;
+	margin: 0.9em 0 0;
+	padding-left: 1.2em;
+}
+
+.course-studio-presentation li {
+	margin: 0.35em 0;
+	padding-left: 0.2em;
+	line-height: 1.35;
+}
+
+.course-studio-presentation strong {
+	font-weight: 700;
+}
+
+.course-studio-presentation code {
+	font-family: var(--r-code-font);
+}
+
+.course-studio-presentation :not(pre) > code {
+	padding: 0.08em 0.28em;
+	border-radius: 0.18em;
+	background: var(--presentation-inline-code-background);
+	font-size: 0.82em;
+}
+
+.course-studio-presentation pre {
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0.75em 0 0;
+	font-size: 0.58em;
+	line-height: 1.55;
+}
+
+.course-studio-presentation pre code {
+	box-sizing: border-box;
+	display: block;
+	max-height: 21em;
+	padding: 1.3em 1.45em;
+	overflow: auto;
+}
+
+.course-studio-presentation blockquote {
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0.8em 0 0;
+	padding: 0.2em 0 0.2em 0.8em;
+	font-style: normal;
+	box-shadow: none;
+}
+
+.course-studio-presentation table {
+	width: 100%;
+	margin: 0.8em 0 0;
+	border-collapse: collapse;
+	font-size: 0.72em;
+}
+
+.course-studio-presentation th,
+.course-studio-presentation td {
+	padding: 0.55em 0.7em;
+	border-bottom: 1px solid currentColor;
+}
+
+.course-studio-presentation .controls,
+.course-studio-presentation .progress {
+	color: var(--r-link-color);
+}
+
+.course-studio-presentation ::selection {
+	color: var(--r-selection-color);
+	background: var(--r-selection-background-color);
+}

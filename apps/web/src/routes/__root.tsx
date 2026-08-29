@@ -1,4 +1,4 @@
-import appCss from "@course-studio/ui/globals.css?url";
+import "@course-studio/ui/globals.css";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -39,10 +39,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				rel: "icon",
 				type: "image/svg+xml",
 				href: "/favicon.svg",
-			},
-			{
-				rel: "stylesheet",
-				href: appCss,
 			},
 		],
 	}),

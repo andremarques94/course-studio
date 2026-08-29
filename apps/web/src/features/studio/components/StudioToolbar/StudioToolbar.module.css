@@ -30,6 +30,20 @@
 	color: var(--color-muted-foreground);
 }
 
+.themeTrigger {
+	min-width: 108px;
+	justify-content: flex-start;
+}
+
+.themeLabel {
+	flex: 1;
+	text-align: left;
+}
+
+.chevron {
+	color: var(--color-muted-foreground);
+}
+
 .presentContent {
 	display: inline-flex;
 	align-items: center;
@@ -39,6 +53,15 @@
 @media (max-width: 720px) {
 	.localLabel,
 	.badge {
+		display: none;
+	}
+
+	.themeTrigger {
+		min-width: auto;
+	}
+
+	.themeLabel,
+	.chevron {
 		display: none;
 	}
 }

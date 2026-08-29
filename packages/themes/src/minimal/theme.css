@@ -1,0 +1,55 @@
+[data-presentation-base-theme="minimal"] .course-studio-presentation {
+	background: var(--presentation-background);
+}
+
+[data-presentation-base-theme="minimal"]
+	[data-presentation-slide]:has(> h1)::before {
+	display: block;
+	width: 0.28em;
+	height: 0.28em;
+	margin-bottom: 0.5em;
+	background: var(--presentation-accent);
+	content: "";
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] h1 {
+	max-width: 10ch;
+	margin-bottom: 0.22em;
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] h1 + p {
+	max-width: 27ch;
+	color: var(--presentation-muted);
+	font-size: 0.82em;
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] h2 {
+	max-width: 15ch;
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] h2 + p {
+	margin-top: 0.8em;
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] li::marker {
+	color: var(--presentation-accent);
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] strong {
+	color: var(--presentation-heading);
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] pre {
+	border: 1px solid #d3d3ce;
+	background: #efefec;
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] blockquote {
+	border-left: 3px solid var(--presentation-accent);
+	color: var(--presentation-muted);
+}
+
+[data-presentation-base-theme="minimal"] [data-presentation-slide] th {
+	border-bottom-width: 2px;
+	color: var(--presentation-heading);
+}

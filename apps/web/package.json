@@ -21,6 +21,7 @@
 		"@codemirror/lang-markdown": "^6.5.2",
 		"@codemirror/language": "^6.12.4",
 		"@course-studio/presentation": "workspace:*",
+		"@course-studio/themes": "workspace:*",
 		"@course-studio/ui": "workspace:*",
 		"@lezer/highlight": "^1.2.3",
 		"@tailwindcss/vite": "^4",

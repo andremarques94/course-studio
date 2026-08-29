@@ -1,0 +1,59 @@
+[data-presentation-base-theme="academic"] .course-studio-presentation {
+	background: var(--presentation-background);
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] {
+	border-top: 8px solid var(--presentation-accent);
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] h1 {
+	max-width: 13ch;
+	margin-bottom: 0.24em;
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] h1 + p {
+	max-width: 30ch;
+	color: var(--presentation-muted);
+	font-size: 0.8em;
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] h2 {
+	max-width: 18ch;
+	padding-bottom: 0.22em;
+	border-bottom: 1px solid #aeb8c0;
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] h3 {
+	color: var(--presentation-accent);
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] li::marker {
+	color: var(--presentation-accent);
+	font-weight: 600;
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] pre {
+	border: 1px solid #cfd5d9;
+	border-left: 5px solid var(--presentation-accent);
+	background: #f1f2f2;
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] blockquote {
+	padding: 0.65em 0;
+	border-top: 1px solid #aeb8c0;
+	border-bottom: 1px solid #aeb8c0;
+	color: var(--presentation-heading);
+	font-family: var(--presentation-heading-font);
+	font-size: 1.05em;
+	font-style: italic;
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] th {
+	border-bottom: 2px solid var(--presentation-heading);
+	color: var(--presentation-heading);
+	font-family: var(--presentation-heading-font);
+}
+
+[data-presentation-base-theme="academic"] [data-presentation-slide] td {
+	border-bottom-color: #cfd5d9;
+}

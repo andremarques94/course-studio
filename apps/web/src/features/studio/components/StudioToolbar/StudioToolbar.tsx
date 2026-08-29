@@ -1,28 +1,65 @@
+import {
+	type BuiltinThemeId,
+	PRESENTATION_THEMES,
+} from "@course-studio/themes";
 import { Badge } from "@course-studio/ui/components/badge";
 import { Button } from "@course-studio/ui/components/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@course-studio/ui/components/dropdown-menu";
-import { CircleDot, Ellipsis, Maximize2, Minimize2 } from "lucide-react";
+import {
+	ChevronDown,
+	CircleDot,
+	Ellipsis,
+	Maximize2,
+	Minimize2,
+	Palette,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useRef } from "react";
 import { AppHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
 
 import styles from "./StudioToolbar.module.css";
 
 interface StudioToolbarProps {
+	themeId: BuiltinThemeId;
+	onThemeChange: (theme: BuiltinThemeId) => void;
+	onThemeSelectionComplete: () => void;
 	previewFocused: boolean;
 	onTogglePreview: () => void;
 }
 
 export function StudioToolbar({
+	themeId,
+	onThemeChange,
+	onThemeSelectionComplete,
 	previewFocused,
 	onTogglePreview,
 }: StudioToolbarProps) {
+	const themeSelectionChanged = useRef(false);
+	const selectedTheme = PRESENTATION_THEMES.find((item) => item.id === themeId);
+	const handleThemeChange = (value: string) => {
+		const nextTheme = PRESENTATION_THEMES.find((item) => item.id === value);
+		if (nextTheme) {
+			themeSelectionChanged.current = true;
+			onThemeChange(nextTheme.id);
+		}
+	};
+	const handleThemeMenuOpenChangeComplete = (open: boolean) => {
+		if (!open && themeSelectionChanged.current) {
+			themeSelectionChanged.current = false;
+			onThemeSelectionComplete();
+		}
+	};
+
 	return (
 		<AppHeader>
 			<div className={styles.context}>
@@ -35,6 +72,40 @@ export function StudioToolbar({
 					<CircleDot data-icon="inline-start" />
 					Draft
 				</Badge>
+				<DropdownMenu onOpenChangeComplete={handleThemeMenuOpenChangeComplete}>
+					<DropdownMenuTrigger
+						render={
+							<Button
+								variant="outline"
+								className={styles.themeTrigger}
+								aria-label={`Presentation theme: ${selectedTheme?.name ?? themeId}`}
+							/>
+						}
+					>
+						<Palette data-icon="inline-start" />
+						<span className={styles.themeLabel}>
+							{selectedTheme?.name ?? themeId}
+						</span>
+						<ChevronDown className={styles.chevron} />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<DropdownMenuRadioGroup
+							value={themeId}
+							onValueChange={handleThemeChange}
+						>
+							<DropdownMenuLabel>Theme</DropdownMenuLabel>
+							{PRESENTATION_THEMES.map((item) => (
+								<DropdownMenuRadioItem
+									key={item.id}
+									value={item.id}
+									closeOnClick
+								>
+									{item.name}
+								</DropdownMenuRadioItem>
+							))}
+						</DropdownMenuRadioGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<ModeToggle />
 				<Button
 					variant={previewFocused ? "secondary" : "default"}

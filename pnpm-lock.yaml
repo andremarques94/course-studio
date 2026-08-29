@@ -38,6 +38,9 @@ importers:
       '@course-studio/presentation':
         specifier: workspace:*
         version: link:../../packages/presentation
+      '@course-studio/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       '@course-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -126,6 +129,9 @@ importers:
 
   packages/presentation:
     dependencies:
+      '@course-studio/themes':
+        specifier: workspace:*
+        version: link:../themes
       '@revealjs/react':
         specifier: ^0.2.1
         version: 0.2.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(reveal.js@6.0.1)
@@ -151,6 +157,18 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.5
         version: 19.2.5(@types/react@19.2.18)
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  packages/themes:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: 2.4.5
+        version: 2.4.5
+      '@course-studio/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       typescript:
         specifier: ^6.0.2
         version: 6.0.3

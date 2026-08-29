@@ -19,6 +19,7 @@ Course Studio is a Markdown-first course authoring app. Write lesson content in 
 - Slide creation with `---` separators
 - Resizable editor and preview workspace
 - Focused presentation mode with <kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
+- Minimal, Academic, and Dark presentation themes
 - Responsive layout and light/dark appearance
 
 <p align="center">
@@ -48,12 +49,13 @@ pnpm build
 ```text
 apps/web               TanStack Start application and studio UI
 packages/presentation  Markdown presentation renderer
+packages/themes        Presentation theme definitions and visual recipes
 packages/ui            Shared UI components and styles
 ```
 
 ## Direction
 
-Development moves one milestone at a time. Presentation themes are next, followed by the course and lesson model. Persistence, publishing, and accounts are intentionally outside the current pre-alpha.
+Development moves one milestone at a time. The course and lesson model is next. Persistence, publishing, and accounts are intentionally outside the current pre-alpha.
 
 ## Contributing
 

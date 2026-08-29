@@ -1,3 +1,5 @@
+import type { PresentationHandle } from "@course-studio/presentation";
+import { type BuiltinThemeId, getBuiltinTheme } from "@course-studio/themes";
 import {
 	ResizableHandle,
 	ResizablePanel,
@@ -6,7 +8,7 @@ import {
 import { useIsMobile } from "@course-studio/ui/hooks/use-mobile";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useRef, useState } from "react";
 
 import { AppShell, AppSidebar } from "@/components/app-shell";
 import { INITIAL_MARKDOWN } from "../../initial-markdown";
@@ -24,8 +26,11 @@ const previewTransition = {
 
 export function Studio() {
 	const [markdown, setMarkdown] = useState(INITIAL_MARKDOWN);
+	const [themeId, setThemeId] = useState<BuiltinThemeId>("minimal");
 	const [previewFocused, setPreviewFocused] = useState(false);
+	const presentationRef = useRef<PresentationHandle | null>(null);
 	const previewMarkdown = useDeferredValue(markdown);
+	const theme = getBuiltinTheme(themeId);
 	const isMobile = useIsMobile();
 	const slideCount = markdown.split(/\n\s*---\s*\n/).length;
 	const togglePreview = () => setPreviewFocused((current) => !current);
@@ -36,6 +41,9 @@ export function Studio() {
 		<AppShell
 			header={
 				<StudioToolbar
+					themeId={themeId}
+					onThemeChange={setThemeId}
+					onThemeSelectionComplete={() => presentationRef.current?.focus()}
 					previewFocused={previewFocused}
 					onTogglePreview={togglePreview}
 				/>
@@ -60,7 +68,11 @@ export function Studio() {
 									className={styles.previewLayout}
 									transition={previewTransition}
 								>
-									<PreviewPane markdown={previewMarkdown} />
+									<PreviewPane
+										markdown={previewMarkdown}
+										theme={theme}
+										presentationRef={presentationRef}
+									/>
 								</motion.div>
 							</motion.div>
 						) : (
@@ -92,7 +104,11 @@ export function Studio() {
 											className={styles.previewLayout}
 											transition={previewTransition}
 										>
-											<PreviewPane markdown={previewMarkdown} />
+											<PreviewPane
+												markdown={previewMarkdown}
+												theme={theme}
+												presentationRef={presentationRef}
+											/>
 										</motion.div>
 									</ResizablePanel>
 								</ResizablePanelGroup>
