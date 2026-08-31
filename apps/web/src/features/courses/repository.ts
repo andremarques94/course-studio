@@ -1,1 +1,1 @@
-export { memoryCourseRepository as courseRepository } from "./data/memory-course-repository";
+export { honoCourseRepository as courseRepository } from "./api/hono-course-repository";

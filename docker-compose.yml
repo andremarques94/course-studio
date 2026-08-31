@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:18.6-alpine3.24
+    environment:
+      POSTGRES_USER: course_studio
+      POSTGRES_PASSWORD: course_studio
+      POSTGRES_DB: course_studio
+    ports:
+      - "5432:5432"
+    volumes:
+      - course-studio-postgres-18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U course_studio -d course_studio"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  course-studio-postgres-18:
