@@ -120,8 +120,7 @@ a.navigationButton:hover {
 
 @media (max-width: 720px) {
 	.courseLink,
-	.separator,
-	.badge {
+	.separator {
 		display: none;
 	}
 

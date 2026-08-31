@@ -47,7 +47,7 @@ import type { Lesson } from "@/features/lessons/types";
 
 import styles from "./StudioToolbar.module.css";
 
-interface StudioToolbarProps {
+type StudioToolbarProps = {
 	course: Course;
 	lesson: Lesson;
 	previousLessonId?: string;
@@ -62,7 +62,7 @@ interface StudioToolbarProps {
 	saveStatus: "saved" | "unsaved" | "saving" | "error";
 	previewFocused: boolean;
 	onTogglePreview: () => void;
-}
+};
 
 export function StudioToolbar({
 	course,
@@ -84,6 +84,7 @@ export function StudioToolbar({
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [title, setTitle] = useState(lesson.title);
 	const renameLesson = useMutation({
+		scope: { id: `lesson:${lesson.id}` },
 		mutationFn: async () => {
 			const result = titleSchema.safeParse(title);
 			if (!result.success) {
@@ -177,6 +178,7 @@ export function StudioToolbar({
 				<Badge
 					variant={saveStatus === "error" ? "destructive" : "outline"}
 					className={styles.badge}
+					aria-live="polite"
 				>
 					<CircleDot data-icon="inline-start" />
 					{saveLabel}

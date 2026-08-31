@@ -9,7 +9,7 @@ export type CreateLessonInput = z.input<typeof createTitleInputSchema>;
 export type UpdateCourseInput = z.input<typeof createTitleInputSchema>;
 export type UpdateLessonInput = z.input<typeof updateLessonInputSchema>;
 
-export interface CourseRepository {
+export type CourseRepository = {
 	getCourses(): Promise<Course[]>;
 	getCourse(id: string): Promise<Course | undefined>;
 	createCourse(input: CreateCourseInput): Promise<Course>;
@@ -21,4 +21,4 @@ export interface CourseRepository {
 	updateLesson(id: string, input: UpdateLessonInput): Promise<Lesson>;
 	deleteLesson(id: string): Promise<void>;
 	reorderLessons(courseId: string, lessonIds: string[]): Promise<Lesson[]>;
-}
+};

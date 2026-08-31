@@ -2,10 +2,10 @@ import pino from "pino";
 
 type LogContext = Record<string, unknown>;
 
-export interface Logger {
+export type Logger = {
 	info(context: LogContext, message: string): void;
 	error(context: LogContext, message: string): void;
-}
+};
 
 export function createLogger(level: string): Logger {
 	const logger = pino({

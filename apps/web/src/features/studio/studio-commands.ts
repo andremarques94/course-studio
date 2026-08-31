@@ -1,6 +1,6 @@
 import type { BuiltinThemeId } from "@course-studio/themes";
 
-export interface StudioCommands {
+export type StudioCommands = {
 	updateLesson(input: {
 		title?: string;
 		markdown?: string;
@@ -13,4 +13,4 @@ export interface StudioCommands {
 		markdown: string;
 		themeId: BuiltinThemeId;
 	}): void;
-}
+};

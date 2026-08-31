@@ -29,10 +29,10 @@ import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
 import type { Course } from "../../types";
 import styles from "./CourseDetailPage.module.css";
 
-interface CourseActionsProps {
+type CourseActionsProps = {
 	course: Course;
 	lessonCount: number;
-}
+};
 
 export function CourseActions({ course, lessonCount }: CourseActionsProps) {
 	const [editing, setEditing] = useState(false);

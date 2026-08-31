@@ -27,6 +27,8 @@ const defaultConfig = {
 	height: 900,
 	keyboardCondition: "focused" as const,
 	margin: 0,
+	// Reveal's mobile scroll view rewrites DOM owned by its React adapter.
+	scrollActivationWidth: 0,
 	width: 1600,
 };
 

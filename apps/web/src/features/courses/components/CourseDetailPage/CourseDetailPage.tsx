@@ -8,9 +8,9 @@ import styles from "./CourseDetailPage.module.css";
 import { CreateLessonForm } from "./CreateLessonForm";
 import { LessonList } from "./LessonList";
 
-interface CourseDetailPageProps {
+type CourseDetailPageProps = {
 	courseId: string;
-}
+};
 
 export function CourseDetailPage({ courseId }: CourseDetailPageProps) {
 	const { data: course } = useSuspenseQuery(courseQueries.detail(courseId));

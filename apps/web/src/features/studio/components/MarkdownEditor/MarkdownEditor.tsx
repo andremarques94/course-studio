@@ -11,10 +11,10 @@ import CodeMirror from "@uiw/react-codemirror";
 
 import styles from "./MarkdownEditor.module.css";
 
-interface MarkdownEditorProps {
+type MarkdownEditorProps = {
 	value: string;
 	onChange: (value: string) => void;
-}
+};
 
 const basicSetup = {
 	lineNumbers: true,

@@ -11,6 +11,7 @@
 		"build": "vite build",
 		"start": "node .output/server/index.mjs",
 		"preview": "vite preview",
+		"test": "tsx --test src/features/studio/**/*.test.ts",
 		"typecheck": "tsc --noEmit",
 		"format": "biome format",
 		"lint": "biome lint",
@@ -54,6 +55,7 @@
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
 		"@vitejs/plugin-react": "^6.0.1",
+		"tsx": "^4.23.0",
 		"typescript": "^6.0.2",
 		"vite": "^8.2.2"
 	}

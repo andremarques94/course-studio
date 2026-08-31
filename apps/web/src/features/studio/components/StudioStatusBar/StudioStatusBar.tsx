@@ -2,9 +2,9 @@ import { Braces } from "lucide-react";
 
 import styles from "./StudioStatusBar.module.css";
 
-interface StudioStatusBarProps {
+type StudioStatusBarProps = {
 	slideCount: number;
-}
+};
 
 export function StudioStatusBar({ slideCount }: StudioStatusBarProps) {
 	return (

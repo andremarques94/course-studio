@@ -4,9 +4,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { courseRepository } from "../../repository";
 import { CreateTitleForm } from "../CreateTitleForm";
 
-interface CreateLessonFormProps {
+type CreateLessonFormProps = {
 	courseId: string;
-}
+};
 
 export function CreateLessonForm({ courseId }: CreateLessonFormProps) {
 	const queryClient = useQueryClient();

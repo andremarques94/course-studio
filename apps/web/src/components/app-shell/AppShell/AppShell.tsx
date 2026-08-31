@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 
 import styles from "./AppShell.module.css";
 
-interface AppShellProps {
+type AppShellProps = {
 	header: ReactNode;
 	sidebar: ReactNode;
 	statusBar: ReactNode;
 	children: ReactNode;
-}
+};
 
 export function AppShell({
 	header,

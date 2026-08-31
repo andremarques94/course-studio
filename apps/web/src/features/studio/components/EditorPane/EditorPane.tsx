@@ -1,10 +1,10 @@
 import { MarkdownEditor } from "../MarkdownEditor";
 import styles from "./EditorPane.module.css";
 
-interface EditorPaneProps {
+type EditorPaneProps = {
 	value: string;
 	onChange: (value: string) => void;
-}
+};
 
 export function EditorPane({ value, onChange }: EditorPaneProps) {
 	return (

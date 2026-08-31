@@ -8,12 +8,21 @@ import {
 import { useIsMobile } from "@course-studio/ui/hooks/use-mobile";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { useDeferredValue, useRef, useState } from "react";
+import {
+	useDeferredValue,
+	useEffect,
+	useEffectEvent,
+	useRef,
+	useState,
+	useSyncExternalStore,
+} from "react";
 
 import { AppShell, AppSidebar } from "@/components/app-shell";
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
+import { LessonAutosave } from "../../lesson-autosave";
 import type { StudioCommands } from "../../studio-commands";
 import { EditorPane } from "../EditorPane";
 import { PreviewPane } from "../PreviewPane";
@@ -27,43 +36,37 @@ const previewTransition = {
 	damping: 33,
 } as const;
 
-interface StudioProps {
+type StudioProps = {
 	course: Course;
 	lesson: Lesson;
 	lessons: Lesson[];
 	commands: StudioCommands;
-}
-
-function getSaveStatus({
-	isError,
-	isPending,
-	isDirty,
-}: {
-	isError: boolean;
-	isPending: boolean;
-	isDirty: boolean;
-}) {
-	if (isError) {
-		return "error";
-	}
-	if (isPending) {
-		return "saving";
-	}
-	if (isDirty) {
-		return "unsaved";
-	}
-	return "saved";
-}
+};
 
 export function Studio({ course, lesson, lessons, commands }: StudioProps) {
-	const [markdown, setMarkdown] = useState(lesson.markdown);
-	const [themeId, setThemeId] = useState<BuiltinThemeId>(lesson.themeId);
-	const [savedMarkdown, setSavedMarkdown] = useState(lesson.markdown);
-	const [savedThemeId, setSavedThemeId] = useState<BuiltinThemeId>(
-		lesson.themeId,
-	);
 	const [previewFocused, setPreviewFocused] = useState(false);
 	const presentationRef = useRef<PresentationHandle | null>(null);
+	const saveLesson = useMutation({
+		mutationFn: (draft: { markdown: string; themeId: BuiltinThemeId }) =>
+			commands.updateLesson(draft),
+		scope: { id: `lesson:${lesson.id}` },
+	});
+	const [autosave] = useState(
+		() =>
+			new LessonAutosave({
+				initialDraft: {
+					markdown: lesson.markdown,
+					themeId: lesson.themeId,
+				},
+				save: saveLesson.mutateAsync,
+			}),
+	);
+	const autosaveState = useSyncExternalStore(
+		autosave.subscribe,
+		autosave.getSnapshot,
+		autosave.getSnapshot,
+	);
+	const { markdown, themeId } = autosaveState.draft;
 	const previewMarkdown = useDeferredValue(markdown);
 	const theme = getBuiltinTheme(themeId);
 	const isMobile = useIsMobile();
@@ -71,35 +74,43 @@ export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 	const lessonIndex = lessons.findIndex((item) => item.id === lesson.id);
 	const previousLesson = lessons[lessonIndex - 1];
 	const nextLesson = lessons[lessonIndex + 1];
-	const isDirty = markdown !== savedMarkdown || themeId !== savedThemeId;
 	const togglePreview = () => setPreviewFocused((current) => !current);
-	const saveLesson = useMutation({
-		mutationFn: () => commands.updateLesson({ markdown, themeId }),
-		onSuccess: (savedLesson) => {
-			setSavedMarkdown(savedLesson.markdown);
-			setSavedThemeId(savedLesson.themeId);
-		},
-	});
 	const handleMarkdownChange = (value: string) => {
-		saveLesson.reset();
-		setMarkdown(value);
+		autosave.updateDraft({
+			...autosave.getSnapshot().draft,
+			markdown: value,
+		});
 	};
 	const handleThemeChange = (value: BuiltinThemeId) => {
-		saveLesson.reset();
-		setThemeId(value);
+		autosave.updateDraft({
+			...autosave.getSnapshot().draft,
+			themeId: value,
+		});
 	};
-	const saveStatus = getSaveStatus({
-		isError: saveLesson.isError,
-		isPending: saveLesson.isPending,
-		isDirty,
+	const flushBeforeNavigation = useEffectEvent(async () => {
+		if (!autosave.getSnapshot().isUnsafeToLeave) {
+			return false;
+		}
+		try {
+			await autosave.flush();
+			return false;
+		} catch {
+			return true;
+		}
+	});
+
+	useEffect(() => () => autosave.dispose(), [autosave]);
+	useBlocker({
+		shouldBlockFn: flushBeforeNavigation,
+		enableBeforeUnload: autosaveState.isUnsafeToLeave,
 	});
 
 	useHotkey("Mod+Shift+P", togglePreview, { stopPropagation: false });
 	useHotkey(
 		"Mod+S",
 		() => {
-			if (isDirty && !saveLesson.isPending) {
-				saveLesson.mutate();
+			if (autosave.getSnapshot().canSaveNow) {
+				void autosave.saveNow().catch(() => undefined);
 			}
 		},
 		{ preventDefault: true, stopPropagation: false },
@@ -125,9 +136,11 @@ export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 					onRenameLesson={async (title) => {
 						await commands.updateLesson({ title });
 					}}
-					onSave={() => saveLesson.mutate()}
-					saveDisabled={!isDirty || saveLesson.isPending}
-					saveStatus={saveStatus}
+					onSave={() => {
+						void autosave.saveNow().catch(() => undefined);
+					}}
+					saveDisabled={!autosaveState.canSaveNow}
+					saveStatus={autosaveState.status}
 					previewFocused={previewFocused}
 					onTogglePreview={togglePreview}
 				/>

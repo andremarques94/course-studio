@@ -6,12 +6,12 @@ import { type SubmitEvent, useState } from "react";
 import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
 import styles from "./CreateTitleForm.module.css";
 
-interface CreateTitleFormProps {
+type CreateTitleFormProps = {
 	inputId: string;
 	label: string;
 	placeholder: string;
 	onCreate: (title: string) => Promise<void>;
-}
+};
 
 export function CreateTitleForm({
 	inputId,

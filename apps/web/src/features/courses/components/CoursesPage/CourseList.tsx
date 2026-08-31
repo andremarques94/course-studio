@@ -5,9 +5,9 @@ import { courseQueries } from "../../queries";
 import type { Course } from "../../types";
 import styles from "./CoursesPage.module.css";
 
-interface CourseListProps {
+type CourseListProps = {
 	courses: readonly Course[];
-}
+};
 
 export function CourseList({ courses }: CourseListProps) {
 	if (courses.length === 0) {

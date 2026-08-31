@@ -20,10 +20,10 @@ export class ApiError extends Error {
 	}
 }
 
-interface PostgresError {
+type PostgresError = {
 	code: string;
 	constraint?: string;
-}
+};
 
 export function findPostgresError(error: unknown): PostgresError | undefined {
 	let current = error;

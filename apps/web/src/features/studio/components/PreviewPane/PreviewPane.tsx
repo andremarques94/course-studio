@@ -4,12 +4,12 @@ import type { Ref } from "react";
 import { PresentationPreview } from "../PresentationPreview";
 import styles from "./PreviewPane.module.css";
 
-interface PreviewPaneProps {
+type PreviewPaneProps = {
 	markdown: string;
 	theme: PresentationTheme;
 	presentationRef: Ref<PresentationHandle>;
 	focused?: boolean;
-}
+};
 
 export function PreviewPane({
 	markdown,

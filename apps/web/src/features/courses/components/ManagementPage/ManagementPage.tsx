@@ -3,10 +3,10 @@ import { AppHeader, AppShell, AppSidebar } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
 import styles from "./ManagementPage.module.css";
 
-interface ManagementPageProps {
+type ManagementPageProps = {
 	title: string;
 	children: ReactNode;
-}
+};
 
 export function ManagementPage({ title, children }: ManagementPageProps) {
 	return (

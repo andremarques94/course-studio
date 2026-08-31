@@ -10,10 +10,10 @@ import type { ReactNode } from "react";
 
 import styles from "./AppSidebar.module.css";
 
-interface RailTooltipProps {
+type RailTooltipProps = {
 	label: string;
 	children: ReactNode;
-}
+};
 
 function RailTooltip({ label, children }: RailTooltipProps) {
 	return (

@@ -14,10 +14,10 @@ import {
 	createRequestLogger,
 } from "./shared/http/request-logger.js";
 
-interface AppOptions {
+type AppOptions = {
 	corsOrigins: string[];
 	logger: Logger;
-}
+};
 
 export function createApp(db: Database, options: AppOptions) {
 	const coursesService = createCoursesService(db);

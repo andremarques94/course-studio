@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { ProductBrand } from "../ProductBrand/ProductBrand";
 import styles from "./AppHeader.module.css";
 
-interface AppHeaderProps {
+type AppHeaderProps = {
 	children: ReactNode;
-}
+};
 
 export function AppHeader({ children }: AppHeaderProps) {
 	return (

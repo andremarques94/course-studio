@@ -4,11 +4,11 @@ import type { Lesson } from "@/features/lessons/types";
 import { createWebStudioCommands } from "../../web-studio-adapter";
 import { Studio } from "./Studio";
 
-interface WebStudioProps {
+type WebStudioProps = {
 	course: Course;
 	lesson: Lesson;
 	lessons: Lesson[];
-}
+};
 
 export function WebStudio({ course, lesson, lessons }: WebStudioProps) {
 	const queryClient = useQueryClient();

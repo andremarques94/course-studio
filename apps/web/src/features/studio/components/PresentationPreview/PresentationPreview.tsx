@@ -7,12 +7,12 @@ import { memo, type Ref } from "react";
 
 import styles from "./PresentationPreview.module.css";
 
-interface PresentationPreviewProps {
+type PresentationPreviewProps = {
 	markdown: string;
 	theme: PresentationTheme;
 	presentationRef: Ref<PresentationHandle>;
 	focused?: boolean;
-}
+};
 
 function PresentationPreviewRoot({
 	markdown,

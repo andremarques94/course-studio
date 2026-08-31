@@ -46,10 +46,10 @@ import { courseRepository } from "../../repository";
 import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
 import styles from "./CourseDetailPage.module.css";
 
-interface LessonListProps {
+type LessonListProps = {
 	courseId: string;
 	lessons: readonly Lesson[];
-}
+};
 
 export function LessonList({ courseId, lessons }: LessonListProps) {
 	const [editingLessonId, setEditingLessonId] = useState<string>();

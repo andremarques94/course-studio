@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 import type { Logger } from "../../infrastructure/logger.js";
 
-export interface AppEnv {
+export type AppEnv = {
 	Variables: {
 		requestId: string;
 	};
-}
+};
 
 export function createRequestLogger(logger: Logger): MiddlewareHandler<AppEnv> {
 	return async (context, next) => {
