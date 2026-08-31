@@ -19,7 +19,9 @@
 	"dependencies": {
 		"@course-studio/themes": "workspace:*",
 		"@revealjs/react": "^0.2.1",
-		"reveal.js": "^6.0.1"
+		"remeda": "^2.45.0",
+		"reveal.js": "^6.0.1",
+		"usehooks-ts": "^3.1.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",

@@ -21,19 +21,29 @@ export type PresentationProps = {
 	onPdfReady?: () => void;
 };
 
+const defaultConfig = {
+	center: false,
+	embedded: true,
+	height: 900,
+	keyboardCondition: "focused" as const,
+	margin: 0,
+	width: 1600,
+};
+
 export function Presentation({
 	markdown,
 	theme,
 	presentationRef,
 	onPdfReady,
 }: PresentationProps) {
-	const { deckRef, handleReady } = usePresentationDeck(
+	const { containerRef, deckRef, handleReady } = usePresentationDeck(
 		presentationRef,
 		onPdfReady,
 	);
 
 	return (
 		<div
+			ref={containerRef}
 			className={styles.presentation}
 			data-presentation-base-theme={theme.baseThemeId}
 			data-presentation-theme={theme.id}
@@ -43,14 +53,7 @@ export function Presentation({
 				deckRef={deckRef}
 				onReady={handleReady}
 				className={`${styles.deck} course-studio-presentation`}
-				config={{
-					center: false,
-					embedded: true,
-					height: 900,
-					keyboardCondition: "focused",
-					margin: 0,
-					width: 1600,
-				}}
+				config={defaultConfig}
 			>
 				<Markdown data-presentation-slide="">{markdown}</Markdown>
 			</Deck>

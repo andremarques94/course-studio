@@ -1,4 +1,5 @@
 import type { BuiltinThemeId } from "@course-studio/themes";
+import { isNonNull } from "remeda";
 
 const PDF_EXPORT_STORAGE_KEY = "course-studio:pdf-export";
 
@@ -44,7 +45,7 @@ export function readPdfExport(): PdfExportPayload | null {
 		const payload: unknown = JSON.parse(stored);
 		if (
 			typeof payload === "object" &&
-			payload !== null &&
+			isNonNull(payload) &&
 			"markdown" in payload &&
 			typeof payload.markdown === "string" &&
 			"themeId" in payload &&
