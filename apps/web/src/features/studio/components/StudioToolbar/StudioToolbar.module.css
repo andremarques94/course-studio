@@ -14,9 +14,22 @@
 	white-space: nowrap;
 }
 
-.localLabel {
+.courseLink {
+	overflow: hidden;
+	max-width: 190px;
 	color: var(--color-muted-foreground);
 	font-size: 11px;
+	text-decoration: none;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.courseLink:hover {
+	color: var(--color-foreground);
+}
+
+.separator {
+	color: var(--color-border);
 }
 
 .actions {
@@ -26,8 +39,38 @@
 	gap: 6px;
 }
 
-.badge {
+.lessonNavigation {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.navigationButton {
+	display: inline-flex;
+	width: 28px;
+	height: 28px;
+	align-items: center;
+	justify-content: center;
+	border-radius: 6px;
 	color: var(--color-muted-foreground);
+}
+
+a.navigationButton:hover {
+	color: var(--color-foreground);
+	background: var(--color-muted);
+}
+
+.navigationButton:focus-visible {
+	outline: 2px solid var(--color-ring);
+	outline-offset: 1px;
+}
+
+.navigationButton[data-disabled] {
+	opacity: 0.3;
+}
+
+.navigationButton svg {
+	width: 14px;
 }
 
 .themeTrigger {
@@ -51,7 +94,8 @@
 }
 
 @media (max-width: 720px) {
-	.localLabel,
+	.courseLink,
+	.separator,
 	.badge {
 		display: none;
 	}
@@ -62,6 +106,12 @@
 
 	.themeLabel,
 	.chevron {
+		display: none;
+	}
+}
+
+@media (max-width: 580px) {
+	.lessonNavigation {
 		display: none;
 	}
 }

@@ -40,7 +40,8 @@
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"remeda": "^2.45.0",
-		"tailwindcss": "^4"
+		"tailwindcss": "^4",
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",
@@ -52,6 +53,6 @@
 		"@types/react-dom": "^19.2.0",
 		"@vitejs/plugin-react": "^6.0.1",
 		"typescript": "^6.0.2",
-		"vite": "^8.0.0"
+		"vite": "^8.2.2"
 	}
 }

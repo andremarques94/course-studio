@@ -13,6 +13,9 @@ import { Route as StudioRouteRouteImport } from './routes/studio/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as StudioIndexRouteImport } from './routes/studio/index'
 import { Route as StudioPrintRouteImport } from './routes/studio/print'
+import { Route as StudioCoursesIndexRouteImport } from './routes/studio/courses/index'
+import { Route as StudioCoursesCourseIdIndexRouteImport } from './routes/studio/courses/$courseId/index'
+import { Route as StudioCoursesCourseIdLessonsLessonIdRouteImport } from './routes/studio/courses/$courseId/lessons/$lessonId'
 
 const StudioRouteRoute = StudioRouteRouteImport.update({
   id: '/studio',
@@ -34,17 +37,40 @@ const StudioPrintRoute = StudioPrintRouteImport.update({
   path: '/print',
   getParentRoute: () => StudioRouteRoute,
 } as any)
+const StudioCoursesIndexRoute = StudioCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => StudioRouteRoute,
+} as any)
+const StudioCoursesCourseIdIndexRoute =
+  StudioCoursesCourseIdIndexRouteImport.update({
+    id: '/courses/$courseId/',
+    path: '/courses/$courseId/',
+    getParentRoute: () => StudioRouteRoute,
+  } as any)
+const StudioCoursesCourseIdLessonsLessonIdRoute =
+  StudioCoursesCourseIdLessonsLessonIdRouteImport.update({
+    id: '/courses/$courseId/lessons/$lessonId',
+    path: '/courses/$courseId/lessons/$lessonId',
+    getParentRoute: () => StudioRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/studio': typeof StudioRouteRouteWithChildren
   '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
+  '/studio/courses/': typeof StudioCoursesIndexRoute
+  '/studio/courses/$courseId/': typeof StudioCoursesCourseIdIndexRoute
+  '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
 }
 export interface FileRoutesByTo {
   '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio': typeof StudioIndexRoute
+  '/studio/courses': typeof StudioCoursesIndexRoute
+  '/studio/courses/$courseId': typeof StudioCoursesCourseIdIndexRoute
+  '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -52,13 +78,37 @@ export interface FileRoutesById {
   '/studio/print': typeof StudioPrintRoute
   '/(public)/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
+  '/studio/courses/': typeof StudioCoursesIndexRoute
+  '/studio/courses/$courseId/': typeof StudioCoursesCourseIdIndexRoute
+  '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/studio' | '/studio/print' | '/' | '/studio/'
+  fullPaths:
+    | '/studio'
+    | '/studio/print'
+    | '/'
+    | '/studio/'
+    | '/studio/courses/'
+    | '/studio/courses/$courseId/'
+    | '/studio/courses/$courseId/lessons/$lessonId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/studio/print' | '/' | '/studio'
-  id: '__root__' | '/studio' | '/studio/print' | '/(public)/' | '/studio/'
+  to:
+    | '/studio/print'
+    | '/'
+    | '/studio'
+    | '/studio/courses'
+    | '/studio/courses/$courseId'
+    | '/studio/courses/$courseId/lessons/$lessonId'
+  id:
+    | '__root__'
+    | '/studio'
+    | '/studio/print'
+    | '/(public)/'
+    | '/studio/'
+    | '/studio/courses/'
+    | '/studio/courses/$courseId/'
+    | '/studio/courses/$courseId/lessons/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -96,17 +146,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioPrintRouteImport
       parentRoute: typeof StudioRouteRoute
     }
+    '/studio/courses/': {
+      id: '/studio/courses/'
+      path: '/courses'
+      fullPath: '/studio/courses/'
+      preLoaderRoute: typeof StudioCoursesIndexRouteImport
+      parentRoute: typeof StudioRouteRoute
+    }
+    '/studio/courses/$courseId/': {
+      id: '/studio/courses/$courseId/'
+      path: '/courses/$courseId'
+      fullPath: '/studio/courses/$courseId/'
+      preLoaderRoute: typeof StudioCoursesCourseIdIndexRouteImport
+      parentRoute: typeof StudioRouteRoute
+    }
+    '/studio/courses/$courseId/lessons/$lessonId': {
+      id: '/studio/courses/$courseId/lessons/$lessonId'
+      path: '/courses/$courseId/lessons/$lessonId'
+      fullPath: '/studio/courses/$courseId/lessons/$lessonId'
+      preLoaderRoute: typeof StudioCoursesCourseIdLessonsLessonIdRouteImport
+      parentRoute: typeof StudioRouteRoute
+    }
   }
 }
 
 interface StudioRouteRouteChildren {
   StudioPrintRoute: typeof StudioPrintRoute
   StudioIndexRoute: typeof StudioIndexRoute
+  StudioCoursesIndexRoute: typeof StudioCoursesIndexRoute
+  StudioCoursesCourseIdIndexRoute: typeof StudioCoursesCourseIdIndexRoute
+  StudioCoursesCourseIdLessonsLessonIdRoute: typeof StudioCoursesCourseIdLessonsLessonIdRoute
 }
 
 const StudioRouteRouteChildren: StudioRouteRouteChildren = {
   StudioPrintRoute: StudioPrintRoute,
   StudioIndexRoute: StudioIndexRoute,
+  StudioCoursesIndexRoute: StudioCoursesIndexRoute,
+  StudioCoursesCourseIdIndexRoute: StudioCoursesCourseIdIndexRoute,
+  StudioCoursesCourseIdLessonsLessonIdRoute:
+    StudioCoursesCourseIdLessonsLessonIdRoute,
 }
 
 const StudioRouteRouteWithChildren = StudioRouteRoute._addFileChildren(

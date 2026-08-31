@@ -14,7 +14,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@course-studio/ui/components/dropdown-menu";
+import { Link } from "@tanstack/react-router";
 import {
+	ArrowLeft,
+	ArrowRight,
 	ChevronDown,
 	CircleDot,
 	Ellipsis,
@@ -26,28 +29,50 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRef } from "react";
 import { AppHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
+import type { Course } from "@/features/courses/types";
+import type { Lesson } from "@/features/lessons/types";
 
 import styles from "./StudioToolbar.module.css";
 
 interface StudioToolbarProps {
+	course: Course;
+	lesson: Lesson;
+	previousLessonId?: string;
+	nextLessonId?: string;
 	themeId: BuiltinThemeId;
 	onThemeChange: (theme: BuiltinThemeId) => void;
 	onThemeSelectionComplete: () => void;
 	onExportPdf: () => void;
+	onSave: () => void;
+	saveDisabled: boolean;
+	saveStatus: "saved" | "unsaved" | "saving" | "error";
 	previewFocused: boolean;
 	onTogglePreview: () => void;
 }
 
 export function StudioToolbar({
+	course,
+	lesson,
+	previousLessonId,
+	nextLessonId,
 	themeId,
 	onThemeChange,
 	onThemeSelectionComplete,
 	onExportPdf,
+	onSave,
+	saveDisabled,
+	saveStatus,
 	previewFocused,
 	onTogglePreview,
 }: StudioToolbarProps) {
 	const themeSelectionChanged = useRef(false);
 	const selectedTheme = PRESENTATION_THEMES.find((item) => item.id === themeId);
+	const saveLabel = {
+		saved: "Saved",
+		unsaved: "Unsaved",
+		saving: "Saving",
+		error: "Save failed",
+	}[saveStatus];
 	const handleThemeChange = (value: string) => {
 		const nextTheme = PRESENTATION_THEMES.find((item) => item.id === value);
 		if (nextTheme) {
@@ -65,15 +90,66 @@ export function StudioToolbar({
 	return (
 		<AppHeader>
 			<div className={styles.context}>
-				<span className={styles.lessonTitle}>Untitled lesson</span>
-				<span className={styles.localLabel}>Local workspace</span>
+				<Link
+					to="/studio/courses/$courseId"
+					params={{ courseId: course.id }}
+					className={styles.courseLink}
+				>
+					{course.title}
+				</Link>
+				<span className={styles.separator}>/</span>
+				<span className={styles.lessonTitle}>{lesson.title}</span>
 			</div>
 
 			<div className={styles.actions}>
-				<Badge variant="outline" className={styles.badge}>
+				<div className={styles.lessonNavigation}>
+					{previousLessonId ? (
+						<Link
+							to="/studio/courses/$courseId/lessons/$lessonId"
+							params={{ courseId: course.id, lessonId: previousLessonId }}
+							className={styles.navigationButton}
+							aria-label="Previous lesson"
+						>
+							<ArrowLeft />
+						</Link>
+					) : (
+						<span
+							className={styles.navigationButton}
+							aria-hidden="true"
+							data-disabled
+						>
+							<ArrowLeft />
+						</span>
+					)}
+					{nextLessonId ? (
+						<Link
+							to="/studio/courses/$courseId/lessons/$lessonId"
+							params={{ courseId: course.id, lessonId: nextLessonId }}
+							className={styles.navigationButton}
+							aria-label="Next lesson"
+						>
+							<ArrowRight />
+						</Link>
+					) : (
+						<span
+							className={styles.navigationButton}
+							aria-hidden="true"
+							data-disabled
+						>
+							<ArrowRight />
+						</span>
+					)}
+				</div>
+				<Badge
+					variant={saveStatus === "error" ? "destructive" : "outline"}
+					className={styles.badge}
+				>
 					<CircleDot data-icon="inline-start" />
-					Draft
+					{saveLabel}
 				</Badge>
+				<Button variant="outline" onClick={onSave} disabled={saveDisabled}>
+					Save
+				</Button>
 				<DropdownMenu onOpenChangeComplete={handleThemeMenuOpenChangeComplete}>
 					<DropdownMenuTrigger
 						render={

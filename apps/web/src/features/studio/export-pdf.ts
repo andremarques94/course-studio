@@ -1,5 +1,5 @@
-import type { BuiltinThemeId } from "@course-studio/themes";
-import { isNonNull } from "remeda";
+import { type BuiltinThemeId, isBuiltinThemeId } from "@course-studio/themes";
+import { isPlainObject } from "remeda";
 
 const PDF_EXPORT_STORAGE_KEY = "course-studio:pdf-export";
 
@@ -44,14 +44,9 @@ export function readPdfExport(): PdfExportPayload | null {
 	try {
 		const payload: unknown = JSON.parse(stored);
 		if (
-			typeof payload === "object" &&
-			isNonNull(payload) &&
-			"markdown" in payload &&
+			isPlainObject(payload) &&
 			typeof payload.markdown === "string" &&
-			"themeId" in payload &&
-			(payload.themeId === "minimal" ||
-				payload.themeId === "academic" ||
-				payload.themeId === "dark")
+			isBuiltinThemeId(payload.themeId)
 		) {
 			return {
 				markdown: payload.markdown,

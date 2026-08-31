@@ -7,6 +7,7 @@ export type {
 export {
 	type BuiltinThemeId,
 	getBuiltinTheme,
+	isBuiltinThemeId,
 	PRESENTATION_THEMES,
 	type PresentationTheme,
 } from "./themes";

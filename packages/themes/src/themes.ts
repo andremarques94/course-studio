@@ -39,3 +39,9 @@ const presentationThemeById = Object.fromEntries(
 export function getBuiltinTheme(id: BuiltinThemeId): BuiltinPresentationTheme {
 	return presentationThemeById[id];
 }
+
+export function isBuiltinThemeId(value: unknown): value is BuiltinThemeId {
+	return (
+		typeof value === "string" && Object.hasOwn(BUILTIN_THEME_RECIPES, value)
+	);
+}

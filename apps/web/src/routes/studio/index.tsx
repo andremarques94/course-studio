@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Studio } from "@/features/studio/components";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/studio/")({
-	component: Studio,
+	beforeLoad: () => {
+		throw redirect({ to: "/studio/courses" });
+	},
 });
