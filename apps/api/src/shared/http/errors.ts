@@ -2,6 +2,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export type ErrorCode =
 	| "COURSE_NOT_FOUND"
+	| "INVALID_LESSON_ORDER"
 	| "INTERNAL_ERROR"
 	| "LESSON_NOT_FOUND"
 	| "NOT_FOUND"

@@ -1,4 +1,14 @@
 import "@course-studio/ui/globals.css";
+import { Button } from "@course-studio/ui/components/button";
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@course-studio/ui/components/empty";
+import { Toaster } from "@course-studio/ui/components/sonner";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -7,6 +17,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { TriangleAlert } from "lucide-react";
 import { MotionConfig } from "motion/react";
 import { ThemeProvider } from "@/features/appearance";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -42,8 +53,30 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			},
 		],
 	}),
+	errorComponent: RootError,
 	shellComponent: RootDocument,
 });
+
+function RootError({ reset }: { reset: () => void }) {
+	return (
+		<main>
+			<Empty className="min-h-dvh rounded-none" role="alert">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<TriangleAlert />
+					</EmptyMedia>
+					<EmptyTitle>Couldn't load this page</EmptyTitle>
+					<EmptyDescription>Try loading it again.</EmptyDescription>
+				</EmptyHeader>
+				<EmptyContent>
+					<Button type="button" variant="outline" onClick={reset}>
+						Try again
+					</Button>
+				</EmptyContent>
+			</Empty>
+		</main>
+	);
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
@@ -53,7 +86,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body>
 				<MotionConfig reducedMotion="user">
-					<ThemeProvider>{children}</ThemeProvider>
+					<ThemeProvider>
+						{children}
+						<Toaster />
+					</ThemeProvider>
 					<TanStackDevtools
 						config={{
 							position: "bottom-right",

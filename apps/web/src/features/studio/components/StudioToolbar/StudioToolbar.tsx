@@ -5,6 +5,14 @@ import {
 import { Badge } from "@course-studio/ui/components/badge";
 import { Button } from "@course-studio/ui/components/button";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@course-studio/ui/components/dialog";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -14,6 +22,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@course-studio/ui/components/dropdown-menu";
+import { Input } from "@course-studio/ui/components/input";
+import { toast } from "@course-studio/ui/components/sonner";
+import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -24,11 +35,13 @@ import {
 	Maximize2,
 	Minimize2,
 	Palette,
+	Pencil,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef } from "react";
+import { type SubmitEvent, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
+import { TITLE_MAX_LENGTH, titleSchema } from "@/features/courses/schemas";
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
 
@@ -43,6 +56,7 @@ interface StudioToolbarProps {
 	onThemeChange: (theme: BuiltinThemeId) => void;
 	onThemeSelectionComplete: () => void;
 	onExportPdf: () => void;
+	onRenameLesson: (title: string) => Promise<void>;
 	onSave: () => void;
 	saveDisabled: boolean;
 	saveStatus: "saved" | "unsaved" | "saving" | "error";
@@ -59,6 +73,7 @@ export function StudioToolbar({
 	onThemeChange,
 	onThemeSelectionComplete,
 	onExportPdf,
+	onRenameLesson,
 	onSave,
 	saveDisabled,
 	saveStatus,
@@ -66,6 +81,21 @@ export function StudioToolbar({
 	onTogglePreview,
 }: StudioToolbarProps) {
 	const themeSelectionChanged = useRef(false);
+	const [renameOpen, setRenameOpen] = useState(false);
+	const [title, setTitle] = useState(lesson.title);
+	const renameLesson = useMutation({
+		mutationFn: async () => {
+			const result = titleSchema.safeParse(title);
+			if (!result.success) {
+				throw new Error(result.error.issues[0]?.message ?? "Invalid title.");
+			}
+			await onRenameLesson(result.data);
+		},
+		onSuccess: () => {
+			setRenameOpen(false);
+			toast.success("Lesson renamed");
+		},
+	});
 	const selectedTheme = PRESENTATION_THEMES.find((item) => item.id === themeId);
 	const saveLabel = {
 		saved: "Saved",
@@ -85,6 +115,10 @@ export function StudioToolbar({
 			themeSelectionChanged.current = false;
 			onThemeSelectionComplete();
 		}
+	};
+	const handleRenameSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		renameLesson.mutate();
 	};
 
 	return (
@@ -221,7 +255,16 @@ export function StudioToolbar({
 						<Ellipsis />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
-						<DropdownMenuItem disabled>Rename lesson</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() => {
+								setTitle(lesson.title);
+								renameLesson.reset();
+								setRenameOpen(true);
+							}}
+						>
+							<Pencil />
+							Rename lesson
+						</DropdownMenuItem>
 						<DropdownMenuItem disabled>Duplicate lesson</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={onExportPdf}>
@@ -229,6 +272,63 @@ export function StudioToolbar({
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
+				<Dialog
+					open={renameOpen}
+					onOpenChange={(open) => {
+						if (!renameLesson.isPending) {
+							setRenameOpen(open);
+						}
+					}}
+				>
+					<DialogContent>
+						<form className={styles.renameForm} onSubmit={handleRenameSubmit}>
+							<DialogHeader>
+								<DialogTitle>Rename lesson</DialogTitle>
+								<DialogDescription>
+									Choose a concise title for this lesson.
+								</DialogDescription>
+							</DialogHeader>
+							<div className={styles.renameField}>
+								<label htmlFor="studio-lesson-title">Lesson name</label>
+								<Input
+									id="studio-lesson-title"
+									value={title}
+									onChange={(event) => {
+										setTitle(event.target.value);
+										renameLesson.reset();
+									}}
+									maxLength={TITLE_MAX_LENGTH}
+									autoComplete="off"
+									autoFocus
+								/>
+								{renameLesson.error ? (
+									<p className={styles.renameError} role="alert">
+										{renameLesson.error.message}
+									</p>
+								) : null}
+							</div>
+							<DialogFooter>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setRenameOpen(false)}
+									disabled={renameLesson.isPending}
+								>
+									Cancel
+								</Button>
+								<Button
+									type="submit"
+									disabled={
+										!titleSchema.safeParse(title).success ||
+										renameLesson.isPending
+									}
+								>
+									{renameLesson.isPending ? "Saving..." : "Save"}
+								</Button>
+							</DialogFooter>
+						</form>
+					</DialogContent>
+				</Dialog>
 			</div>
 		</AppHeader>
 	);

@@ -2,7 +2,10 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { ApiError } from "../../shared/http/errors.js";
 import { validationHook } from "../../shared/http/validation.js";
-import { createLessonSchema } from "../lessons/lesson.schema.js";
+import {
+	createLessonSchema,
+	reorderLessonsSchema,
+} from "../lessons/lesson.schema.js";
 import type { LessonsService } from "../lessons/lesson.service.js";
 import {
 	courseIdSchema,
@@ -79,6 +82,18 @@ export function createCoursesRoutes(
 						c.req.valid("json"),
 					),
 					201,
+				),
+		)
+		.put(
+			"/:courseId/lessons/order",
+			zValidator("param", courseIdSchema, validationHook),
+			zValidator("json", reorderLessonsSchema, validationHook),
+			async (c) =>
+				c.json(
+					await lessonsService.reorder(
+						c.req.valid("param").courseId,
+						c.req.valid("json"),
+					),
 				),
 		);
 }

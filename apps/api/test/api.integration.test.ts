@@ -105,7 +105,10 @@ test("courses and lessons persist through the API", {
 			},
 		);
 		assert.equal(createLessonResponse.status, 201);
-		const lesson = (await createLessonResponse.json()) as { id: string };
+		const lesson = (await createLessonResponse.json()) as {
+			id: string;
+			slug: string;
+		};
 		const lessonsResponse = await app.request(`/courses/${courseId}/lessons`);
 		assert.equal(lessonsResponse.status, 200);
 		const lessonList = (await lessonsResponse.json()) as Array<{ id: string }>;
@@ -128,9 +131,60 @@ test("courses and lessons persist through the API", {
 		const updateLessonResponse = await app.request(`/lessons/${lesson.id}`, {
 			method: "PATCH",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ markdown, themeId: "academic" }),
+			body: JSON.stringify({
+				title: "Updated introduction",
+				markdown,
+				themeId: "academic",
+			}),
 		});
 		assert.equal(updateLessonResponse.status, 200);
+		const updatedLesson = (await updateLessonResponse.json()) as {
+			slug: string;
+			title: string;
+		};
+		assert.equal(updatedLesson.title, "Updated introduction");
+		assert.equal(updatedLesson.slug, lesson.slug);
+
+		const secondLessonResponse = await app.request(
+			`/courses/${courseId}/lessons`,
+			{
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ title: "Second lesson" }),
+			},
+		);
+		assert.equal(secondLessonResponse.status, 201);
+		const secondLesson = (await secondLessonResponse.json()) as { id: string };
+		const incompleteOrderResponse = await app.request(
+			`/courses/${courseId}/lessons/order`,
+			{
+				method: "PUT",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ lessonIds: [lesson.id] }),
+			},
+		);
+		assert.equal(incompleteOrderResponse.status, 400);
+
+		const reorderResponse = await app.request(
+			`/courses/${courseId}/lessons/order`,
+			{
+				method: "PUT",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ lessonIds: [secondLesson.id, lesson.id] }),
+			},
+		);
+		assert.equal(reorderResponse.status, 200);
+		const reorderedLessons = (await reorderResponse.json()) as Array<{
+			id: string;
+			position: number;
+		}>;
+		assert.deepEqual(
+			reorderedLessons.map(({ id, position }) => ({ id, position })),
+			[
+				{ id: secondLesson.id, position: 0 },
+				{ id: lesson.id, position: 1 },
+			],
+		);
 
 		await db.$client.end();
 		db = createDatabase(databaseUrl);
@@ -147,21 +201,21 @@ test("courses and lessons persist through the API", {
 		};
 		assert.equal(persistedLesson.markdown, markdown);
 		assert.equal(persistedLesson.themeId, "academic");
+		const persistedOrderResponse = await app.request(
+			`/courses/${courseId}/lessons`,
+		);
+		const persistedOrder = (await persistedOrderResponse.json()) as Array<{
+			id: string;
+		}>;
+		assert.deepEqual(
+			persistedOrder.map(({ id }) => id),
+			[secondLesson.id, lesson.id],
+		);
 
 		const deleteLessonResponse = await app.request(`/lessons/${lesson.id}`, {
 			method: "DELETE",
 		});
 		assert.equal(deleteLessonResponse.status, 204);
-
-		const secondLessonResponse = await app.request(
-			`/courses/${courseId}/lessons`,
-			{
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ title: "Cascade target" }),
-			},
-		);
-		const secondLesson = (await secondLessonResponse.json()) as { id: string };
 
 		const deleteCourseResponse = await app.request(`/courses/${courseId}`, {
 			method: "DELETE",

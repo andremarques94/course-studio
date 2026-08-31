@@ -14,7 +14,7 @@ export const lessonSchema = z.object({
 	slug: z.string().min(1),
 	markdown: z.string(),
 	themeId: themeIdSchema,
-	position: z.number().int().nonnegative(),
+	position: z.int().nonnegative(),
 	createdAt: entityDateSchema,
 	updatedAt: entityDateSchema,
 });
@@ -22,5 +22,5 @@ export const lessonSchema = z.object({
 export const lessonsSchema = z.array(lessonSchema);
 
 export const updateLessonInputSchema = lessonSchema
-	.pick({ title: true, markdown: true, themeId: true, position: true })
+	.pick({ title: true, markdown: true, themeId: true })
 	.partial();

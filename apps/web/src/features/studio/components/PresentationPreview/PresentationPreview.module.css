@@ -39,6 +39,20 @@
 		0 18px 48px rgb(0 0 0 / 18%);
 }
 
+.preview[data-focused="true"] {
+	--canvas-inset: 0px;
+
+	background: #191919;
+}
+
+.preview[data-focused="true"] .canvas {
+	width: min(100cqw, calc(100cqh * 16 / 9));
+	max-width: none;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
 @media (max-width: 767px) {
 	.preview {
 		--canvas-inset: 12px;

@@ -11,15 +11,17 @@ interface PresentationPreviewProps {
 	markdown: string;
 	theme: PresentationTheme;
 	presentationRef: Ref<PresentationHandle>;
+	focused?: boolean;
 }
 
 function PresentationPreviewRoot({
 	markdown,
 	theme,
 	presentationRef,
+	focused = false,
 }: PresentationPreviewProps) {
 	return (
-		<div className={styles.preview}>
+		<div className={styles.preview} data-focused={focused}>
 			<div className={styles.canvas}>
 				<Presentation
 					markdown={markdown}

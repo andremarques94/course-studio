@@ -6,8 +6,8 @@ const envSchema = z
 			.enum(["development", "test", "production"])
 			.default("development"),
 		DATABASE_URL: z.url(),
-		API_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
-		PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+		API_PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
+		PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
 		CORS_ORIGINS: z.string().trim().min(1).optional(),
 		LOG_LEVEL: z
 			.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])

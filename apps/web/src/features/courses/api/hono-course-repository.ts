@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { lessonSchema, lessonsSchema } from "@/features/lessons/schemas";
+import { api } from "@/integrations/api/client";
 import type {
 	CourseRepository,
 	CreateCourseInput,
 	CreateLessonInput,
+	UpdateCourseInput,
 	UpdateLessonInput,
 } from "../course-repository";
 import {
@@ -11,7 +13,6 @@ import {
 	coursesSchema,
 	createTitleInputSchema,
 } from "../schemas";
-import { api } from "./client";
 
 const errorResponseSchema = z.object({
 	error: z.object({
@@ -60,6 +61,27 @@ export const honoCourseRepository: CourseRepository = {
 		return courseSchema.parse(await response.json());
 	},
 
+	async updateCourse(id: string, input: UpdateCourseInput) {
+		const json = createTitleInputSchema.parse(input);
+		const response = await api.courses[":courseId"].$patch({
+			param: { courseId: id },
+			json,
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return courseSchema.parse(await response.json());
+	},
+
+	async deleteCourse(id: string) {
+		const response = await api.courses[":courseId"].$delete({
+			param: { courseId: id },
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+	},
+
 	async getLessons(courseId: string) {
 		const response = await api.courses[":courseId"].lessons.$get({
 			param: { courseId },
@@ -104,5 +126,25 @@ export const honoCourseRepository: CourseRepository = {
 			return throwRequestError(response);
 		}
 		return lessonSchema.parse(await response.json());
+	},
+
+	async deleteLesson(id: string) {
+		const response = await api.lessons[":lessonId"].$delete({
+			param: { lessonId: id },
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+	},
+
+	async reorderLessons(courseId: string, lessonIds: string[]) {
+		const response = await api.courses[":courseId"].lessons.order.$put({
+			param: { courseId },
+			json: { lessonIds },
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return lessonsSchema.parse(await response.json());
 	},
 };

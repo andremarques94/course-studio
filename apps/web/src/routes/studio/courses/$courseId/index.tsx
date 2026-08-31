@@ -5,12 +5,14 @@ import { courseQueries } from "@/features/courses/queries";
 export const Route = createFileRoute("/studio/courses/$courseId/")({
 	loader: ({ context, params }) =>
 		Promise.all([
-			context.queryClient.ensureQueryData(
-				courseQueries.detail(params.courseId),
-			),
-			context.queryClient.ensureQueryData(
-				courseQueries.lessons(params.courseId),
-			),
+			context.queryClient.query({
+				...courseQueries.detail(params.courseId),
+				staleTime: "static",
+			}),
+			context.queryClient.query({
+				...courseQueries.lessons(params.courseId),
+				staleTime: "static",
+			}),
 		]),
 	component: CourseRoute,
 });

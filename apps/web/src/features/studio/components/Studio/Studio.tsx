@@ -7,16 +7,14 @@ import {
 } from "@course-studio/ui/components/resizable";
 import { useIsMobile } from "@course-studio/ui/hooks/use-mobile";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useDeferredValue, useRef, useState } from "react";
 
 import { AppShell, AppSidebar } from "@/components/app-shell";
-import { courseRepository } from "@/features/courses/repository";
 import type { Course } from "@/features/courses/types";
-import { lessonQueries } from "@/features/lessons/queries";
 import type { Lesson } from "@/features/lessons/types";
-import { openPdfExport } from "../../export-pdf";
+import type { StudioCommands } from "../../studio-commands";
 import { EditorPane } from "../EditorPane";
 import { PreviewPane } from "../PreviewPane";
 import { StudioStatusBar } from "../StudioStatusBar";
@@ -33,9 +31,31 @@ interface StudioProps {
 	course: Course;
 	lesson: Lesson;
 	lessons: Lesson[];
+	commands: StudioCommands;
 }
 
-export function Studio({ course, lesson, lessons }: StudioProps) {
+function getSaveStatus({
+	isError,
+	isPending,
+	isDirty,
+}: {
+	isError: boolean;
+	isPending: boolean;
+	isDirty: boolean;
+}) {
+	if (isError) {
+		return "error";
+	}
+	if (isPending) {
+		return "saving";
+	}
+	if (isDirty) {
+		return "unsaved";
+	}
+	return "saved";
+}
+
+export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 	const [markdown, setMarkdown] = useState(lesson.markdown);
 	const [themeId, setThemeId] = useState<BuiltinThemeId>(lesson.themeId);
 	const [savedMarkdown, setSavedMarkdown] = useState(lesson.markdown);
@@ -44,7 +64,6 @@ export function Studio({ course, lesson, lessons }: StudioProps) {
 	);
 	const [previewFocused, setPreviewFocused] = useState(false);
 	const presentationRef = useRef<PresentationHandle | null>(null);
-	const queryClient = useQueryClient();
 	const previewMarkdown = useDeferredValue(markdown);
 	const theme = getBuiltinTheme(themeId);
 	const isMobile = useIsMobile();
@@ -55,22 +74,10 @@ export function Studio({ course, lesson, lessons }: StudioProps) {
 	const isDirty = markdown !== savedMarkdown || themeId !== savedThemeId;
 	const togglePreview = () => setPreviewFocused((current) => !current);
 	const saveLesson = useMutation({
-		mutationFn: () =>
-			courseRepository.updateLesson(lesson.id, { markdown, themeId }),
-		onSuccess: (updatedLesson) => {
-			queryClient.setQueryData(
-				lessonQueries.detail(lesson.id).queryKey,
-				updatedLesson,
-			);
-			queryClient.setQueryData<Lesson[]>(
-				["courses", course.id, "lessons"],
-				(current) =>
-					current?.map((item) =>
-						item.id === updatedLesson.id ? updatedLesson : item,
-					),
-			);
-			setSavedMarkdown(updatedLesson.markdown);
-			setSavedThemeId(updatedLesson.themeId);
+		mutationFn: () => commands.updateLesson({ markdown, themeId }),
+		onSuccess: (savedLesson) => {
+			setSavedMarkdown(savedLesson.markdown);
+			setSavedThemeId(savedLesson.themeId);
 		},
 	});
 	const handleMarkdownChange = (value: string) => {
@@ -81,15 +88,27 @@ export function Studio({ course, lesson, lessons }: StudioProps) {
 		saveLesson.reset();
 		setThemeId(value);
 	};
-	const saveStatus = saveLesson.isError
-		? "error"
-		: saveLesson.isPending
-			? "saving"
-			: isDirty
-				? "unsaved"
-				: "saved";
+	const saveStatus = getSaveStatus({
+		isError: saveLesson.isError,
+		isPending: saveLesson.isPending,
+		isDirty,
+	});
 
 	useHotkey("Mod+Shift+P", togglePreview, { stopPropagation: false });
+	useHotkey(
+		"Mod+S",
+		() => {
+			if (isDirty && !saveLesson.isPending) {
+				saveLesson.mutate();
+			}
+		},
+		{ preventDefault: true, stopPropagation: false },
+	);
+	useHotkey("Escape", () => setPreviewFocused(false), {
+		enabled: previewFocused,
+		preventDefault: true,
+		stopPropagation: true,
+	});
 
 	return (
 		<AppShell
@@ -102,7 +121,10 @@ export function Studio({ course, lesson, lessons }: StudioProps) {
 					themeId={themeId}
 					onThemeChange={handleThemeChange}
 					onThemeSelectionComplete={() => presentationRef.current?.focus()}
-					onExportPdf={() => openPdfExport({ markdown, themeId })}
+					onExportPdf={() => commands.exportPresentation({ markdown, themeId })}
+					onRenameLesson={async (title) => {
+						await commands.updateLesson({ title });
+					}}
 					onSave={() => saveLesson.mutate()}
 					saveDisabled={!isDirty || saveLesson.isPending}
 					saveStatus={saveStatus}
@@ -119,7 +141,7 @@ export function Studio({ course, lesson, lessons }: StudioProps) {
 						{previewFocused ? (
 							<motion.div
 								key="focused-preview"
-								className={styles.mode}
+								className={`${styles.mode} ${styles.focusedMode}`}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}
@@ -134,6 +156,7 @@ export function Studio({ course, lesson, lessons }: StudioProps) {
 										markdown={previewMarkdown}
 										theme={theme}
 										presentationRef={presentationRef}
+										focused
 									/>
 								</motion.div>
 							</motion.div>

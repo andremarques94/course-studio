@@ -45,6 +45,12 @@
 	padding-top: 24px;
 }
 
+.emptyState {
+	min-height: 260px;
+	margin-top: 24px;
+	border: 1px dashed var(--color-border);
+}
+
 .card {
 	position: relative;
 	display: grid;

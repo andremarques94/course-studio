@@ -45,6 +45,10 @@
 	gap: 2px;
 }
 
+.badge {
+	width: 96px;
+}
+
 .navigationButton {
 	display: inline-flex;
 	width: 28px;
@@ -91,6 +95,27 @@ a.navigationButton:hover {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
+}
+
+.renameForm,
+.renameField {
+	display: grid;
+	gap: 12px;
+}
+
+.renameField {
+	gap: 6px;
+}
+
+.renameField label {
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.renameError {
+	margin: 0;
+	color: var(--color-destructive);
+	font-size: 11px;
 }
 
 @media (max-width: 720px) {

@@ -10,6 +10,22 @@ interface CourseListProps {
 }
 
 export function CourseList({ courses }: CourseListProps) {
+	if (courses.length === 0) {
+		return (
+			<Empty className={styles.emptyState}>
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<BookOpen />
+					</EmptyMedia>
+					<EmptyTitle>No courses yet</EmptyTitle>
+					<EmptyDescription>
+						Create a course to start adding lessons.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
+		);
+	}
+
 	return (
 		<div className={styles.grid}>
 			{courses.map((course, index) => (
@@ -42,3 +58,11 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
 		</Link>
 	);
 }
+
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@course-studio/ui/components/empty";

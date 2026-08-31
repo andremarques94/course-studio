@@ -9,6 +9,11 @@
 	background: var(--color-background);
 }
 
+.pane[data-focused="true"] {
+	grid-template-rows: minmax(0, 1fr);
+	background: #191919;
+}
+
 .paneHeader {
 	display: flex;
 	align-items: center;

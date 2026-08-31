@@ -1,3 +1,4 @@
+import { toast } from "@course-studio/ui/components/sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { courseRepository } from "../../repository";
@@ -9,6 +10,7 @@ export function CreateCourseForm() {
 
 	const createCourse = async (title: string) => {
 		const course = await courseRepository.createCourse({ title });
+		toast.success("Course created");
 		await queryClient.invalidateQueries({ queryKey: ["courses"] });
 		await navigate({
 			to: "/studio/courses/$courseId",

@@ -1,23 +1,34 @@
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@course-studio/ui/components/empty";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SearchX } from "lucide-react";
 import { courseQueries } from "@/features/courses/queries";
 import { lessonQueries } from "@/features/lessons/queries";
-import { Studio } from "@/features/studio/components";
+import { WebStudio } from "@/features/studio/components";
 
 export const Route = createFileRoute(
 	"/studio/courses/$courseId/lessons/$lessonId",
 )({
 	loader: ({ context, params }) =>
 		Promise.all([
-			context.queryClient.ensureQueryData(
-				courseQueries.detail(params.courseId),
-			),
-			context.queryClient.ensureQueryData(
-				courseQueries.lessons(params.courseId),
-			),
-			context.queryClient.ensureQueryData(
-				lessonQueries.detail(params.lessonId),
-			),
+			context.queryClient.query({
+				...courseQueries.detail(params.courseId),
+				staleTime: "static",
+			}),
+			context.queryClient.query({
+				...courseQueries.lessons(params.courseId),
+				staleTime: "static",
+			}),
+			context.queryClient.query({
+				...lessonQueries.detail(params.lessonId),
+				staleTime: "static",
+			}),
 		]),
 	component: LessonEditorRoute,
 });
@@ -30,16 +41,30 @@ function LessonEditorRoute() {
 
 	if (!course || !lesson || lesson.courseId !== course.id) {
 		return (
-			<main style={{ padding: "2rem" }}>
-				<h1>Lesson not found</h1>
-				<Link to="/studio/courses/$courseId" params={{ courseId }}>
-					Return to course
-				</Link>
+			<main>
+				<Empty className="min-h-dvh rounded-none">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<SearchX />
+						</EmptyMedia>
+						<EmptyTitle>Lesson not found</EmptyTitle>
+						<EmptyDescription>
+							<Link to="/studio/courses/$courseId" params={{ courseId }}>
+								Return to course
+							</Link>
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
 			</main>
 		);
 	}
 
 	return (
-		<Studio key={lesson.id} course={course} lesson={lesson} lessons={lessons} />
+		<WebStudio
+			key={lesson.id}
+			course={course}
+			lesson={lesson}
+			lessons={lessons}
+		/>
 	);
 }
