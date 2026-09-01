@@ -10,6 +10,7 @@ const envSchema = z
 			.number()
 			.pipe(z.int().min(1).max(65_535))
 			.default(3002),
+		DATABASE_URL: z.url(),
 		API_URL: z.url().default("http://localhost:3001"),
 		LOG_LEVEL: z
 			.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
@@ -29,6 +30,7 @@ const envSchema = z
 		nodeEnv: env.NODE_ENV,
 		host: env.COLLAB_HOST,
 		port: env.COLLAB_PORT,
+		databaseUrl: env.DATABASE_URL,
 		apiUrl: env.API_URL.replace(/\/$/, ""),
 		logLevel: env.LOG_LEVEL,
 	}));

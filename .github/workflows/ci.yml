@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Check, build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      id-token: write
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: course_studio
+          POSTGRES_PASSWORD: course_studio
+          POSTGRES_DB: course_studio
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U course_studio"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://course_studio:course_studio@localhost:5432/course_studio
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Turborepo Remote Cache
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compute turbo arguments
+        id: turbo
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "args=--filter=...[origin/master]" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=--force" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run database migrations
+        run: pnpm --filter @course-studio/db db:migrate
+
+      - name: Lint, typecheck, build & test
+        run: pnpm exec turbo run check typecheck build test --continue ${{ steps.turbo.outputs.args }}

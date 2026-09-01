@@ -21,6 +21,10 @@ const lessonRoomSchema = z
 	.transform((room) => room.slice("lesson:".length));
 const lessonSchema = z.object({ markdown: z.string() });
 
+export function parseLessonDocumentName(documentName: string) {
+	return lessonRoomSchema.parse(documentName);
+}
+
 export function createLessonDocumentLoader({
 	apiUrl,
 	fetch: fetchLesson = globalThis.fetch,
@@ -29,7 +33,7 @@ export function createLessonDocumentLoader({
 		document,
 		documentName,
 	}: LoadLessonDocumentInput) {
-		const lessonId = lessonRoomSchema.parse(documentName);
+		const lessonId = parseLessonDocumentName(documentName);
 		const response = await fetchLesson(
 			`${apiUrl}/lessons/${encodeURIComponent(lessonId)}`,
 			{ signal: AbortSignal.timeout(5_000) },

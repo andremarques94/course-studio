@@ -241,6 +241,26 @@ test("does not accept edits or flush after disposal", async () => {
 	assert.deepEqual(autosave.getSnapshot().draft, initialDraft);
 });
 
+test("resumes after a development Strict Mode effect cleanup", async () => {
+	const saves: LessonDraft[] = [];
+	const autosave = new LessonAutosave({
+		initialDraft,
+		save: async (nextDraft) => {
+			saves.push(nextDraft);
+			return nextDraft;
+		},
+	});
+
+	autosave.dispose();
+	autosave.resume();
+	autosave.updateDraft(draft("Strict Mode edit", "dark"));
+
+	assert.equal(autosave.getSnapshot().status, "unsaved");
+	await autosave.saveNow();
+	assert.deepEqual(saves, [draft("Strict Mode edit", "dark")]);
+	assert.equal(autosave.getSnapshot().status, "saved");
+});
+
 test("allows an error listener to retry synchronously", async () => {
 	const scheduler = createScheduler();
 	const firstSave = deferred<LessonDraft>();

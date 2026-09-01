@@ -82,6 +82,21 @@ export class LessonAutosave {
 		this.emit();
 	}
 
+	resume() {
+		if (!this.disposed) {
+			return;
+		}
+
+		this.disposed = false;
+		if (!draftsMatch(this.draft, this.pendingDraft ?? this.acknowledged)) {
+			this.cancelScheduledSave = this.schedule(() => {
+				this.cancelScheduledSave = undefined;
+				void this.requestSave(this.draft).catch(() => undefined);
+			}, this.delay);
+		}
+		this.emit();
+	}
+
 	saveNow() {
 		return this.flush();
 	}
@@ -100,7 +115,6 @@ export class LessonAutosave {
 	dispose() {
 		this.disposed = true;
 		this.cancelDebounce();
-		this.listeners.clear();
 	}
 
 	private assertActive() {

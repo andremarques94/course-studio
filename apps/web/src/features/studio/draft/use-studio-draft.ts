@@ -72,7 +72,10 @@ export function useStudioDraft({
 			}),
 		[autosave, document],
 	);
-	useEffect(() => () => autosave.dispose(), [autosave]);
+	useEffect(() => {
+		autosave.resume();
+		return () => autosave.dispose();
+	}, [autosave]);
 
 	return {
 		markdown,
