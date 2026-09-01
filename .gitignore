@@ -39,5 +39,8 @@ coverage
 *.local
 todos.json
 PROJECT.md
+CONTEXT.md
+.temp
 
 .vscode/settings.json
+.vscode/launch.json

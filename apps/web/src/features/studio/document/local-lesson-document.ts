@@ -30,6 +30,7 @@ export function createLocalLessonDocument(
 	return {
 		ydoc,
 		markdown,
+		presence: null,
 		getMarkdownSnapshot: () => markdownSnapshot,
 		subscribeToMarkdown(listener) {
 			listeners.add(listener);

@@ -1,0 +1,10 @@
+{
+	"extends": "@course-studio/typescript-config/base.json",
+	"include": ["src", "test"],
+	"exclude": ["node_modules", "dist"],
+	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": ["node"]
+	}
+}

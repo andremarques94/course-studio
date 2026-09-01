@@ -1,3 +1,4 @@
+export { CollaboratorPresence } from "./CollaboratorPresence";
 export { EditorPane } from "./EditorPane";
 export { MarkdownEditor } from "./MarkdownEditor";
 export { PresentationPreview } from "./PresentationPreview";

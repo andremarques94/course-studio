@@ -9,6 +9,7 @@ import {
 	EmptyTitle,
 } from "@course-studio/ui/components/empty";
 import { Toaster } from "@course-studio/ui/components/sonner";
+import { TooltipProvider } from "@course-studio/ui/components/tooltip";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -87,8 +88,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body>
 				<MotionConfig reducedMotion="user">
 					<ThemeProvider>
-						{children}
-						<Toaster />
+						<TooltipProvider>
+							{children}
+							<Toaster />
+						</TooltipProvider>
 					</ThemeProvider>
 					<TanStackDevtools
 						config={{

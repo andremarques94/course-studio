@@ -11,11 +11,13 @@ import CodeMirror from "@uiw/react-codemirror";
 import { useMemo, useState } from "react";
 import { yCollab } from "y-codemirror.next";
 import type * as Y from "yjs";
+import type { CollaborationPresence } from "../../document";
 
 import styles from "./MarkdownEditor.module.css";
 
 type MarkdownEditorProps = {
 	markdown: Y.Text;
+	presence: CollaborationPresence | null;
 };
 
 const basicSetup = {
@@ -93,9 +95,15 @@ const extensions = [
 	syntaxHighlighting(highlightStyle),
 ];
 
-export function MarkdownEditor({ markdown: ytext }: MarkdownEditorProps) {
+export function MarkdownEditor({
+	markdown: ytext,
+	presence,
+}: MarkdownEditorProps) {
 	const [initialMarkdown] = useState(() => ytext.toString());
-	const collaborationExtension = useMemo(() => yCollab(ytext, null), [ytext]);
+	const collaborationExtension = useMemo(
+		() => yCollab(ytext, presence?.awareness ?? null),
+		[ytext, presence],
+	);
 
 	return (
 		<div className={styles.editor}>

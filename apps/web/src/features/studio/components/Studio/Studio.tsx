@@ -12,7 +12,7 @@ import { useRef, useState } from "react";
 import { AppShell, AppSidebar } from "@/components/app-shell";
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
-import type { LessonDocument } from "../../document";
+import { type LessonDocument, useCollaborators } from "../../document";
 import type { StudioDraft } from "../../draft";
 import type { StudioCommands } from "../../studio-commands";
 import { EditorPane } from "../EditorPane";
@@ -47,6 +47,7 @@ export function Studio({
 	const [previewFocused, setPreviewFocused] = useState(false);
 	const presentationRef = useRef<PresentationHandle | null>(null);
 	const isMobile = useIsMobile();
+	const collaborators = useCollaborators(lessonDocument.presence);
 	const slideCount = draft.markdown.split(/\n\s*---\s*\n/).length;
 	const lessonIndex = lessons.findIndex((item) => item.id === lesson.id);
 	const previousLesson = lessons[lessonIndex - 1];
@@ -99,7 +100,12 @@ export function Studio({
 				/>
 			}
 			sidebar={<AppSidebar />}
-			statusBar={<StudioStatusBar slideCount={slideCount} />}
+			statusBar={
+				<StudioStatusBar
+					slideCount={slideCount}
+					collaborators={collaborators}
+				/>
+			}
 		>
 			<LayoutGroup id="studio-preview">
 				<main className={styles.workspace}>
@@ -143,7 +149,10 @@ export function Studio({
 										defaultSize={isMobile ? "54%" : "45%"}
 										minSize="28%"
 									>
-										<EditorPane markdown={lessonDocument.markdown} />
+										<EditorPane
+											markdown={lessonDocument.markdown}
+											presence={lessonDocument.presence}
+										/>
 									</ResizablePanel>
 									<ResizableHandle className={styles.resizeHandle} withHandle />
 									<ResizablePanel
