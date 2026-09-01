@@ -3,8 +3,8 @@ import { courseQueries } from "@/features/courses/queries";
 import { courseRepository } from "@/features/courses/repository";
 import { lessonQueries } from "@/features/lessons/queries";
 import type { Lesson } from "@/features/lessons/types";
-import { openPdfExport } from "./export-pdf";
-import type { StudioCommands } from "./studio-commands";
+import { openPdfExport } from "../export";
+import type { StudioCommands } from "../studio-commands";
 
 export function createWebStudioCommands({
 	queryClient,

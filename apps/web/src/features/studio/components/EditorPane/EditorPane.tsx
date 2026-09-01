@@ -1,12 +1,12 @@
+import type * as Y from "yjs";
 import { MarkdownEditor } from "../MarkdownEditor";
 import styles from "./EditorPane.module.css";
 
 type EditorPaneProps = {
-	value: string;
-	onChange: (value: string) => void;
+	markdown: Y.Text;
 };
 
-export function EditorPane({ value, onChange }: EditorPaneProps) {
+export function EditorPane({ markdown }: EditorPaneProps) {
 	return (
 		<section className={styles.pane} aria-labelledby="editor-pane-title">
 			<header className={styles.paneHeader}>
@@ -14,7 +14,7 @@ export function EditorPane({ value, onChange }: EditorPaneProps) {
 				<span className={styles.paneMeta}>Markdown</span>
 			</header>
 			<div className={styles.paneContent}>
-				<MarkdownEditor value={value} onChange={onChange} />
+				<MarkdownEditor markdown={markdown} />
 			</div>
 		</section>
 	);

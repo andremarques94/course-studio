@@ -1,5 +1,4 @@
 import type { PresentationHandle } from "@course-studio/presentation";
-import { type BuiltinThemeId, getBuiltinTheme } from "@course-studio/themes";
 import {
 	ResizableHandle,
 	ResizablePanel,
@@ -7,22 +6,14 @@ import {
 } from "@course-studio/ui/components/resizable";
 import { useIsMobile } from "@course-studio/ui/hooks/use-mobile";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useMutation } from "@tanstack/react-query";
-import { useBlocker } from "@tanstack/react-router";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import {
-	useDeferredValue,
-	useEffect,
-	useEffectEvent,
-	useRef,
-	useState,
-	useSyncExternalStore,
-} from "react";
+import { useRef, useState } from "react";
 
 import { AppShell, AppSidebar } from "@/components/app-shell";
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
-import { LessonAutosave } from "../../lesson-autosave";
+import type { LessonDocument } from "../../document";
+import type { StudioDraft } from "../../draft";
 import type { StudioCommands } from "../../studio-commands";
 import { EditorPane } from "../EditorPane";
 import { PreviewPane } from "../PreviewPane";
@@ -40,77 +31,34 @@ type StudioProps = {
 	course: Course;
 	lesson: Lesson;
 	lessons: Lesson[];
+	lessonDocument: LessonDocument;
+	draft: StudioDraft;
 	commands: StudioCommands;
 };
 
-export function Studio({ course, lesson, lessons, commands }: StudioProps) {
+export function Studio({
+	course,
+	lesson,
+	lessons,
+	lessonDocument,
+	draft,
+	commands,
+}: StudioProps) {
 	const [previewFocused, setPreviewFocused] = useState(false);
 	const presentationRef = useRef<PresentationHandle | null>(null);
-	const saveLesson = useMutation({
-		mutationFn: (draft: { markdown: string; themeId: BuiltinThemeId }) =>
-			commands.updateLesson(draft),
-		scope: { id: `lesson:${lesson.id}` },
-	});
-	const [autosave] = useState(
-		() =>
-			new LessonAutosave({
-				initialDraft: {
-					markdown: lesson.markdown,
-					themeId: lesson.themeId,
-				},
-				save: saveLesson.mutateAsync,
-			}),
-	);
-	const autosaveState = useSyncExternalStore(
-		autosave.subscribe,
-		autosave.getSnapshot,
-		autosave.getSnapshot,
-	);
-	const { markdown, themeId } = autosaveState.draft;
-	const previewMarkdown = useDeferredValue(markdown);
-	const theme = getBuiltinTheme(themeId);
 	const isMobile = useIsMobile();
-	const slideCount = markdown.split(/\n\s*---\s*\n/).length;
+	const slideCount = draft.markdown.split(/\n\s*---\s*\n/).length;
 	const lessonIndex = lessons.findIndex((item) => item.id === lesson.id);
 	const previousLesson = lessons[lessonIndex - 1];
 	const nextLesson = lessons[lessonIndex + 1];
 	const togglePreview = () => setPreviewFocused((current) => !current);
-	const handleMarkdownChange = (value: string) => {
-		autosave.updateDraft({
-			...autosave.getSnapshot().draft,
-			markdown: value,
-		});
-	};
-	const handleThemeChange = (value: BuiltinThemeId) => {
-		autosave.updateDraft({
-			...autosave.getSnapshot().draft,
-			themeId: value,
-		});
-	};
-	const flushBeforeNavigation = useEffectEvent(async () => {
-		if (!autosave.getSnapshot().isUnsafeToLeave) {
-			return false;
-		}
-		try {
-			await autosave.flush();
-			return false;
-		} catch {
-			return true;
-		}
-	});
-
-	useEffect(() => () => autosave.dispose(), [autosave]);
-	useBlocker({
-		shouldBlockFn: flushBeforeNavigation,
-		enableBeforeUnload: autosaveState.isUnsafeToLeave,
-	});
 
 	useHotkey("Mod+Shift+P", togglePreview, { stopPropagation: false });
 	useHotkey(
 		"Mod+S",
 		() => {
-			if (autosave.getSnapshot().canSaveNow) {
-				void autosave.saveNow().catch(() => undefined);
+			if (draft.canSaveNow) {
+				void draft.saveNow().catch(() => undefined);
 			}
 		},
 		{ preventDefault: true, stopPropagation: false },
@@ -129,18 +77,23 @@ export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 					lesson={lesson}
 					previousLessonId={previousLesson?.id}
 					nextLessonId={nextLesson?.id}
-					themeId={themeId}
-					onThemeChange={handleThemeChange}
+					themeId={draft.themeId}
+					onThemeChange={draft.setThemeId}
 					onThemeSelectionComplete={() => presentationRef.current?.focus()}
-					onExportPdf={() => commands.exportPresentation({ markdown, themeId })}
+					onExportPdf={() =>
+						commands.exportPresentation({
+							markdown: draft.markdown,
+							themeId: draft.themeId,
+						})
+					}
 					onRenameLesson={async (title) => {
 						await commands.updateLesson({ title });
 					}}
 					onSave={() => {
-						void autosave.saveNow().catch(() => undefined);
+						void draft.saveNow().catch(() => undefined);
 					}}
-					saveDisabled={!autosaveState.canSaveNow}
-					saveStatus={autosaveState.status}
+					saveDisabled={!draft.canSaveNow}
+					saveStatus={draft.saveStatus}
 					previewFocused={previewFocused}
 					onTogglePreview={togglePreview}
 				/>
@@ -166,8 +119,8 @@ export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 									transition={previewTransition}
 								>
 									<PreviewPane
-										markdown={previewMarkdown}
-										theme={theme}
+										markdown={draft.previewMarkdown}
+										theme={draft.theme}
 										presentationRef={presentationRef}
 										focused
 									/>
@@ -190,10 +143,7 @@ export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 										defaultSize={isMobile ? "54%" : "45%"}
 										minSize="28%"
 									>
-										<EditorPane
-											value={markdown}
-											onChange={handleMarkdownChange}
-										/>
+										<EditorPane markdown={lessonDocument.markdown} />
 									</ResizablePanel>
 									<ResizableHandle className={styles.resizeHandle} withHandle />
 									<ResizablePanel
@@ -206,8 +156,8 @@ export function Studio({ course, lesson, lessons, commands }: StudioProps) {
 											transition={previewTransition}
 										>
 											<PreviewPane
-												markdown={previewMarkdown}
-												theme={theme}
+												markdown={draft.previewMarkdown}
+												theme={draft.theme}
 												presentationRef={presentationRef}
 											/>
 										</motion.div>

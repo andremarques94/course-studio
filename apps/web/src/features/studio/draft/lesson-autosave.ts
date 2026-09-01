@@ -134,7 +134,6 @@ export class LessonAutosave {
 		try {
 			await this.savePendingDrafts();
 		} catch (error) {
-			// Detach the failed worker before notifying listeners so a retry can start.
 			this.saveWorker = undefined;
 			this.emit();
 			throw error;

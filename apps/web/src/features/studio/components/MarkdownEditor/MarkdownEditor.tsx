@@ -8,12 +8,14 @@ import { markdown } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import CodeMirror from "@uiw/react-codemirror";
+import { useMemo, useState } from "react";
+import { yCollab } from "y-codemirror.next";
+import type * as Y from "yjs";
 
 import styles from "./MarkdownEditor.module.css";
 
 type MarkdownEditorProps = {
-	value: string;
-	onChange: (value: string) => void;
+	markdown: Y.Text;
 };
 
 const basicSetup = {
@@ -91,14 +93,16 @@ const extensions = [
 	syntaxHighlighting(highlightStyle),
 ];
 
-export function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
+export function MarkdownEditor({ markdown: ytext }: MarkdownEditorProps) {
+	const [initialMarkdown] = useState(() => ytext.toString());
+	const collaborationExtension = useMemo(() => yCollab(ytext, null), [ytext]);
+
 	return (
 		<div className={styles.editor}>
 			<CodeMirror
-				value={value}
+				value={initialMarkdown}
 				height="100%"
-				extensions={extensions}
-				onChange={onChange}
+				extensions={[...extensions, collaborationExtension]}
 				basicSetup={basicSetup}
 			/>
 		</div>

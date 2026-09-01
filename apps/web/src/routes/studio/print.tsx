@@ -9,7 +9,7 @@ import {
 } from "@course-studio/ui/components/empty";
 import { createFileRoute } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
-import { readPdfExport } from "@/features/studio/export-pdf";
+import { readPdfExport } from "@/features/studio/export";
 
 import styles from "./print.module.css";
 
