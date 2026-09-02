@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+const corsOriginSchema = z.union([
+	z.literal("*"),
+	z
+		.url()
+		.refine((origin) => {
+			const url = new URL(origin);
+			return url.pathname === "/" && !url.search && !url.hash;
+		}, "CORS origins cannot include a path, query, or fragment.")
+		.transform((origin) => new URL(origin).origin),
+]);
+
 const envSchema = z
 	.object({
 		NODE_ENV: z
@@ -8,7 +19,13 @@ const envSchema = z
 		DATABASE_URL: z.url(),
 		API_PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
 		PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
-		CORS_ORIGINS: z.string().trim().min(1).optional(),
+		CORS_ORIGINS: z
+			.string()
+			.trim()
+			.min(1)
+			.transform((origins) => origins.split(",").map((origin) => origin.trim()))
+			.pipe(z.array(corsOriginSchema))
+			.optional(),
 		LOG_LEVEL: z
 			.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
 			.default("info"),
@@ -17,21 +34,10 @@ const envSchema = z
 		nodeEnv: env.NODE_ENV,
 		databaseUrl: env.DATABASE_URL,
 		apiPort: env.API_PORT ?? env.PORT ?? 3001,
-		corsOrigins: env.CORS_ORIGINS
-			? env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
-			: ["*"],
+		corsOrigins: env.CORS_ORIGINS ?? ["*"],
 		logLevel: env.LOG_LEVEL,
 	}))
 	.superRefine((env, context) => {
-		const origins = z
-			.array(z.union([z.literal("*"), z.url()]))
-			.safeParse(env.corsOrigins);
-		if (!origins.success) {
-			for (const issue of origins.error.issues) {
-				context.addIssue({ ...issue, path: ["CORS_ORIGINS", ...issue.path] });
-			}
-		}
-
 		if (env.nodeEnv === "production" && env.corsOrigins.includes("*")) {
 			context.addIssue({
 				code: "custom",

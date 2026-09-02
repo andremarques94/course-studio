@@ -31,6 +31,8 @@ __unconfig*
 
 # Test coverage
 coverage
+playwright-report
+test-results
 
 # OS
 .DS_Store

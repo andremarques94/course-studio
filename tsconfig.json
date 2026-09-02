@@ -1,0 +1,7 @@
+{
+	"extends": "./packages/typescript-config/base.json",
+	"include": ["playwright.config.ts", "e2e/**/*.ts"],
+	"compilerOptions": {
+		"types": ["node"]
+	}
+}

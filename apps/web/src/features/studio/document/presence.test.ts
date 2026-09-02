@@ -16,6 +16,16 @@ const identity = {
 	colorLight: "hsl(202.60deg 72% 48% / 20%)",
 };
 
+test("creates a valid identity without crypto.randomUUID", () => {
+	const generatedIdentity = createEditorIdentity();
+
+	assert.match(
+		generatedIdentity.id,
+		/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+	);
+	assert.deepEqual(parseEditorIdentity(generatedIdentity), generatedIdentity);
+});
+
 test("publishes valid Awareness identities", () => {
 	const ydoc = new Y.Doc();
 	const awareness = new Awareness(ydoc);

@@ -7,13 +7,16 @@
 		"build": "turbo run build",
 		"start": "turbo run start",
 		"test": "turbo run test",
+		"check:e2e": "biome check playwright.config.ts e2e && tsc -p tsconfig.json",
+		"pretest:e2e": "pnpm check:e2e && pnpm --filter @course-studio/db build && pnpm --filter @course-studio/api build && pnpm --filter @course-studio/collab build",
+		"test:e2e": "playwright test",
 		"db:up": "docker compose up -d postgres",
 		"db:down": "docker compose down",
 		"db:logs": "docker compose logs -f postgres",
 		"lint": "turbo run lint",
 		"format": "turbo run format",
 		"typecheck": "turbo run typecheck",
-		"check": "turbo run check typecheck",
+		"check": "turbo run check typecheck && pnpm check:e2e",
 		"prepare": "husky"
 	},
 	"lint-staged": {
@@ -21,8 +24,11 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",
+		"@playwright/test": "^1.62.1",
+		"@types/node": "^22.20.1",
 		"husky": "^9.1.7",
 		"lint-staged": "^17.3.0",
-		"turbo": "^2"
+		"turbo": "^2",
+		"typescript": "^6.0.3"
 	}
 }

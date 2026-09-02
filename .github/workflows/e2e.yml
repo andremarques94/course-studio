@@ -1,23 +1,23 @@
-name: CI
+name: E2E
 
 on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: Check, build & test
+  e2e:
+    name: Browser tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     permissions:
       contents: read
-      id-token: write
 
     services:
       postgres:
@@ -35,47 +35,40 @@ jobs:
           --health-retries 10
 
     env:
+      CI: "true"
       DATABASE_URL: postgresql://course_studio:course_studio@localhost:5432/course_studio
 
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Turborepo Remote Cache
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-        continue-on-error: true
-        uses: vercel/setup-turborepo-remote-cache-action@49d7b1b46ba4c9251e1977986bfe18336feabc8f # v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
 
       - name: Install Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
-          cache: pnpm
+
+      - name: Enable pnpm
+        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check E2E source
-        run: pnpm check:e2e
-
-      - name: Compute turbo arguments
-        id: turbo
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            echo "args=--filter=...[origin/master]" >> "$GITHUB_OUTPUT"
-          else
-            echo "args=--force" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run database migrations
         run: pnpm --filter @course-studio/db db:migrate
 
-      - name: Lint, typecheck, build & test
-        run: pnpm exec turbo run check typecheck build test --continue ${{ steps.turbo.outputs.args }}
+      - name: Run browser tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 1

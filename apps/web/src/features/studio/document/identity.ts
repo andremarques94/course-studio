@@ -1,3 +1,4 @@
+import { v4 as uuid } from "uuid";
 import { z } from "zod";
 
 const STORAGE_KEY = "course-studio:editor-identity";
@@ -19,7 +20,7 @@ const editorIdentitySchema = z
 export type EditorIdentity = z.infer<typeof editorIdentitySchema>;
 
 export function createEditorIdentity(): EditorIdentity {
-	const id = crypto.randomUUID();
+	const id = uuid();
 	const guestNumber = crypto.getRandomValues(new Uint16Array(1))[0] % 10_000;
 
 	return {

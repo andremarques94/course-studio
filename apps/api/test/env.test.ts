@@ -28,6 +28,27 @@ test("production requires explicit CORS origins", () => {
 	]);
 });
 
+test("normalizes configured URLs to browser origins", () => {
+	const env = loadEnv({
+		DATABASE_URL: databaseUrl,
+		CORS_ORIGINS: "http://192.168.1.99:3000/, https://studio.example.com",
+	});
+
+	assert.deepEqual(env.corsOrigins, [
+		"http://192.168.1.99:3000",
+		"https://studio.example.com",
+	]);
+});
+
+test("rejects a CORS URL containing more than an origin", () => {
+	assert.throws(() =>
+		loadEnv({
+			DATABASE_URL: databaseUrl,
+			CORS_ORIGINS: "https://studio.example.com/path",
+		}),
+	);
+});
+
 test("uses a deployment platform PORT when API_PORT is not set", () => {
 	const env = loadEnv({ DATABASE_URL: databaseUrl, PORT: "8080" });
 

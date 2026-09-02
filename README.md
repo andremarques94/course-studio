@@ -56,7 +56,15 @@ Before opening a pull request:
 ```bash
 pnpm check
 pnpm build
+pnpm exec playwright install chromium        # one-time browser install
+pnpm test:e2e                                # requires migrated PostgreSQL
 ```
+
+The E2E workflow runs Playwright against PostgreSQL, the HTTP API, the
+Hocuspocus server, and isolated browser contexts. It covers the core authoring
+journey and multiplayer behavior. Failed runs retain traces, screenshots, and
+the HTML report for one day. Playwright starts the application services on
+ports 3000-3002; stop local development servers before running the suite.
 
 ## Project structure
 
@@ -72,7 +80,7 @@ packages/db            Drizzle schema, migrations, and database client
 
 ## Direction
 
-Development moves one milestone at a time. Next: multiplayer browser tests, then publishing and versioning. Accounts and public deployments are out of scope in the pre-alpha.
+Development moves one milestone at a time. Next: publishing and versioning. Accounts and public deployments are out of scope in the pre-alpha.
 
 ## Contributing
 

@@ -106,8 +106,9 @@ export function MarkdownEditor({
 	);
 
 	return (
-		<div className={styles.editor}>
+		<div className={styles.editor} data-testid="markdown-editor">
 			<CodeMirror
+				aria-label="Lesson Markdown editor"
 				value={initialMarkdown}
 				height="100%"
 				extensions={[...extensions, collaborationExtension]}
