@@ -11,27 +11,34 @@ test("initializes an empty lesson document from the HTTP lesson", async () => {
 		apiUrl: "http://api.test",
 		fetch: async (input) => {
 			assert.equal(input, `http://api.test/lessons/${lessonId}`);
-			return Response.json({ markdown: "# Existing lesson" });
+			return Response.json({
+				markdown: "# Existing lesson",
+				themeId: "academic",
+			});
 		},
 	});
 
 	await loadDocument({ document, documentName: `lesson:${lessonId}` });
 
 	assert.equal(document.getText("markdown").toString(), "# Existing lesson");
+	assert.equal(document.getMap("metadata").get("themeId"), "academic");
 	document.destroy();
 });
 
 test("does not overwrite an existing collaborative document", async () => {
 	const document = new Y.Doc();
 	document.getText("markdown").insert(0, "Collaborative state");
+	document.getMap("metadata").set("themeId", "dark");
 	const loadDocument = createLessonDocumentLoader({
 		apiUrl: "http://api.test",
-		fetch: async () => Response.json({ markdown: "Legacy Markdown" }),
+		fetch: async () =>
+			Response.json({ markdown: "Legacy Markdown", themeId: "minimal" }),
 	});
 
 	await loadDocument({ document, documentName: `lesson:${lessonId}` });
 
 	assert.equal(document.getText("markdown").toString(), "Collaborative state");
+	assert.equal(document.getMap("metadata").get("themeId"), "dark");
 	document.destroy();
 });
 
@@ -39,7 +46,8 @@ test("rejects document names outside the lesson room format", async () => {
 	const document = new Y.Doc();
 	const loadDocument = createLessonDocumentLoader({
 		apiUrl: "http://api.test",
-		fetch: async () => Response.json({ markdown: "Never loaded" }),
+		fetch: async () =>
+			Response.json({ markdown: "Never loaded", themeId: "minimal" }),
 	});
 
 	await assert.rejects(

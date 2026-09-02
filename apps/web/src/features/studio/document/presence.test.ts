@@ -6,8 +6,8 @@ import {
 	encodeAwarenessUpdate,
 } from "y-protocols/awareness";
 import * as Y from "yjs";
-import { createCollaborationPresence } from "./collaboration-presence";
-import { createEditorIdentity, parseEditorIdentity } from "./editor-identity";
+import { createEditorIdentity, parseEditorIdentity } from "./identity";
+import { createCollaborationPresence } from "./presence";
 
 const identity = {
 	id: "019c1f0d-b5b8-7d54-8c18-950eb0f21f7d",

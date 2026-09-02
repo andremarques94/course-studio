@@ -31,6 +31,7 @@ test("restores the encoded Yjs state after a collaboration server restart", asyn
 		store,
 		async initializeDocument({ document }) {
 			document.getText("markdown").insert(0, "# Initial");
+			document.getMap("metadata").set("themeId", "minimal");
 			return document;
 		},
 	});
@@ -61,6 +62,7 @@ test("restores the encoded Yjs state after a collaboration server restart", asyn
 		restoredDocument.getText("markdown").toString(),
 		"# Initial\n\nCollaborative edit",
 	);
+	assert.equal(restoredDocument.getMap("metadata").get("themeId"), "minimal");
 	assert.deepEqual(Y.encodeStateAsUpdate(restoredDocument), persistedState);
 	restoredDocument.destroy();
 });

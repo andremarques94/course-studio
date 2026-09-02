@@ -1,28 +1,10 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
+import { setTimeout as sleep } from "node:timers/promises";
 import type { BuiltinThemeId } from "@course-studio/themes";
-import { LessonAutosave, type LessonDraft } from "./index";
+import { createAutosave, type LessonDraft } from "./autosave";
 
 const initialDraft: LessonDraft = { markdown: "Initial", themeId: "minimal" };
-
-function createScheduler() {
-	let scheduled: (() => void) | undefined;
-	return {
-		schedule(callback: () => void) {
-			scheduled = callback;
-			return () => {
-				if (scheduled === callback) {
-					scheduled = undefined;
-				}
-			};
-		},
-		run() {
-			const callback = scheduled;
-			scheduled = undefined;
-			callback?.();
-		},
-	};
-}
 
 function deferred<T>() {
 	let resolve!: (value: T) => void;
@@ -40,7 +22,7 @@ function draft(markdown: string, themeId: BuiltinThemeId = "minimal") {
 
 test("starts saved without sending the initial draft", () => {
 	const calls: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
 		save: async (value) => {
 			calls.push(value);
@@ -54,11 +36,10 @@ test("starts saved without sending the initial draft", () => {
 });
 
 test("debounces edits into one latest save", async () => {
-	const scheduler = createScheduler();
 	const calls: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			return value;
@@ -68,7 +49,7 @@ test("debounces edits into one latest save", async () => {
 	autosave.updateDraft(draft("First"));
 	autosave.updateDraft(draft("Latest", "dark"));
 	assert.equal(autosave.getSnapshot().status, "unsaved");
-	scheduler.run();
+	await sleep(1);
 	await autosave.flush();
 
 	assert.deepEqual(calls, [draft("Latest", "dark")]);
@@ -76,16 +57,15 @@ test("debounces edits into one latest save", async () => {
 });
 
 test("coalesces edits during a slow save without overlapping requests", async () => {
-	const scheduler = createScheduler();
 	const firstSave = deferred<LessonDraft>();
 	const secondSave = deferred<LessonDraft>();
 	const secondSaveStarted = deferred<void>();
 	const calls: LessonDraft[] = [];
 	let active = 0;
 	let maxActive = 0;
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			active += 1;
@@ -101,11 +81,11 @@ test("coalesces edits during a slow save without overlapping requests", async ()
 	});
 
 	autosave.updateDraft(draft("A"));
-	scheduler.run();
+	await sleep(1);
 	autosave.updateDraft(draft("B"));
-	scheduler.run();
+	await sleep(1);
 	autosave.updateDraft(draft("C"));
-	scheduler.run();
+	await sleep(1);
 	assert.deepEqual(calls, [draft("A")]);
 
 	firstSave.resolve(draft("A"));
@@ -119,12 +99,11 @@ test("coalesces edits during a slow save without overlapping requests", async ()
 });
 
 test("persists a reversion made while another draft is saving", async () => {
-	const scheduler = createScheduler();
 	const firstSave = deferred<LessonDraft>();
 	const calls: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			if (calls.length === 1) {
@@ -135,9 +114,9 @@ test("persists a reversion made while another draft is saving", async () => {
 	});
 
 	autosave.updateDraft(draft("Changed"));
-	scheduler.run();
+	await sleep(1);
 	autosave.updateDraft(initialDraft);
-	scheduler.run();
+	await sleep(1);
 	firstSave.resolve(draft("Changed"));
 	await autosave.flush();
 
@@ -146,11 +125,10 @@ test("persists a reversion made while another draft is saving", async () => {
 });
 
 test("manual save is immediate and does not duplicate queued work", async () => {
-	const scheduler = createScheduler();
 	const calls: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			return value;
@@ -159,19 +137,18 @@ test("manual save is immediate and does not duplicate queued work", async () => 
 
 	autosave.updateDraft(draft("Manual"));
 	await autosave.saveNow();
-	scheduler.run();
+	await sleep(1);
 	await autosave.flush();
 
 	assert.deepEqual(calls, [draft("Manual")]);
 });
 
 test("keeps a failed draft dirty and retries the latest draft", async () => {
-	const scheduler = createScheduler();
 	const calls: LessonDraft[] = [];
 	let shouldFail = true;
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			if (shouldFail) {
@@ -182,14 +159,13 @@ test("keeps a failed draft dirty and retries the latest draft", async () => {
 	});
 
 	autosave.updateDraft(draft("Failed"));
-	scheduler.run();
 	await assert.rejects(autosave.flush(), /offline/);
 	assert.equal(autosave.getSnapshot().status, "error");
 	assert.equal(autosave.getSnapshot().isUnsafeToLeave, true);
 
 	shouldFail = false;
 	autosave.updateDraft(draft("Recovered", "academic"));
-	scheduler.run();
+	await sleep(1);
 	await autosave.flush();
 
 	assert.deepEqual(calls, [draft("Failed"), draft("Recovered", "academic")]);
@@ -197,12 +173,11 @@ test("keeps a failed draft dirty and retries the latest draft", async () => {
 });
 
 test("continues with a newer queued draft when an older save fails", async () => {
-	const scheduler = createScheduler();
 	const firstSave = deferred<LessonDraft>();
 	const calls: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			if (calls.length === 1) {
@@ -213,9 +188,9 @@ test("continues with a newer queued draft when an older save fails", async () =>
 	});
 
 	autosave.updateDraft(draft("Outdated"));
-	scheduler.run();
+	await sleep(1);
 	autosave.updateDraft(draft("Latest"));
-	scheduler.run();
+	await sleep(1);
 	firstSave.reject(new Error("temporary failure"));
 	await autosave.flush();
 
@@ -225,7 +200,7 @@ test("continues with a newer queued draft when an older save fails", async () =>
 
 test("does not accept edits or flush after disposal", async () => {
 	const calls: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
 		save: async (value) => {
 			calls.push(value);
@@ -243,7 +218,7 @@ test("does not accept edits or flush after disposal", async () => {
 
 test("resumes after a development Strict Mode effect cleanup", async () => {
 	const saves: LessonDraft[] = [];
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
 		save: async (nextDraft) => {
 			saves.push(nextDraft);
@@ -262,13 +237,12 @@ test("resumes after a development Strict Mode effect cleanup", async () => {
 });
 
 test("allows an error listener to retry synchronously", async () => {
-	const scheduler = createScheduler();
 	const firstSave = deferred<LessonDraft>();
 	const calls: LessonDraft[] = [];
 	let retry: Promise<void> | undefined;
-	const autosave = new LessonAutosave({
+	const autosave = createAutosave({
 		initialDraft,
-		schedule: scheduler.schedule,
+		delay: 1,
 		save: async (value) => {
 			calls.push(value);
 			if (calls.length === 1) {
@@ -284,7 +258,7 @@ test("allows an error listener to retry synchronously", async () => {
 	});
 
 	autosave.updateDraft(draft("Retry"));
-	scheduler.run();
+	await sleep(1);
 	const failedFlush = autosave.flush();
 	firstSave.reject(new Error("offline"));
 

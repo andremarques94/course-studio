@@ -48,11 +48,11 @@ export function parseEditorIdentity(value: unknown): EditorIdentity | null {
 }
 
 function editorColorForId(id: string): string {
-	let hash = 2_166_136_261;
-	for (const character of id) {
-		hash ^= character.charCodeAt(0);
-		hash = Math.imul(hash, 16_777_619);
-	}
+	const hash = Array.from(id).reduce(
+		(current, character) =>
+			Math.imul(current ^ character.charCodeAt(0), 16_777_619),
+		2_166_136_261,
+	);
 	const hue = (((hash >>> 0) / 0xff_ff_ff_ff) * 360).toFixed(2);
 	return `hsl(${hue}deg 72% 48%)`;
 }

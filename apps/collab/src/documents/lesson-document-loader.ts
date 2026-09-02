@@ -19,7 +19,10 @@ const lessonRoomSchema = z
 		/^lesson:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
 	)
 	.transform((room) => room.slice("lesson:".length));
-const lessonSchema = z.object({ markdown: z.string() });
+const lessonSchema = z.object({
+	markdown: z.string(),
+	themeId: z.enum(["minimal", "academic", "dark"]),
+});
 
 export function parseLessonDocumentName(documentName: string) {
 	return lessonRoomSchema.parse(documentName);
@@ -47,8 +50,12 @@ export function createLessonDocumentLoader({
 
 		const lesson = lessonSchema.parse(await response.json());
 		const markdown = document.getText("markdown");
+		const metadata = document.getMap<unknown>("metadata");
 		if (markdown.length === 0 && lesson.markdown.length > 0) {
 			markdown.insert(0, lesson.markdown);
+		}
+		if (!metadata.has("themeId")) {
+			metadata.set("themeId", lesson.themeId);
 		}
 
 		return document;

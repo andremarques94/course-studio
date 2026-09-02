@@ -40,6 +40,7 @@ test("restores a lesson document from PostgreSQL after recreating the collaborat
 		firstDocument
 			.getText("markdown")
 			.insert(0, "# PostgreSQL\n\nExact collaborative state.");
+		firstDocument.getMap("metadata").set("themeId", "dark");
 		const firstPersistence = createLessonDocumentPersistence({
 			store: createPostgresLessonDocumentStore(db),
 			async initializeDocument({ document }) {
@@ -72,6 +73,7 @@ test("restores a lesson document from PostgreSQL after recreating the collaborat
 			restoredDocument.getText("markdown").toString(),
 			"# PostgreSQL\n\nExact collaborative state.",
 		);
+		assert.equal(restoredDocument.getMap("metadata").get("themeId"), "dark");
 		assert.deepEqual(Y.encodeStateAsUpdate(restoredDocument), expectedState);
 		restoredDocument.destroy();
 	} finally {

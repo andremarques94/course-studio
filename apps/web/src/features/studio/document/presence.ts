@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Awareness } from "y-protocols/awareness";
-import { type EditorIdentity, parseEditorIdentity } from "./editor-identity";
+import { type EditorIdentity, parseEditorIdentity } from "./identity";
 
 export type CollaborationPresence = {
 	readonly awareness: Awareness;
@@ -11,10 +11,10 @@ export type CollaborationPresence = {
 export function createCollaborationPresence(
 	awareness: Awareness,
 ): CollaborationPresence & { destroy(): void } {
-	let snapshot = readCollaborators(awareness);
+	const state = { snapshot: readCollaborators(awareness) };
 	const listeners = new Set<() => void>();
 	const handleChange = () => {
-		snapshot = readCollaborators(awareness);
+		state.snapshot = readCollaborators(awareness);
 		for (const listener of listeners) {
 			listener();
 		}
@@ -24,7 +24,7 @@ export function createCollaborationPresence(
 
 	return {
 		awareness,
-		getSnapshot: () => snapshot,
+		getSnapshot: () => state.snapshot,
 		destroy() {
 			awareness.off("change", handleChange);
 			listeners.clear();
