@@ -12,7 +12,11 @@ import { useRef, useState } from "react";
 import { AppShell, AppSidebar } from "@/components/app-shell";
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
-import { type LessonDocument, useCollaborators } from "../../document";
+import {
+	type LessonDocument,
+	useCollaborationStatus,
+	useCollaborators,
+} from "../../document";
 import type { StudioDraft } from "../../draft";
 import type { StudioCommands } from "../../studio-commands";
 import { EditorPane } from "../EditorPane";
@@ -48,6 +52,9 @@ export function Studio({
 	const presentationRef = useRef<PresentationHandle | null>(null);
 	const isMobile = useIsMobile();
 	const collaborators = useCollaborators(lessonDocument.presence);
+	const collaborationStatus = useCollaborationStatus(
+		lessonDocument.collaborationStatus,
+	);
 	const slideCount = draft.markdown.split(/\n\s*---\s*\n/).length;
 	const lessonIndex = lessons.findIndex((item) => item.id === lesson.id);
 	const previousLesson = lessons[lessonIndex - 1];
@@ -55,15 +62,6 @@ export function Studio({
 	const togglePreview = () => setPreviewFocused((current) => !current);
 
 	useHotkey("Mod+Shift+P", togglePreview, { stopPropagation: false });
-	useHotkey(
-		"Mod+S",
-		() => {
-			if (draft.canSaveNow) {
-				void draft.saveNow().catch(() => undefined);
-			}
-		},
-		{ preventDefault: true, stopPropagation: false },
-	);
 	useHotkey("Escape", () => setPreviewFocused(false), {
 		enabled: previewFocused,
 		preventDefault: true,
@@ -90,11 +88,6 @@ export function Studio({
 					onRenameLesson={async (title) => {
 						await commands.updateLesson({ title });
 					}}
-					onSave={() => {
-						void draft.saveNow().catch(() => undefined);
-					}}
-					saveDisabled={!draft.canSaveNow}
-					saveStatus={draft.saveStatus}
 					previewFocused={previewFocused}
 					onTogglePreview={togglePreview}
 				/>
@@ -103,6 +96,7 @@ export function Studio({
 			statusBar={
 				<StudioStatusBar
 					slideCount={slideCount}
+					collaborationStatus={collaborationStatus}
 					collaborators={collaborators}
 				/>
 			}

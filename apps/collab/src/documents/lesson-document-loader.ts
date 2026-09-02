@@ -57,7 +57,5 @@ export function createLessonDocumentLoader({
 		if (!metadata.has("themeId")) {
 			metadata.set("themeId", lesson.themeId);
 		}
-
-		return document;
 	};
 }

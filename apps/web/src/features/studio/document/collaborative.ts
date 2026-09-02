@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { getSessionEditorIdentity } from "./identity";
 import { createLessonDocumentModel, type LessonDocument } from "./model";
 import { createCollaborationPresence } from "./presence";
+import { createCollaborationStatusStore } from "./status";
 
 type CollaborativeLessonDocument = LessonDocument & { destroy(): void };
 
@@ -18,13 +19,27 @@ export function createCollaborativeLessonDocument({
 }: CollaborativeLessonDocumentOptions): CollaborativeLessonDocument {
 	const ydoc = new Y.Doc();
 	const document = createLessonDocumentModel(ydoc, false);
+	const collaborationStatus = createCollaborationStatusStore();
+	document.setCollaborationStatus(collaborationStatus);
 
 	const provider = new HocuspocusProvider({
 		url,
 		name: `lesson:${lessonId}`,
 		document: ydoc,
-		onSynced() {
-			document.markReady();
+		onOpen() {
+			collaborationStatus.setTransportStatus("connected");
+		},
+		onStatus({ status }) {
+			collaborationStatus.setTransportStatus(status);
+		},
+		onSynced({ state }) {
+			collaborationStatus.setSynced(state);
+			if (state) {
+				document.markReady();
+			}
+		},
+		onUnsyncedChanges({ number }) {
+			collaborationStatus.setUnsyncedChanges(number);
 		},
 	});
 	if (!provider.awareness) {
@@ -41,6 +56,7 @@ export function createCollaborativeLessonDocument({
 		destroy() {
 			presence.destroy();
 			provider.destroy();
+			collaborationStatus.destroy();
 			destroyDocument();
 		},
 	};

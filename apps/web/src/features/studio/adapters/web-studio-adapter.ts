@@ -32,10 +32,6 @@ export function createWebStudioCommands({
 						lesson.id === updatedLesson.id ? updatedLesson : lesson,
 					),
 			);
-			return {
-				markdown: updatedLesson.markdown,
-				themeId: updatedLesson.themeId,
-			};
 		},
 		exportPresentation: openPdfExport,
 	};

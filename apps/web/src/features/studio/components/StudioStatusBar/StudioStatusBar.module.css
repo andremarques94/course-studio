@@ -41,3 +41,53 @@
 .aspectRatio {
 	font-variant-numeric: tabular-nums;
 }
+
+.collaborationStatus {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--color-foreground);
+	white-space: nowrap;
+}
+
+.statusDot {
+	width: 6px;
+	height: 6px;
+	border-radius: 999px;
+	background: currentcolor;
+}
+
+.collaborationStatus[data-status="connecting"] .statusDot {
+	color: var(--color-muted-foreground);
+}
+
+.collaborationStatus[data-status="connected"] .statusDot {
+	color: var(--color-chart-4);
+}
+
+.collaborationStatus[data-status="syncing"] .statusDot {
+	color: var(--color-chart-2);
+}
+
+.collaborationStatus[data-status="synced"] .statusDot {
+	color: var(--color-primary);
+}
+
+.collaborationStatus[data-status="offline"] .statusDot {
+	color: var(--color-destructive);
+}
+
+@media (max-width: 480px) {
+	.statusBar {
+		grid-template-columns: minmax(0, 1fr) auto auto;
+	}
+
+	.statusItem {
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.aspectRatio {
+		display: none;
+	}
+}

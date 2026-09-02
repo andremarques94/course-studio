@@ -15,11 +15,12 @@ Course Studio is a Markdown-first course authoring app. Write lessons in Markdow
 ## What works today
 
 - Courses and lessons that persist between sessions
-- Markdown editing with autosave
+- Yjs-backed Markdown editing with persisted collaborative drafts
 - Live slide preview; type `---` to start a new slide
 - Minimal, Academic, and Dark presentation themes
 - Real-time collaborative editing
 - Remote cursors, selections, and collaborator presence
+- Live connection and synchronization status
 - PDF export
 - Presentation mode with <kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
 - Light and dark appearance; resizable editor and preview panes
@@ -71,7 +72,7 @@ packages/db            Drizzle schema, migrations, and database client
 
 ## Direction
 
-Development moves one milestone at a time. Next: persisting collaborative documents, then publishing and versioning. Accounts and public deployments are out of scope in the pre-alpha.
+Development moves one milestone at a time. Next: multiplayer browser tests, then publishing and versioning. Accounts and public deployments are out of scope in the pre-alpha.
 
 ## Contributing
 

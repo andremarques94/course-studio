@@ -5,3 +5,7 @@ export {
 	type CollaborationPresence,
 	useCollaborators,
 } from "./presence";
+export {
+	type CollaborationStatus,
+	useCollaborationStatus,
+} from "./status";

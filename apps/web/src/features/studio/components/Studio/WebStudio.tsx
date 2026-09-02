@@ -8,7 +8,6 @@ import {
 	useCollaborativeLessonDocument,
 } from "../../document";
 import { useStudioDraft } from "../../draft";
-import { useDraftNavigationBlocker } from "../../hooks";
 import { Studio } from "./Studio";
 import { StudioLoadingState } from "./StudioLoadingState";
 
@@ -51,15 +50,9 @@ function ConnectedWebStudio({
 		lessonId: lesson.id,
 	});
 	const draft = useStudioDraft({
-		lessonId: lesson.id,
-		initialDraft: {
-			markdown: lesson.markdown,
-			themeId: lesson.themeId,
-		},
 		document: lessonDocument,
-		save: commands.updateLesson,
+		fallbackThemeId: lesson.themeId,
 	});
-	useDraftNavigationBlocker(draft);
 
 	return (
 		<Studio

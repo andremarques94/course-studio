@@ -1,6 +1,7 @@
 import { type BuiltinThemeId, isBuiltinThemeId } from "@course-studio/themes";
 import type * as Y from "yjs";
 import type { CollaborationPresence } from "./presence";
+import type { CollaborationStatusStore } from "./status";
 
 export type LessonDocumentSnapshot = {
 	readonly markdown: string;
@@ -12,6 +13,7 @@ export type LessonDocument = {
 	readonly ydoc: Y.Doc;
 	readonly markdown: Y.Text;
 	readonly presence: CollaborationPresence | null;
+	readonly collaborationStatus: CollaborationStatusStore | null;
 	readonly getSnapshot: () => LessonDocumentSnapshot;
 	readonly subscribe: (listener: () => void) => () => void;
 	readonly setThemeId: (themeId: BuiltinThemeId) => void;
@@ -21,6 +23,7 @@ export type ManagedLessonDocument = LessonDocument & {
 	destroy(): void;
 	markReady(): void;
 	setPresence(presence: CollaborationPresence): void;
+	setCollaborationStatus(status: CollaborationStatusStore): void;
 };
 
 export function createLessonDocumentModel(
@@ -31,6 +34,7 @@ export function createLessonDocumentModel(
 	const metadata = ydoc.getMap<unknown>("metadata");
 	const listeners = new Set<() => void>();
 	const state = {
+		collaborationStatus: null as CollaborationStatusStore | null,
 		presence: null as CollaborationPresence | null,
 		snapshot: readSnapshot(markdown, metadata, ready),
 	};
@@ -59,6 +63,9 @@ export function createLessonDocumentModel(
 		get presence() {
 			return state.presence;
 		},
+		get collaborationStatus() {
+			return state.collaborationStatus;
+		},
 		getSnapshot: () => state.snapshot,
 		subscribe(listener) {
 			listeners.add(listener);
@@ -78,6 +85,9 @@ export function createLessonDocumentModel(
 		},
 		setPresence(nextPresence) {
 			state.presence = nextPresence;
+		},
+		setCollaborationStatus(nextStatus) {
+			state.collaborationStatus = nextStatus;
 		},
 		destroy() {
 			markdown.unobserve(publish);

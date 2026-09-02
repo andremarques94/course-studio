@@ -13,6 +13,7 @@ const identity = {
 	id: "019c1f0d-b5b8-7d54-8c18-950eb0f21f7d",
 	name: "Guest 0142",
 	color: "hsl(202.60deg 72% 48%)",
+	colorLight: "hsl(202.60deg 72% 48% / 20%)",
 };
 
 test("publishes valid Awareness identities", () => {
@@ -49,6 +50,13 @@ test("ignores malformed or untrusted Awareness identities", () => {
 	assert.deepEqual(presence.getSnapshot(), []);
 	assert.deepEqual(parseEditorIdentity(identity), identity);
 	assert.equal(parseEditorIdentity({ ...identity, id: "not-an-id" }), null);
+	assert.equal(
+		parseEditorIdentity({
+			...identity,
+			colorLight: "url(javascript:alert(1))",
+		}),
+		null,
+	);
 
 	presence.destroy();
 	awareness.destroy();

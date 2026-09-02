@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { courses, createDatabase, lessons } from "@course-studio/db";
 import { eq } from "drizzle-orm";
 import * as Y from "yjs";
+import { createLessonDocumentLoader } from "../src/documents/lesson-document-loader.js";
 import {
 	createLessonDocumentPersistence,
 	createPostgresLessonDocumentStore,
@@ -11,7 +12,7 @@ import {
 
 const databaseUrl = process.env.DATABASE_URL;
 
-test("restores a lesson document from PostgreSQL after recreating the collaboration database client", {
+test("migrates a legacy lesson once and restores it after recreating the database client", {
 	skip: databaseUrl ? false : "DATABASE_URL is not set",
 }, async () => {
 	if (!databaseUrl) {
@@ -34,25 +35,44 @@ test("restores a lesson document from PostgreSQL after recreating the collaborat
 			courseId,
 			title: "Persisted lesson",
 			slug: "persisted-lesson",
+			markdown: "# PostgreSQL\n\nExact collaborative state.",
+			themeId: "dark",
 		});
 
-		const firstDocument = new Y.Doc();
-		firstDocument
-			.getText("markdown")
-			.insert(0, "# PostgreSQL\n\nExact collaborative state.");
-		firstDocument.getMap("metadata").set("themeId", "dark");
-		const firstPersistence = createLessonDocumentPersistence({
-			store: createPostgresLessonDocumentStore(db),
-			async initializeDocument({ document }) {
-				return document;
+		let lessonFetchCount = 0;
+		const initializeDocument = createLessonDocumentLoader({
+			apiUrl: "http://api.test",
+			fetch: async (input) => {
+				lessonFetchCount += 1;
+				assert.equal(input, `http://api.test/lessons/${lessonId}`);
+				return Response.json({
+					markdown: "# PostgreSQL\n\nExact collaborative state.",
+					themeId: "dark",
+				});
 			},
 		});
-		await firstPersistence.store({
+		const firstDocument = new Y.Doc();
+		const firstStore = createPostgresLessonDocumentStore(db);
+		const firstPersistence = createLessonDocumentPersistence({
+			store: firstStore,
+			initializeDocument,
+		});
+		await firstPersistence.load({
 			document: firstDocument,
 			documentName,
 		});
+		assert.equal(lessonFetchCount, 1);
 		const expectedState = Y.encodeStateAsUpdate(firstDocument);
 		firstDocument.destroy();
+
+		const competingDocument = new Y.Doc();
+		competingDocument.getText("markdown").insert(0, "Competing migration");
+		const conflictWinner = await firstStore.initialize(
+			lessonId,
+			Y.encodeStateAsUpdate(competingDocument),
+		);
+		competingDocument.destroy();
+		assert.deepEqual(conflictWinner, expectedState);
 
 		await db.$client.end();
 		db = createDatabase(databaseUrl);

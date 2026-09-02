@@ -127,13 +127,19 @@ test("courses and lessons persist through the API", {
 		);
 		assert.equal(duplicateLessonResponse.status, 409);
 
-		const markdown = "# Persisted\n\nThis survives a restart.";
+		const initialMarkdown = `# ${lessonTitle}`;
+		const markdownUpdateResponse = await app.request(`/lessons/${lesson.id}`, {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ markdown: "# Must use Yjs" }),
+		});
+		assert.equal(markdownUpdateResponse.status, 400);
+
 		const updateLessonResponse = await app.request(`/lessons/${lesson.id}`, {
 			method: "PATCH",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({
 				title: "Updated introduction",
-				markdown,
 				themeId: "academic",
 			}),
 		});
@@ -199,7 +205,7 @@ test("courses and lessons persist through the API", {
 			markdown: string;
 			themeId: string;
 		};
-		assert.equal(persistedLesson.markdown, markdown);
+		assert.equal(persistedLesson.markdown, initialMarkdown);
 		assert.equal(persistedLesson.themeId, "academic");
 		const persistedOrderResponse = await app.request(
 			`/courses/${courseId}/lessons`,

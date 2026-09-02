@@ -9,25 +9,49 @@ type LessonDocumentPersistenceInput = {
 
 export type LessonDocumentStore = {
 	load(lessonId: string): Promise<Uint8Array | null>;
+	initialize(lessonId: string, state: Uint8Array): Promise<Uint8Array>;
 	store(lessonId: string, state: Uint8Array): Promise<void>;
 };
 
 type LessonDocumentPersistenceOptions = {
 	store: LessonDocumentStore;
-	initializeDocument(input: LessonDocumentPersistenceInput): Promise<Y.Doc>;
+	initializeDocument(input: LessonDocumentPersistenceInput): Promise<void>;
 };
 
 export function createPostgresLessonDocumentStore(
 	db: Database,
 ): LessonDocumentStore {
-	return {
-		async load(lessonId) {
-			const document = await db.query.lessonDocuments.findFirst({
-				columns: { ydoc: true },
-				where: (table, { eq }) => eq(table.lessonId, lessonId),
-			});
+	async function load(lessonId: string) {
+		const document = await db.query.lessonDocuments.findFirst({
+			columns: { ydoc: true },
+			where: (table, { eq }) => eq(table.lessonId, lessonId),
+		});
 
-			return document ? new Uint8Array(document.ydoc) : null;
+		return document ? new Uint8Array(document.ydoc) : null;
+	}
+
+	return {
+		load,
+
+		async initialize(lessonId, state) {
+			const [inserted] = await db
+				.insert(lessonDocuments)
+				.values({ lessonId, ydoc: Buffer.from(state) })
+				.onConflictDoNothing({ target: lessonDocuments.lessonId })
+				.returning({ ydoc: lessonDocuments.ydoc });
+
+			if (inserted) {
+				return new Uint8Array(inserted.ydoc);
+			}
+
+			const persistedState = await load(lessonId);
+			if (!persistedState) {
+				throw new Error(
+					`Could not initialize lesson document ${lessonId}: persisted state is unavailable.`,
+				);
+			}
+
+			return persistedState;
 		},
 
 		async store(lessonId, state) {
@@ -56,7 +80,23 @@ export function createLessonDocumentPersistence({
 				return input.document;
 			}
 
-			return initializeDocument(input);
+			const candidate = new Y.Doc();
+
+			try {
+				await initializeDocument({
+					document: candidate,
+					documentName: input.documentName,
+				});
+				const initializedState = Y.encodeStateAsUpdate(candidate);
+				const persistedState = await store.initialize(
+					lessonId,
+					initializedState,
+				);
+				Y.applyUpdate(input.document, persistedState);
+				return input.document;
+			} finally {
+				candidate.destroy();
+			}
 		},
 
 		async store({ document, documentName }: LessonDocumentPersistenceInput) {

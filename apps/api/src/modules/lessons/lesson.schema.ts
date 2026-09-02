@@ -13,9 +13,9 @@ export const reorderLessonsSchema = z.object({
 export const updateLessonSchema = z
 	.object({
 		title: titleSchema.optional(),
-		markdown: z.string().optional(),
 		themeId: z.enum(["minimal", "academic", "dark"]).optional(),
 	})
+	.strict()
 	.refine((input) => Object.keys(input).length > 0, {
 		message: "At least one field is required.",
 	});

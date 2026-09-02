@@ -7,9 +7,14 @@ const editorIdentitySchema = z
 		id: z.uuid(),
 		name: z.string().length(10).refine(isGuestName),
 		color: z.string().max(32),
+		colorLight: z.string().max(40),
 		avatarUrl: z.httpUrl().max(2_048).optional(),
 	})
-	.refine(({ id, color }) => color === editorColorForId(id));
+	.refine(
+		({ id, color, colorLight }) =>
+			color === editorColorForId(id) &&
+			colorLight === editorSelectionColorForId(id),
+	);
 
 export type EditorIdentity = z.infer<typeof editorIdentitySchema>;
 
@@ -21,6 +26,7 @@ export function createEditorIdentity(): EditorIdentity {
 		id,
 		name: `Guest ${guestNumber.toString().padStart(4, "0")}`,
 		color: editorColorForId(id),
+		colorLight: editorSelectionColorForId(id),
 	};
 }
 
@@ -48,13 +54,20 @@ export function parseEditorIdentity(value: unknown): EditorIdentity | null {
 }
 
 function editorColorForId(id: string): string {
+	return `hsl(${editorHueForId(id)}deg 72% 48%)`;
+}
+
+function editorSelectionColorForId(id: string): string {
+	return `hsl(${editorHueForId(id)}deg 72% 48% / 20%)`;
+}
+
+function editorHueForId(id: string): string {
 	const hash = Array.from(id).reduce(
 		(current, character) =>
 			Math.imul(current ^ character.charCodeAt(0), 16_777_619),
 		2_166_136_261,
 	);
-	const hue = (((hash >>> 0) / 0xff_ff_ff_ff) * 360).toFixed(2);
-	return `hsl(${hue}deg 72% 48%)`;
+	return (((hash >>> 0) / 0xff_ff_ff_ff) * 360).toFixed(2);
 }
 
 function isGuestName(name: string): boolean {

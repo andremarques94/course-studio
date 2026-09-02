@@ -19,6 +19,11 @@ function createMemoryStore(): LessonDocumentStore & {
 		async load(id) {
 			return documents.get(id) ?? null;
 		},
+		async initialize(id, state) {
+			const persistedState = documents.get(id) ?? state;
+			documents.set(id, persistedState.slice());
+			return persistedState.slice();
+		},
 		async store(id, state) {
 			documents.set(id, state.slice());
 		},
@@ -32,7 +37,6 @@ test("restores the encoded Yjs state after a collaboration server restart", asyn
 		async initializeDocument({ document }) {
 			document.getText("markdown").insert(0, "# Initial");
 			document.getMap("metadata").set("themeId", "minimal");
-			return document;
 		},
 	});
 	const firstDocument = new Y.Doc();
@@ -46,9 +50,8 @@ test("restores the encoded Yjs state after a collaboration server restart", asyn
 	let initialized = false;
 	const restartedPersistence = createLessonDocumentPersistence({
 		store,
-		async initializeDocument({ document }) {
+		async initializeDocument() {
 			initialized = true;
-			return document;
 		},
 	});
 	const restoredDocument = new Y.Doc();
@@ -67,7 +70,7 @@ test("restores the encoded Yjs state after a collaboration server restart", asyn
 	restoredDocument.destroy();
 });
 
-test("uses the lesson initializer only when no persisted state exists", async () => {
+test("initializes and persists a legacy lesson exactly once", async () => {
 	const store = createMemoryStore();
 	let initializationCount = 0;
 	const persistence = createLessonDocumentPersistence({
@@ -75,16 +78,62 @@ test("uses the lesson initializer only when no persisted state exists", async ()
 		async initializeDocument({ document }) {
 			initializationCount += 1;
 			document.getText("markdown").insert(0, "Legacy Markdown");
-			return document;
 		},
 	});
-	const document = new Y.Doc();
+	const firstDocument = new Y.Doc();
 
-	await persistence.load({ document, documentName });
+	await persistence.load({ document: firstDocument, documentName });
+	const persistedState = store.documents.get(lessonId);
 
 	assert.equal(initializationCount, 1);
-	assert.equal(document.getText("markdown").toString(), "Legacy Markdown");
-	document.destroy();
+	assert.ok(persistedState);
+	assert.equal(firstDocument.getText("markdown").toString(), "Legacy Markdown");
+	assert.deepEqual(Y.encodeStateAsUpdate(firstDocument), persistedState);
+	firstDocument.destroy();
+
+	const secondDocument = new Y.Doc();
+	await persistence.load({ document: secondDocument, documentName });
+
+	assert.equal(initializationCount, 1);
+	assert.equal(
+		secondDocument.getText("markdown").toString(),
+		"Legacy Markdown",
+	);
+	assert.deepEqual(Y.encodeStateAsUpdate(secondDocument), persistedState);
+	secondDocument.destroy();
+});
+
+test("concurrent initializations converge on the first persisted state", async () => {
+	const store = createMemoryStore();
+	let initializationCount = 0;
+	const persistence = createLessonDocumentPersistence({
+		store,
+		async initializeDocument({ document }) {
+			initializationCount += 1;
+			document
+				.getText("markdown")
+				.insert(0, `Legacy Markdown ${initializationCount}`);
+		},
+	});
+	const firstDocument = new Y.Doc();
+	const secondDocument = new Y.Doc();
+
+	await Promise.all([
+		persistence.load({ document: firstDocument, documentName }),
+		persistence.load({ document: secondDocument, documentName }),
+	]);
+
+	const persistedState = store.documents.get(lessonId);
+	assert.ok(persistedState);
+	assert.equal(initializationCount, 2);
+	assert.deepEqual(Y.encodeStateAsUpdate(firstDocument), persistedState);
+	assert.deepEqual(Y.encodeStateAsUpdate(secondDocument), persistedState);
+	assert.equal(
+		firstDocument.getText("markdown").toString(),
+		secondDocument.getText("markdown").toString(),
+	);
+	firstDocument.destroy();
+	secondDocument.destroy();
 });
 
 test("rejects invalid room names before accessing persistence", async () => {
@@ -95,13 +144,15 @@ test("rejects invalid room names before accessing persistence", async () => {
 				accessedStore = true;
 				return null;
 			},
+			async initialize() {
+				accessedStore = true;
+				return new Uint8Array();
+			},
 			async store() {
 				accessedStore = true;
 			},
 		},
-		async initializeDocument({ document }) {
-			return document;
-		},
+		async initializeDocument() {},
 	});
 	const document = new Y.Doc();
 

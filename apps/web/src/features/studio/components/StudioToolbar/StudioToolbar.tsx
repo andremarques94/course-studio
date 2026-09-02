@@ -2,7 +2,6 @@ import {
 	type BuiltinThemeId,
 	PRESENTATION_THEMES,
 } from "@course-studio/themes";
-import { Badge } from "@course-studio/ui/components/badge";
 import { Button } from "@course-studio/ui/components/button";
 import {
 	Dialog,
@@ -30,7 +29,6 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	ChevronDown,
-	CircleDot,
 	Ellipsis,
 	Maximize2,
 	Minimize2,
@@ -57,9 +55,6 @@ type StudioToolbarProps = {
 	onThemeSelectionComplete: () => void;
 	onExportPdf: () => void;
 	onRenameLesson: (title: string) => Promise<void>;
-	onSave: () => void;
-	saveDisabled: boolean;
-	saveStatus: "saved" | "unsaved" | "saving" | "error";
 	previewFocused: boolean;
 	onTogglePreview: () => void;
 };
@@ -74,9 +69,6 @@ export function StudioToolbar({
 	onThemeSelectionComplete,
 	onExportPdf,
 	onRenameLesson,
-	onSave,
-	saveDisabled,
-	saveStatus,
 	previewFocused,
 	onTogglePreview,
 }: StudioToolbarProps) {
@@ -98,12 +90,6 @@ export function StudioToolbar({
 		},
 	});
 	const selectedTheme = PRESENTATION_THEMES.find((item) => item.id === themeId);
-	const saveLabel = {
-		saved: "Saved",
-		unsaved: "Unsaved",
-		saving: "Saving",
-		error: "Save failed",
-	}[saveStatus];
 	const handleThemeChange = (value: string) => {
 		const nextTheme = PRESENTATION_THEMES.find((item) => item.id === value);
 		if (nextTheme) {
@@ -175,17 +161,6 @@ export function StudioToolbar({
 						</span>
 					)}
 				</div>
-				<Badge
-					variant={saveStatus === "error" ? "destructive" : "outline"}
-					className={styles.badge}
-					aria-live="polite"
-				>
-					<CircleDot data-icon="inline-start" />
-					{saveLabel}
-				</Badge>
-				<Button variant="outline" onClick={onSave} disabled={saveDisabled}>
-					Save
-				</Button>
 				<DropdownMenu onOpenChangeComplete={handleThemeMenuOpenChangeComplete}>
 					<DropdownMenuTrigger
 						render={
