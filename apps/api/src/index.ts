@@ -11,6 +11,7 @@ const db = createDatabase(env.databaseUrl);
 const auth = createAuth(db, {
 	baseURL: env.betterAuthUrl,
 	github: env.github,
+	google: env.google,
 	secret: env.betterAuthSecret,
 	trustedOrigins: env.trustedOrigins,
 });

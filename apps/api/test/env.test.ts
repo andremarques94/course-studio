@@ -69,3 +69,15 @@ test("requires GitHub OAuth credentials as a pair", () => {
 		{ clientId: "client", clientSecret: "secret" },
 	);
 });
+
+test("requires Google OAuth credentials as a pair", () => {
+	assert.throws(() => loadEnv({ ...baseEnv, GOOGLE_CLIENT_ID: "client" }));
+	assert.deepEqual(
+		loadEnv({
+			...baseEnv,
+			GOOGLE_CLIENT_ID: "client",
+			GOOGLE_CLIENT_SECRET: "secret",
+		}).google,
+		{ clientId: "client", clientSecret: "secret" },
+	);
+});

@@ -21,7 +21,11 @@ const signUpSchema = credentialsSchema
 
 type AuthMode = "sign-in" | "sign-up";
 
-type AuthRequest = { type: "email"; formData: FormData } | { type: "github" };
+type SocialProvider = "github" | "google";
+
+type AuthRequest =
+	| { type: "email"; formData: FormData }
+	| { type: SocialProvider };
 
 type UseAuthFormOptions = {
 	mode: AuthMode;
@@ -32,15 +36,14 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 	const navigate = useNavigate();
 	const authenticate = useMutation({
 		mutationFn: async (request: AuthRequest) => {
-			if (request.type === "github") {
+			if (request.type !== "email") {
 				const result = await authClient.signIn.social({
 					callbackURL: new URL(redirect, window.location.origin).toString(),
-					provider: "github",
+					provider: request.type,
 				});
 				if (result?.error) {
-					throw new Error(
-						"GitHub sign-in is unavailable. Check the OAuth configuration.",
-					);
+					const providerName = request.type === "github" ? "GitHub" : "Google";
+					throw new Error(`${providerName} sign-in is unavailable.`);
 				}
 				return;
 			}
@@ -77,8 +80,15 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 			}
 			authenticate.mutate({ type: "github" });
 		},
+		handleGoogleSignIn() {
+			if (authenticate.isPending) {
+				return;
+			}
+			authenticate.mutate({ type: "google" });
+		},
 		isEmailPending: pendingRequest === "email",
 		isGitHubPending: pendingRequest === "github",
+		isGooglePending: pendingRequest === "google",
 	};
 }
 

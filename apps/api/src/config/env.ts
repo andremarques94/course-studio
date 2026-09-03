@@ -15,7 +15,7 @@ const originsSchema = z
 	.transform((origins) => origins.split(",").map((origin) => origin.trim()))
 	.pipe(z.array(originSchema).min(1));
 
-function createGitHubConfig(clientId?: string, clientSecret?: string) {
+function createOAuthConfig(clientId?: string, clientSecret?: string) {
 	if (!clientId || !clientSecret) {
 		return undefined;
 	}
@@ -34,6 +34,8 @@ const envSchema = z
 		BETTER_AUTH_TRUSTED_ORIGINS: originsSchema.optional(),
 		GITHUB_CLIENT_ID: z.string().trim().min(1).optional(),
 		GITHUB_CLIENT_SECRET: z.string().trim().min(1).optional(),
+		GOOGLE_CLIENT_ID: z.string().trim().min(1).optional(),
+		GOOGLE_CLIENT_SECRET: z.string().trim().min(1).optional(),
 		API_PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
 		PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
 		LOG_LEVEL: z
@@ -59,6 +61,12 @@ const envSchema = z
 				path: "GITHUB_CLIENT_ID",
 				message: "GitHub client ID and secret must be configured together.",
 			},
+			{
+				invalid:
+					Boolean(env.GOOGLE_CLIENT_ID) !== Boolean(env.GOOGLE_CLIENT_SECRET),
+				path: "GOOGLE_CLIENT_ID",
+				message: "Google client ID and secret must be configured together.",
+			},
 		].forEach(({ invalid, path, message }) => {
 			if (invalid) {
 				context.addIssue({ code: "custom", path: [path], message });
@@ -74,7 +82,8 @@ const envSchema = z
 		trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS ?? [
 			"http://localhost:3000",
 		],
-		github: createGitHubConfig(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET),
+		github: createOAuthConfig(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET),
+		google: createOAuthConfig(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET),
 		logLevel: env.LOG_LEVEL,
 	}));
 

@@ -3,14 +3,15 @@ import { authSchema, type Database } from "@course-studio/db";
 import { betterAuth } from "better-auth";
 import { jwt } from "better-auth/plugins";
 
-export type GitHubOAuthConfig = {
+export type OAuthConfig = {
 	clientId: string;
 	clientSecret: string;
 };
 
 export type AuthOptions = {
 	baseURL: string;
-	github?: GitHubOAuthConfig;
+	github?: OAuthConfig;
+	google?: OAuthConfig;
 	secret: string;
 	trustedOrigins: string[];
 };
@@ -28,12 +29,14 @@ export function createAuth(db: Database, options: AuthOptions) {
 		emailAndPassword: {
 			enabled: true,
 		},
-		socialProviders: options.github
-			? {
-					github: options.github,
-				}
-			: {},
+		socialProviders: {
+			...(options.github ? { github: options.github } : {}),
+			...(options.google ? { google: options.google } : {}),
+		},
 		account: {
+			accountLinking: {
+				requireLocalEmailVerified: false,
+			},
 			encryptOAuthTokens: true,
 			identityStrategy: "provider-id",
 		},
