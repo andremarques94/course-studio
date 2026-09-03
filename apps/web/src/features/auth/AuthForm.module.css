@@ -3,26 +3,16 @@
 	background: var(--color-background);
 }
 
-.topbar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	height: 60px;
-	padding: 0 max(20px, calc((100vw - 1180px) / 2));
-	border-bottom: 1px solid var(--color-border);
-	background: color-mix(in oklch, var(--color-background) 88%, transparent);
-	backdrop-filter: blur(14px);
-}
-
-.topbarActions {
-	display: flex;
-	align-items: center;
-	gap: 4px;
+.actionDivider {
+	width: 1px;
+	height: 18px;
+	margin-inline: 2px;
+	background: var(--color-border);
 }
 
 .main {
 	display: grid;
-	min-height: calc(100svh - 60px);
+	min-height: calc(100svh - 64px);
 	padding: 40px 16px;
 	place-items: center;
 	background: color-mix(
@@ -71,14 +61,9 @@
 	background: var(--color-card);
 }
 
-@media (max-width: 520px) {
-	.topbar {
-		height: 52px;
-		padding: 0 12px;
-	}
-
+@media (max-width: 700px) {
 	.main {
-		min-height: calc(100svh - 52px);
+		min-height: calc(100svh - 60px);
 		padding-block: 28px;
 	}
 }

@@ -1,0 +1,31 @@
+.header {
+	height: 64px;
+	border-bottom: 1px solid var(--color-border);
+	background: var(--color-background);
+}
+
+.inner {
+	display: flex;
+	width: min(1120px, calc(100% - 48px));
+	height: 100%;
+	margin: 0 auto;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.actions {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 6px;
+}
+
+@media (max-width: 700px) {
+	.header {
+		height: 60px;
+	}
+
+	.inner {
+		width: calc(100% - 32px);
+	}
+}

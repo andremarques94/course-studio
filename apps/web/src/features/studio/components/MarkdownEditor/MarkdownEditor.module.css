@@ -57,6 +57,10 @@
 	caret-color: var(--color-primary);
 }
 
+.editor :global(.cm-editor.cm-focused .cm-cursor) {
+	border-left-color: var(--color-foreground);
+}
+
 .editor :global(.cm-line) {
 	padding: 0 20px 0 8px;
 }

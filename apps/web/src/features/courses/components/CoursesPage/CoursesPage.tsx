@@ -12,14 +12,16 @@ export function CoursesPage() {
 		<ManagementPage title="Courses">
 			<div className={styles.content}>
 				<header className={styles.pageHeader}>
-					<div>
-						<p className={styles.eyebrow}>Course library</p>
-						<h1>Your courses</h1>
+					<div className={styles.headingCopy}>
+						<h1>Courses</h1>
 						<p className={styles.intro}>
-							Choose a course to manage its lessons, or start a new one.
+							Build your curriculum one course at a time. Open a course to
+							write, preview, and arrange its lessons.
 						</p>
 					</div>
-					<CreateCourseForm />
+					<div className={styles.createPanel}>
+						<CreateCourseForm />
+					</div>
 				</header>
 
 				<CourseList courses={courses} />

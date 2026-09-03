@@ -20,10 +20,6 @@
 	gap: 4px;
 }
 
-.tooltipTrigger {
-	display: contents;
-}
-
 .railButton {
 	position: relative;
 	display: grid;

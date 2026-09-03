@@ -1,27 +1,6 @@
 .page {
 	min-height: 100dvh;
-	background:
-		radial-gradient(
-			circle at 50% 8%,
-			color-mix(in oklch, var(--color-primary) 9%, transparent),
-			transparent 34rem
-		),
-		var(--color-background);
-}
-
-.header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	width: min(1180px, calc(100% - 40px));
-	height: 60px;
-	margin: 0 auto;
-}
-
-.headerActions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
+	background: var(--color-background);
 }
 
 .preAlphaBadge {
@@ -29,11 +8,19 @@
 	letter-spacing: 0.03em;
 }
 
+.statusDot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--color-primary);
+}
+
 .githubLink {
 	display: inline-flex;
+	height: 24px;
+	padding-inline: 8px;
 	align-items: center;
 	gap: 5px;
-	padding: 6px 8px;
 	border-radius: var(--radius-md);
 	color: var(--color-muted-foreground);
 	font-size: 12px;
@@ -56,69 +43,155 @@
 	height: 12px;
 }
 
+.actionDivider {
+	width: 1px;
+	height: 18px;
+	margin-inline: 2px;
+	background: var(--color-border);
+}
+
 .main {
 	display: flex;
-	width: min(1180px, calc(100% - 40px));
+	width: min(1120px, calc(100% - 48px));
 	margin: 0 auto;
-	padding: clamp(64px, 9vw, 116px) 0 64px;
+	padding: clamp(68px, 8vw, 108px) 0 72px;
 	flex-direction: column;
-	align-items: center;
 }
 
 .hero {
-	display: flex;
-	max-width: 800px;
-	flex-direction: column;
-	align-items: center;
-	text-align: center;
+	display: grid;
+	grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+	align-items: end;
+	gap: clamp(56px, 9vw, 132px);
+}
+
+.heroCopy {
+	min-width: 0;
 }
 
 .hero h1 {
 	max-width: 760px;
 	margin: 0;
-	font-size: clamp(42px, 6.2vw, 76px);
+	font-size: clamp(48px, 6vw, 76px);
 	font-weight: 650;
-	letter-spacing: -0.055em;
+	letter-spacing: -0.058em;
 	line-height: 0.98;
 	text-wrap: balance;
 }
 
-.description {
-	max-width: 610px;
-	margin: 24px 0 0;
+.headlineAccent {
+	display: block;
 	color: var(--color-muted-foreground);
-	font-size: clamp(16px, 2vw, 19px);
+	font-weight: 480;
+}
+
+.description {
+	max-width: 600px;
+	margin: 26px 0 0;
+	color: var(--color-muted-foreground);
+	font-size: clamp(16px, 1.8vw, 19px);
 	letter-spacing: -0.015em;
 	line-height: 1.55;
-	text-wrap: balance;
 }
 
 .heroActions {
 	display: flex;
+	margin-top: 30px;
 	align-items: center;
 	gap: 10px;
-	margin-top: 30px;
+}
+
+.workflow {
+	margin: 0;
+	padding: 0;
+	border-top: 1px solid var(--color-border);
+	list-style: none;
+}
+
+.workflow li {
+	display: grid;
+	padding: 18px 0;
+	grid-template-columns: 34px 1fr;
+	gap: 12px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.workflow li > span {
+	padding-top: 2px;
+	color: var(--color-primary);
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	font-size: 9px;
+	letter-spacing: 0.08em;
+}
+
+.workflow div {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.workflow strong {
+	font-size: 13px;
+	font-weight: 620;
+}
+
+.workflow small {
+	color: var(--color-muted-foreground);
+	font-size: 11px;
+	line-height: 1.45;
+}
+
+.previewHeading {
+	display: flex;
+	margin-top: clamp(72px, 9vw, 116px);
+	padding-bottom: 14px;
+	align-items: baseline;
+	justify-content: space-between;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.previewHeading p,
+.previewMeta {
+	margin: 0;
+}
+
+.previewHeading p {
+	font-size: 14px;
+	font-weight: 620;
+	letter-spacing: -0.015em;
+}
+
+.previewMeta {
+	color: var(--color-muted-foreground);
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	font-size: 9px;
+	letter-spacing: 0.075em;
+	text-transform: uppercase;
 }
 
 .productPreview {
-	width: min(1040px, 100%);
-	margin-top: clamp(66px, 9vw, 108px);
+	width: 100%;
+	margin-top: 18px;
 	overflow: hidden;
 	border: 1px solid
 		color-mix(in oklch, var(--color-foreground) 14%, transparent);
 	border-radius: calc(var(--radius-lg) + 2px);
 	background: var(--color-background);
-	box-shadow:
-		0 2px 4px rgb(0 0 0 / 5%),
-		0 28px 80px rgb(0 0 0 / 12%);
+	box-shadow: 0 24px 64px
+		color-mix(in oklch, var(--color-foreground) 10%, transparent);
+}
+
+:global(.dark) .productPreview {
+	box-shadow: none;
 }
 
 .previewTopbar {
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
 	height: 42px;
 	padding: 0 12px;
+	align-items: center;
+	justify-content: space-between;
 	border-bottom: 1px solid var(--color-border);
 	font-size: 10px;
 }
@@ -131,6 +204,8 @@
 }
 
 .previewBrand {
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	font-size: 9px;
 	font-weight: 560;
 }
 
@@ -156,16 +231,16 @@
 
 .previewBody {
 	display: grid;
+	height: clamp(380px, 45vw, 520px);
 	grid-template-columns: 38px minmax(0, 0.82fr) minmax(0, 1.18fr);
-	height: clamp(360px, 48vw, 570px);
 }
 
 .previewRail {
 	display: flex;
+	padding-top: 14px;
 	flex-direction: column;
 	align-items: center;
 	gap: 12px;
-	padding-top: 14px;
 	border-right: 1px solid var(--color-border);
 	background: color-mix(
 		in oklch,
@@ -174,7 +249,8 @@
 	);
 }
 
-.previewRail span {
+.railItem,
+.railActive {
 	width: 14px;
 	height: 14px;
 	border: 1px solid var(--color-muted-foreground);
@@ -182,7 +258,7 @@
 	opacity: 0.36;
 }
 
-.previewRail .railActive {
+.railActive {
 	border-color: var(--color-primary);
 	background: color-mix(in oklch, var(--color-primary) 16%, transparent);
 	opacity: 1;
@@ -191,8 +267,8 @@
 .editorMock,
 .previewMock {
 	display: grid;
-	grid-template-rows: 32px minmax(0, 1fr);
 	min-width: 0;
+	grid-template-rows: 32px minmax(0, 1fr);
 }
 
 .editorMock {
@@ -201,8 +277,8 @@
 
 .paneLabel {
 	display: flex;
-	align-items: center;
 	padding: 0 10px;
+	align-items: center;
 	border-bottom: 1px solid var(--color-border);
 	background: color-mix(
 		in oklch,
@@ -261,8 +337,8 @@
 .slideMock {
 	display: flex;
 	width: 100%;
-	aspect-ratio: 16 / 9;
 	padding: clamp(18px, 4vw, 48px);
+	aspect-ratio: 16 / 9;
 	flex-direction: column;
 	justify-content: center;
 	overflow: hidden;
@@ -285,7 +361,8 @@
 	font-size: clamp(16px, 2.5vw, 34px);
 	font-weight: 580;
 	letter-spacing: -0.04em;
-	white-space: nowrap;
+	line-height: 1.05;
+	text-wrap: balance;
 }
 
 .slideMock p {
@@ -296,10 +373,10 @@
 
 .previewStatus {
 	display: grid;
-	grid-template-columns: 1fr auto 1fr;
-	align-items: center;
 	height: 22px;
 	padding: 0 8px;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
 	border-top: 1px solid var(--color-border);
 	background: color-mix(
 		in oklch,
@@ -318,26 +395,83 @@
 	justify-self: end;
 }
 
-@media (max-width: 700px) {
-	.header,
+@media (max-width: 800px) {
 	.main {
-		width: min(100% - 24px, 1180px);
+		width: calc(100% - 32px);
+		padding-top: 58px;
 	}
 
-	.headerActions {
-		gap: 3px;
+	.hero {
+		grid-template-columns: 1fr;
+		gap: 52px;
 	}
 
+	.workflow {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.workflow li {
+		padding: 16px;
+		grid-template-columns: 1fr;
+		border-right: 1px solid var(--color-border);
+	}
+
+	.workflow li:first-child {
+		padding-left: 0;
+	}
+
+	.workflow li:last-child {
+		padding-right: 0;
+		border-right: 0;
+	}
+}
+
+@media (max-width: 700px) {
 	.preAlphaBadge {
 		display: none;
 	}
 
+	.hero h1 {
+		font-size: clamp(44px, 13vw, 60px);
+	}
+
+	.previewBody {
+		height: clamp(280px, 90vw, 380px);
+		grid-template-columns: 30px minmax(0, 1fr);
+	}
+
+	.editorMock {
+		display: none;
+	}
+
+	.canvasMock {
+		padding: clamp(16px, 5vw, 28px);
+	}
+}
+
+@media (max-width: 520px) {
+	.githubLabel {
+		display: none;
+	}
+
+	.githubLink svg {
+		width: 14px;
+		height: 14px;
+	}
+
 	.main {
-		padding-top: 58px;
+		padding-top: 48px;
+	}
+
+	.description {
+		margin-top: 22px;
 	}
 
 	.heroActions {
-		width: min(300px, 100%);
+		width: 100%;
+		margin-top: 26px;
 		flex-direction: column;
 	}
 
@@ -345,39 +479,21 @@
 		width: 100%;
 	}
 
-	.productPreview {
-		margin-top: 64px;
+	.workflow {
+		display: block;
 	}
 
-	.previewBody {
-		grid-template-columns: 30px minmax(0, 1fr);
-		height: 520px;
+	.workflow li,
+	.workflow li:first-child,
+	.workflow li:last-child {
+		padding: 15px 0;
+		grid-template-columns: 34px 1fr;
+		border-right: 0;
 	}
 
-	.editorMock {
-		display: none;
-	}
-
-	.previewMock {
-		min-width: 0;
-	}
-
-	.canvasMock {
-		padding: 18px;
-	}
-}
-
-@media (max-width: 420px) {
-	.githubLink {
-		font-size: 0;
-	}
-
-	.githubLink svg {
-		width: 15px;
-		height: 15px;
-	}
-
-	.hero h1 {
-		font-size: 42px;
+	.previewHeading {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 5px;
 	}
 }

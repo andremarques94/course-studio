@@ -144,7 +144,7 @@ export function CourseActions({ course, lessonCount }: CourseActionsProps) {
 				>
 					<Ellipsis />
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start">
+				<DropdownMenuContent align="end">
 					<DropdownMenuGroup>
 						<DropdownMenuItem onClick={() => setEditing(true)}>
 							<Pencil />

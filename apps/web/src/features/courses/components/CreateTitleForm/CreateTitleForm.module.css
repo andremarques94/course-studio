@@ -1,11 +1,12 @@
 .form {
 	display: grid;
-	gap: 8px;
+	gap: 9px;
 }
 
 .form label {
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 620;
+	letter-spacing: -0.01em;
 }
 
 .controls {
@@ -14,13 +15,18 @@
 	gap: 8px;
 }
 
+.controls input,
+.controls button {
+	height: 36px;
+}
+
 .error {
 	margin: 0;
 	color: var(--color-destructive);
 	font-size: 11px;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
 	.controls {
 		grid-template-columns: 1fr;
 	}

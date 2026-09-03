@@ -130,186 +130,194 @@ export function LessonList({ courseId, lessons }: LessonListProps) {
 
 	return (
 		<>
-			<div className={styles.lessonListHeader}>
-				<div>
-					<h2>Lessons</h2>
-					<p className={styles.reorderHint} aria-live="polite">
-						<span
-							className={
-								reordering && !reorderLessons.isPending
-									? undefined
-									: styles.reorderHintPlaceholder
-							}
+			<section className={styles.outline} aria-labelledby="lesson-list-title">
+				<div className={styles.lessonListHeader}>
+					<div>
+						<h2 id="lesson-list-title">Course outline</h2>
+						<p className={styles.lessonSummary}>
+							{lessons.length === 0
+								? "Add the first lesson to begin writing."
+								: "Open a lesson to continue writing."}
+						</p>
+					</div>
+					{lessons.length > 1 ? (
+						<Button
+							type="button"
+							variant={reordering ? "default" : "outline"}
+							className={styles.reorderToggle}
+							onClick={() => setReordering((current) => !current)}
 						>
-							Use the arrow buttons to set the teaching order.
-						</span>
-						<span
-							className={
-								reordering && reorderLessons.isPending
-									? undefined
-									: styles.reorderHintPlaceholder
-							}
-						>
-							Saving lesson order...
-						</span>
-					</p>
+							{reordering ? null : <ListRestart data-icon="inline-start" />}
+							{reordering ? "Done arranging" : "Arrange lessons"}
+						</Button>
+					) : null}
 				</div>
-				{lessons.length > 1 ? (
-					<Button
-						type="button"
-						variant={reordering ? "default" : "outline"}
-						onClick={() => setReordering((current) => !current)}
-					>
-						{reordering ? null : <ListRestart data-icon="inline-start" />}
-						{reordering ? "Done" : "Reorder"}
-					</Button>
+				{reordering ? (
+					<p className={styles.reorderHint} aria-live="polite">
+						{reorderLessons.isPending
+							? "Saving lesson order..."
+							: "Use the arrow buttons to set the teaching order."}
+					</p>
 				) : null}
-			</div>
-			<ol className={styles.lessonList}>
-				{lessons.map((lesson, index) => (
-					<li key={lesson.id} className={styles.lessonRow}>
-						{editingLessonId === lesson.id ? (
-							<form
-								className={styles.lessonTitleEditor}
-								onSubmit={handleRename}
-							>
-								<label
-									htmlFor={`lesson-name-${lesson.id}`}
-									className={styles.srOnly}
+				<ol className={styles.lessonList}>
+					{lessons.map((lesson, index) => (
+						<li key={lesson.id} className={styles.lessonRow}>
+							{editingLessonId === lesson.id ? (
+								<form
+									className={styles.lessonTitleEditor}
+									onSubmit={handleRename}
 								>
-									Lesson name
-								</label>
-								<Input
-									id={`lesson-name-${lesson.id}`}
-									value={title}
-									onChange={(event) => {
-										setTitle(event.target.value);
-										updateLesson.reset();
-									}}
-									maxLength={TITLE_MAX_LENGTH}
-									autoComplete="off"
-									autoFocus
-								/>
-								<Button
-									type="submit"
-									size="sm"
-									disabled={
-										!titleSchema.safeParse(title).success ||
-										updateLesson.isPending
-									}
+									<label
+										htmlFor={`lesson-name-${lesson.id}`}
+										className={styles.srOnly}
+									>
+										Lesson name
+									</label>
+									<Input
+										id={`lesson-name-${lesson.id}`}
+										value={title}
+										onChange={(event) => {
+											setTitle(event.target.value);
+											updateLesson.reset();
+										}}
+										maxLength={TITLE_MAX_LENGTH}
+										autoComplete="off"
+										autoFocus
+									/>
+									<Button
+										type="submit"
+										size="sm"
+										disabled={
+											!titleSchema.safeParse(title).success ||
+											updateLesson.isPending
+										}
+									>
+										{updateLesson.isPending ? "Saving..." : "Save"}
+									</Button>
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => {
+											setEditingLessonId(undefined);
+											updateLesson.reset();
+										}}
+									>
+										Cancel
+									</Button>
+								</form>
+							) : reordering ? (
+								<div className={styles.lessonReorderItem}>
+									<span className={styles.position}>
+										{String(index + 1).padStart(2, "0")}
+									</span>
+									<span className={styles.lessonIcon}>
+										<FileText aria-hidden="true" />
+									</span>
+									<span className={styles.lessonTitle}>{lesson.title}</span>
+								</div>
+							) : (
+								<Link
+									to="/studio/courses/$courseId/lessons/$lessonId"
+									params={{ courseId, lessonId: lesson.id }}
+									className={styles.lessonLink}
 								>
-									{updateLesson.isPending ? "Saving..." : "Save"}
-								</Button>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									onClick={() => {
-										setEditingLessonId(undefined);
-										updateLesson.reset();
-									}}
-								>
-									Cancel
-								</Button>
-							</form>
-						) : reordering ? (
-							<div className={styles.lessonReorderItem}>
-								<span className={styles.position}>
-									{String(index + 1).padStart(2, "0")}
-								</span>
-								<span className={styles.lessonIcon}>
-									<FileText aria-hidden="true" />
-								</span>
-								<span className={styles.lessonTitle}>{lesson.title}</span>
-							</div>
-						) : (
-							<Link
-								to="/studio/courses/$courseId/lessons/$lessonId"
-								params={{ courseId, lessonId: lesson.id }}
-								className={styles.lessonLink}
-							>
-								<span className={styles.position}>
-									{String(index + 1).padStart(2, "0")}
-								</span>
-								<span className={styles.lessonIcon}>
-									<FileText aria-hidden="true" />
-								</span>
-								<span className={styles.lessonTitle}>{lesson.title}</span>
-								<span className={styles.openLabel}>Open editor</span>
-								<ArrowRight className={styles.arrow} aria-hidden="true" />
-							</Link>
-						)}
-						{editingLessonId === lesson.id ? null : reordering ? (
-							<div className={styles.reorderActions}>
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									aria-label={`Move ${lesson.title} up`}
-									onClick={() => moveLesson(index, -1)}
-									disabled={index === 0 || reorderLessons.isPending}
-								>
-									<ArrowUp />
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									aria-label={`Move ${lesson.title} down`}
-									onClick={() => moveLesson(index, 1)}
-									disabled={
-										index === lessons.length - 1 || reorderLessons.isPending
-									}
-								>
-									<ArrowDown />
-								</Button>
-							</div>
-						) : (
-							<DropdownMenu>
-								<DropdownMenuTrigger
-									render={
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className={styles.lessonMenuTrigger}
-											aria-label={`Actions for ${lesson.title}`}
-										/>
-									}
-								>
-									<Ellipsis />
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuGroup>
-										<DropdownMenuItem
-											onClick={() => {
-												setTitle(lesson.title);
-												setEditingLessonId(lesson.id);
-											}}
-										>
-											<Pencil />
-											Rename lesson
-										</DropdownMenuItem>
-									</DropdownMenuGroup>
-									<DropdownMenuSeparator />
-									<DropdownMenuGroup>
-										<DropdownMenuItem
-											variant="destructive"
-											onClick={() => {
-												deleteLesson.reset();
-												setDeletingLessonId(lesson.id);
-											}}
-										>
-											<Trash2 />
-											Delete lesson
-										</DropdownMenuItem>
-									</DropdownMenuGroup>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						)}
-					</li>
-				))}
-			</ol>
+									<span className={styles.position}>
+										{String(index + 1).padStart(2, "0")}
+									</span>
+									<span className={styles.lessonIcon}>
+										<FileText aria-hidden="true" />
+									</span>
+									<span className={styles.lessonTitle}>{lesson.title}</span>
+									<span className={styles.openLabel}>Open editor</span>
+									<ArrowRight className={styles.arrow} aria-hidden="true" />
+								</Link>
+							)}
+							{editingLessonId === lesson.id ? null : reordering ? (
+								<div className={styles.reorderActions}>
+									<Button
+										type="button"
+										variant="outline"
+										size="icon"
+										aria-label={`Move ${lesson.title} up`}
+										onClick={() => moveLesson(index, -1)}
+										disabled={index === 0 || reorderLessons.isPending}
+									>
+										<ArrowUp />
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										size="icon"
+										aria-label={`Move ${lesson.title} down`}
+										onClick={() => moveLesson(index, 1)}
+										disabled={
+											index === lessons.length - 1 || reorderLessons.isPending
+										}
+									>
+										<ArrowDown />
+									</Button>
+								</div>
+							) : (
+								<DropdownMenu>
+									<DropdownMenuTrigger
+										render={
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className={styles.lessonMenuTrigger}
+												aria-label={`Actions for ${lesson.title}`}
+											/>
+										}
+									>
+										<Ellipsis />
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuGroup>
+											<DropdownMenuItem
+												onClick={() => {
+													setTitle(lesson.title);
+													setEditingLessonId(lesson.id);
+												}}
+											>
+												<Pencil />
+												Rename lesson
+											</DropdownMenuItem>
+										</DropdownMenuGroup>
+										<DropdownMenuSeparator />
+										<DropdownMenuGroup>
+											<DropdownMenuItem
+												variant="destructive"
+												onClick={() => {
+													deleteLesson.reset();
+													setDeletingLessonId(lesson.id);
+												}}
+											>
+												<Trash2 />
+												Delete lesson
+											</DropdownMenuItem>
+										</DropdownMenuGroup>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							)}
+						</li>
+					))}
+				</ol>
+				{lessons.length === 0 ? (
+					<Empty className={styles.emptyState}>
+						<EmptyHeader>
+							<EmptyMedia variant="icon">
+								<FileText />
+							</EmptyMedia>
+							<EmptyTitle>No lessons yet</EmptyTitle>
+							<EmptyDescription>
+								Create a lesson to start writing.
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				) : null}
+			</section>
 			<AlertDialog
 				open={Boolean(deletingLesson)}
 				onOpenChange={(open) => {
@@ -367,19 +375,6 @@ export function LessonList({ courseId, lessons }: LessonListProps) {
 								: "Couldn't reorder lessons"}
 						</EmptyTitle>
 						<EmptyDescription>Try again.</EmptyDescription>
-					</EmptyHeader>
-				</Empty>
-			) : null}
-			{lessons.length === 0 ? (
-				<Empty className={styles.emptyState}>
-					<EmptyHeader>
-						<EmptyMedia variant="icon">
-							<FileText />
-						</EmptyMedia>
-						<EmptyTitle>No lessons yet</EmptyTitle>
-						<EmptyDescription>
-							Create a lesson to start writing.
-						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
 			) : null}

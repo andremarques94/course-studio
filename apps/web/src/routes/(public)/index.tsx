@@ -1,19 +1,12 @@
 import { Badge } from "@course-studio/ui/components/badge";
 import { buttonVariants } from "@course-studio/ui/components/button";
-import { Separator } from "@course-studio/ui/components/separator";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, ExternalLink } from "lucide-react";
-import {
-	motion,
-	useReducedMotion,
-	useScroll,
-	useTransform,
-	type Variants,
-} from "motion/react";
-import { useRef } from "react";
+import { motion, type Variants } from "motion/react";
 
-import { ProductBrand } from "@/components/app-shell";
+import { PublicHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
+import { getSession } from "@/features/auth/session";
 
 import styles from "./index.module.css";
 
@@ -40,40 +33,49 @@ export const Route = createFileRoute("/(public)/")({
 	head: () => ({
 		meta: [{ title: "Course Studio | Markdown to courses" }],
 	}),
+	loader: async () => Boolean(await getSession()),
 	component: Home,
 });
 
 function Home() {
-	const previewRef = useRef<HTMLElement>(null);
-	const reducedMotion = useReducedMotion();
-	const { scrollYProgress } = useScroll({
-		target: previewRef,
-		offset: ["start end", "end start"],
-	});
-	const previewY = useTransform(scrollYProgress, [0, 1], [18, -18]);
+	const isAuthenticated = Route.useLoaderData();
 
 	return (
 		<div className={styles.page}>
-			<header className={styles.header}>
-				<ProductBrand />
-				<div className={styles.headerActions}>
-					<Badge variant="outline" className={styles.preAlphaBadge}>
-						Pre-alpha
-					</Badge>
-					<a
-						href="https://github.com/andremarques94/course-studio"
-						target="_blank"
-						rel="noreferrer"
-						className={styles.githubLink}
+			<PublicHeader>
+				<Badge variant="outline" className={styles.preAlphaBadge}>
+					<span className={styles.statusDot} aria-hidden="true" />
+					Pre-alpha
+				</Badge>
+				<a
+					href="https://github.com/andremarques94/course-studio"
+					target="_blank"
+					rel="noreferrer"
+					className={styles.githubLink}
+					aria-label="View Course Studio on GitHub"
+				>
+					<span className={styles.githubLabel}>GitHub</span>
+					<ExternalLink aria-hidden="true" />
+				</a>
+				{isAuthenticated ? (
+					<Link
+						to="/studio"
+						className={buttonVariants({ variant: "ghost", size: "sm" })}
 					>
-						GitHub
-						<ExternalLink aria-hidden="true" />
-					</a>
-					<ModeToggle />
-				</div>
-			</header>
-
-			<Separator />
+						Studio
+					</Link>
+				) : (
+					<Link
+						to="/sign-in"
+						search={{ redirect: "/studio" }}
+						className={buttonVariants({ variant: "ghost", size: "sm" })}
+					>
+						Sign in
+					</Link>
+				)}
+				<span className={styles.actionDivider} aria-hidden="true" />
+				<ModeToggle />
+			</PublicHeader>
 
 			<main className={styles.main}>
 				<motion.section
@@ -82,49 +84,78 @@ function Home() {
 					initial="hidden"
 					animate="visible"
 				>
-					<motion.h1 variants={heroItemVariants}>
-						Build the lesson, not the slide deck.
-					</motion.h1>
-					<motion.p className={styles.description} variants={heroItemVariants}>
-						Turn your Markdown notes into beautiful presentations.
-					</motion.p>
+					<div className={styles.heroCopy}>
+						<motion.h1 variants={heroItemVariants}>
+							Build the lesson,
+							<span className={styles.headlineAccent}>not the slide deck.</span>
+						</motion.h1>
+						<motion.p
+							className={styles.description}
+							variants={heroItemVariants}
+						>
+							Write structured lessons in Markdown, preview every slide as you
+							work, and present from the same source.
+						</motion.p>
 
-					<motion.div
-						className={styles.heroActions}
-						variants={heroItemVariants}
-					>
-						<Link
-							to="/studio"
-							preload="intent"
-							className={buttonVariants({ size: "lg" })}
+						<motion.div
+							className={styles.heroActions}
+							variants={heroItemVariants}
 						>
-							Open Studio
-							<ArrowRight data-icon="inline-end" />
-						</Link>
-						<a
-							href="#workflow"
-							aria-label="See how it works"
-							className={buttonVariants({ variant: "outline", size: "lg" })}
-						>
-							See how it works
-						</a>
-					</motion.div>
+							<Link
+								to="/studio"
+								preload="intent"
+								className={buttonVariants({ size: "lg" })}
+							>
+								Open Studio
+								<ArrowRight data-icon="inline-end" />
+							</Link>
+							<a
+								href="#workflow"
+								className={buttonVariants({ variant: "outline", size: "lg" })}
+							>
+								See the workflow
+							</a>
+						</motion.div>
+					</div>
+
+					<motion.ol className={styles.workflow} variants={heroItemVariants}>
+						<li>
+							<span>01</span>
+							<div>
+								<strong>Organize courses and lessons</strong>
+								<small>Keep every lesson in a clear course structure.</small>
+							</div>
+						</li>
+						<li>
+							<span>02</span>
+							<div>
+								<strong>Write with live preview</strong>
+								<small>
+									Edit Markdown and see every slide update instantly.
+								</small>
+							</div>
+						</li>
+						<li>
+							<span>03</span>
+							<div>
+								<strong>Collaborate in real time</strong>
+								<small>
+									Edit together with shared cursors and synced changes.
+								</small>
+							</div>
+						</li>
+					</motion.ol>
 				</motion.section>
 
-				<motion.section
-					ref={previewRef}
-					className={styles.productPreview}
-					id="workflow"
-					style={{ y: reducedMotion ? 0 : previewY }}
-					initial={{ opacity: 0, scale: 0.985 }}
-					whileInView={{ opacity: 1, scale: 1 }}
-					viewport={{ once: true, amount: 0.18 }}
-					transition={{ type: "spring", stiffness: 305, damping: 33 }}
-				>
+				<div className={styles.previewHeading} id="workflow">
+					<p>One lesson. Two working views.</p>
+					<span className={styles.previewMeta}>Live authoring workspace</span>
+				</div>
+				<section className={styles.productPreview}>
 					<div className={styles.previewTopbar}>
 						<div className={styles.previewBrand}>
 							<span className={styles.miniMark} aria-hidden="true" />
-							<span>Introducing Course Studio</span>
+							<span>lesson-01.md</span>
 						</div>
 						<div className={styles.previewActions}>
 							<span>Draft</span>
@@ -134,8 +165,8 @@ function Home() {
 					<div className={styles.previewBody}>
 						<div className={styles.previewRail} aria-hidden="true">
 							<span className={styles.railActive} />
-							<span />
-							<span />
+							<span className={styles.railItem} />
+							<span className={styles.railItem} />
 						</div>
 						<div className={styles.editorMock}>
 							<div className={styles.paneLabel}>Editor</div>
@@ -171,7 +202,7 @@ function Home() {
 						<span>2 slides</span>
 						<span>16:9</span>
 					</div>
-				</motion.section>
+				</section>
 			</main>
 		</div>
 	);

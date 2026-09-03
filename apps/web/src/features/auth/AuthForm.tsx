@@ -19,7 +19,7 @@ import { Input } from "@course-studio/ui/components/input";
 import { Spinner } from "@course-studio/ui/components/spinner";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
-import { ProductBrand } from "@/components/app-shell";
+import { PublicHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
 import styles from "./AuthForm.module.css";
 import { useAuthForm } from "./use-auth-form";
@@ -41,19 +41,17 @@ export function AuthForm({ mode, redirect }: AuthFormProps) {
 
 	return (
 		<div className={styles.page}>
-			<header className={styles.topbar}>
-				<ProductBrand />
-				<nav className={styles.topbarActions} aria-label="Public navigation">
-					<Link
-						to="/"
-						className={buttonVariants({ variant: "ghost", size: "sm" })}
-					>
-						<ArrowLeft data-icon="inline-start" />
-						Back to home
-					</Link>
-					<ModeToggle />
-				</nav>
-			</header>
+			<PublicHeader>
+				<Link
+					to="/"
+					className={buttonVariants({ variant: "ghost", size: "sm" })}
+				>
+					<ArrowLeft data-icon="inline-start" />
+					Back to home
+				</Link>
+				<span className={styles.actionDivider} aria-hidden="true" />
+				<ModeToggle />
+			</PublicHeader>
 
 			<main className={styles.main}>
 				<div className={styles.container}>

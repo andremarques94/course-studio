@@ -45,14 +45,16 @@ export function CourseDetailPage({ courseId }: CourseDetailPageProps) {
 				</Link>
 
 				<header className={styles.pageHeader}>
-					<div>
-						<p className={styles.eyebrow}>Course outline</p>
+					<div className={styles.headingCopy}>
 						<CourseActions course={course} lessonCount={lessons.length} />
 						<p className={styles.lessonCount}>
-							{lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}
+							{lessons.length} {lessons.length === 1 ? "lesson" : "lessons"} in
+							this course
 						</p>
 					</div>
-					<CreateLessonForm courseId={courseId} />
+					<div className={styles.createPanel}>
+						<CreateLessonForm courseId={courseId} />
+					</div>
 				</header>
 
 				<LessonList courseId={courseId} lessons={lessons} />

@@ -10,7 +10,9 @@ type CourseListProps = {
 };
 
 export function CourseList({ courses }: CourseListProps) {
-	if (courses.length === 0) {
+	const hasCourses = courses.length > 0;
+
+	if (!hasCourses) {
 		return (
 			<Empty className={styles.emptyState}>
 				<EmptyHeader>
@@ -27,11 +29,24 @@ export function CourseList({ courses }: CourseListProps) {
 	}
 
 	return (
-		<div className={styles.grid}>
-			{courses.map((course, index) => (
-				<CourseCard key={course.id} course={course} index={index + 1} />
-			))}
-		</div>
+		<section
+			className={styles.courseIndex}
+			aria-labelledby="course-index-title"
+		>
+			<div className={styles.sectionHeader}>
+				<h2 id="course-index-title">Your curriculum</h2>
+				<p>
+					{courses.length} {courses.length === 1 ? "course" : "courses"}
+				</p>
+			</div>
+			<ol className={styles.grid}>
+				{courses.map((course, index) => (
+					<li key={course.id}>
+						<CourseCard course={course} index={index + 1} />
+					</li>
+				))}
+			</ol>
+		</section>
 	);
 }
 
@@ -44,7 +59,9 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
 			params={{ courseId: course.id }}
 			className={styles.card}
 		>
-			<div className={styles.cardIndex}>{String(index).padStart(2, "0")}</div>
+			<div className={styles.cardIndex}>
+				<strong>{String(index).padStart(2, "0")}</strong>
+			</div>
 			<div className={styles.cardIcon}>
 				<BookOpen aria-hidden="true" />
 			</div>
@@ -54,7 +71,10 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
 					{lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}
 				</p>
 			</div>
-			<ArrowRight className={styles.cardArrow} aria-hidden="true" />
+			<div className={styles.cardAction}>
+				<span>Open course</span>
+				<ArrowRight className={styles.cardArrow} aria-hidden="true" />
+			</div>
 		</Link>
 	);
 }

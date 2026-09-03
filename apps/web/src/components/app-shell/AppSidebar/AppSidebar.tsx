@@ -6,23 +6,23 @@ import {
 import { Link, useNavigate, useRouteContext } from "@tanstack/react-router";
 import { Files, House, LogOut, Search } from "lucide-react";
 import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import type { ReactElement } from "react";
 import { authClient } from "@/features/auth/auth-client";
 
 import styles from "./AppSidebar.module.css";
 
 type RailTooltipProps = {
 	label: string;
-	children: ReactNode;
+	children: ReactElement;
 };
 
 function RailTooltip({ label, children }: RailTooltipProps) {
 	return (
 		<Tooltip>
-			<TooltipTrigger render={<span className={styles.tooltipTrigger} />}>
-				{children}
-			</TooltipTrigger>
-			<TooltipContent side="right">{label}</TooltipContent>
+			<TooltipTrigger render={children} />
+			<TooltipContent side="right" sideOffset={8}>
+				{label}
+			</TooltipContent>
 		</Tooltip>
 	);
 }

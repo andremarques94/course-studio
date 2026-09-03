@@ -1,18 +1,18 @@
 import { z } from "zod";
 import { lessonSchema, lessonsSchema } from "@/features/lessons/schemas";
 import { api } from "@/integrations/api/client";
+import {
+	courseSchema,
+	coursesSchema,
+	createTitleInputSchema,
+} from "../schemas";
 import type {
 	CourseRepository,
 	CreateCourseInput,
 	CreateLessonInput,
 	UpdateCourseInput,
 	UpdateLessonInput,
-} from "../course-repository";
-import {
-	courseSchema,
-	coursesSchema,
-	createTitleInputSchema,
-} from "../schemas";
+} from "./course-repository";
 
 const errorResponseSchema = z.object({
 	error: z.object({
