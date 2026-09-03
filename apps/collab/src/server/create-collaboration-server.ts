@@ -1,11 +1,13 @@
 import { Server } from "@hocuspocus/server";
 import type { Logger } from "pino";
 import type * as Y from "yjs";
+import type { AuthenticateToken } from "../auth/jwt.js";
 
 type CollaborationServerOptions = {
 	host: string;
 	port: number;
 	logger: Logger;
+	authenticateToken: AuthenticateToken;
 	loadDocument(input: {
 		document: Y.Doc;
 		documentName: string;
@@ -20,6 +22,7 @@ export function createCollaborationServer({
 	host,
 	port,
 	logger,
+	authenticateToken,
 	loadDocument,
 	storeDocument,
 }: CollaborationServerOptions) {
@@ -29,10 +32,11 @@ export function createCollaborationServer({
 		maxDebounce: 10_000,
 		port,
 		stopOnSignals: false,
-		async onAuthenticate() {
-			// Milestone 7B is intentionally development-only. Replace this hook with
-			// token validation and lesson-level authorization before public exposure.
-			return {};
+		async onAuthenticate({ token }) {
+			if (!token) {
+				throw new Error("Authentication token is required.");
+			}
+			return authenticateToken(token);
 		},
 		onLoadDocument: loadDocument,
 		onStoreDocument: storeDocument,

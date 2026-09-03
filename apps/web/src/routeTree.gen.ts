@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudioRouteRouteImport } from './routes/studio/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as publicSignInRouteImport } from './routes/(public)/sign-in'
+import { Route as publicSignUpRouteImport } from './routes/(public)/sign-up'
 import { Route as StudioIndexRouteImport } from './routes/studio/index'
 import { Route as StudioPrintRouteImport } from './routes/studio/print'
 import { Route as StudioCoursesIndexRouteImport } from './routes/studio/courses/index'
@@ -25,6 +27,16 @@ const StudioRouteRoute = StudioRouteRouteImport.update({
 const publicIndexRoute = publicIndexRouteImport.update({
   id: '/(public)/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicSignInRoute = publicSignInRouteImport.update({
+  id: '/(public)/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicSignUpRoute = publicSignUpRouteImport.update({
+  id: '/(public)/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudioIndexRoute = StudioIndexRouteImport.update({
@@ -57,6 +69,8 @@ const StudioCoursesCourseIdLessonsLessonIdRoute =
 
 export interface FileRoutesByFullPath {
   '/studio': typeof StudioRouteRouteWithChildren
+  '/sign-in': typeof publicSignInRoute
+  '/sign-up': typeof publicSignUpRoute
   '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
@@ -65,6 +79,8 @@ export interface FileRoutesByFullPath {
   '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
 }
 export interface FileRoutesByTo {
+  '/sign-in': typeof publicSignInRoute
+  '/sign-up': typeof publicSignUpRoute
   '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio': typeof StudioIndexRoute
@@ -75,6 +91,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/studio': typeof StudioRouteRouteWithChildren
+  '/(public)/sign-in': typeof publicSignInRoute
+  '/(public)/sign-up': typeof publicSignUpRoute
   '/studio/print': typeof StudioPrintRoute
   '/(public)/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
@@ -86,6 +104,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/studio'
+    | '/sign-in'
+    | '/sign-up'
     | '/studio/print'
     | '/'
     | '/studio/'
@@ -94,6 +114,8 @@ export interface FileRouteTypes {
     | '/studio/courses/$courseId/lessons/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/sign-in'
+    | '/sign-up'
     | '/studio/print'
     | '/'
     | '/studio'
@@ -103,6 +125,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/studio'
+    | '/(public)/sign-in'
+    | '/(public)/sign-up'
     | '/studio/print'
     | '/(public)/'
     | '/studio/'
@@ -113,6 +137,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   StudioRouteRoute: typeof StudioRouteRouteWithChildren
+  publicSignInRoute: typeof publicSignInRoute
+  publicSignUpRoute: typeof publicSignUpRoute
   publicIndexRoute: typeof publicIndexRoute
 }
 
@@ -130,6 +156,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(public)/sign-in': {
+      id: '/(public)/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof publicSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(public)/sign-up': {
+      id: '/(public)/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof publicSignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/studio/': {
@@ -193,6 +233,8 @@ const StudioRouteRouteWithChildren = StudioRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   StudioRouteRoute: StudioRouteRouteWithChildren,
+  publicSignInRoute: publicSignInRoute,
+  publicSignUpRoute: publicSignUpRoute,
   publicIndexRoute: publicIndexRoute,
 }
 export const routeTree = rootRouteImport

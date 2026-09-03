@@ -9,7 +9,7 @@
 		}
 	},
 	"scripts": {
-		"predev": "pnpm --filter @course-studio/db build",
+		"predev": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
 		"dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
 		"build": "tsc -p tsconfig.build.json",
 		"start": "node --env-file-if-exists=../../.env dist/index.js",
@@ -17,10 +17,12 @@
 		"format": "biome format",
 		"lint": "biome lint",
 		"typecheck": "tsc --noEmit",
-		"test": "tsx --test test/*.test.ts",
-		"test:integration": "tsx --test test/api.integration.test.ts"
+		"pretest": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
+		"test": "tsx --env-file-if-exists=../../.env --test test/*.test.ts",
+		"test:integration": "tsx --env-file-if-exists=../../.env --test test/api.integration.test.ts"
 	},
 	"dependencies": {
+		"@course-studio/auth": "workspace:*",
 		"@course-studio/db": "workspace:*",
 		"@hono/node-server": "^2.1.1",
 		"@hono/zod-validator": "^0.7.6",

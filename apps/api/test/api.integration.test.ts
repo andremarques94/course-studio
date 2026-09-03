@@ -1,12 +1,36 @@
 import { strict as assert } from "node:assert";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
+import { createAuth } from "@course-studio/auth";
 import { createDatabase } from "@course-studio/db";
 import { createApp } from "../src/app.js";
 import { createLogger } from "../src/infrastructure/logger.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const logger = createLogger("silent");
+const authSecret =
+	process.env.BETTER_AUTH_SECRET ??
+	"integration-test-secret-with-32-characters";
+const webOrigin = "http://localhost:3000";
+
+function createTestApp(db: ReturnType<typeof createDatabase>) {
+	const auth = createAuth(db, {
+		baseURL: "http://localhost:3001",
+		secret: authSecret,
+		trustedOrigins: [webOrigin],
+	});
+	return createApp(db, { auth, corsOrigins: [webOrigin], logger });
+}
+
+function withSession(app: ReturnType<typeof createTestApp>, cookie: string) {
+	return {
+		request(input: string, init?: RequestInit) {
+			const headers = new Headers(init?.headers);
+			headers.set("cookie", cookie);
+			return app.request(input, { ...init, headers });
+		},
+	} as ReturnType<typeof createTestApp>;
+}
 
 test("courses and lessons persist through the API", {
 	skip: databaseUrl ? false : "DATABASE_URL is not set",
@@ -16,10 +40,7 @@ test("courses and lessons persist through the API", {
 	}
 
 	let db = createDatabase(databaseUrl);
-	let app = createApp(db, {
-		corsOrigins: ["http://localhost:3000"],
-		logger,
-	});
+	let app = createTestApp(db);
 	let courseId: string | undefined;
 
 	try {
@@ -32,20 +53,51 @@ test("courses and lessons persist through the API", {
 		assert.ok(dbHealthResponse.headers.get("x-request-id"));
 
 		const corsResponse = await app.request("/courses", {
-			headers: { origin: "http://localhost:3000" },
+			headers: { origin: webOrigin },
 		});
 		assert.equal(
 			corsResponse.headers.get("access-control-allow-origin"),
-			"http://localhost:3000",
+			webOrigin,
+		);
+		assert.equal(
+			corsResponse.headers.get("access-control-allow-credentials"),
+			"true",
 		);
 
-		const localApp = createApp(db, { corsOrigins: ["*"], logger });
+		const localApp = createTestApp(db);
 		const localCorsResponse = await localApp.request("/health", {
-			headers: { origin: "http://localhost:4173" },
+			headers: { origin: webOrigin },
 		});
 		assert.equal(
 			localCorsResponse.headers.get("access-control-allow-origin"),
-			"*",
+			webOrigin,
+		);
+
+		assert.equal((await app.request("/courses")).status, 401);
+		const signUpResponse = await app.request("/api/auth/sign-up/email", {
+			method: "POST",
+			headers: { "content-type": "application/json", origin: webOrigin },
+			body: JSON.stringify({
+				email: `integration-${randomUUID()}@example.com`,
+				name: "Integration User",
+				password: "test-password",
+			}),
+		});
+		assert.equal(signUpResponse.status, 200);
+		const cookie = signUpResponse.headers.get("set-cookie")?.split(";", 1)[0];
+		assert.ok(cookie);
+		app = withSession(app, cookie);
+		const sessionResponse = await app.request("/api/auth/get-session");
+		assert.equal(sessionResponse.status, 200);
+		assert.equal(
+			((await sessionResponse.json()) as { user: { name: string } }).user.name,
+			"Integration User",
+		);
+		const tokenResponse = await app.request("/api/auth/token");
+		assert.equal(tokenResponse.status, 200);
+		assert.match(
+			((await tokenResponse.json()) as { token: string }).token,
+			/^[\w-]+\.[\w-]+\.[\w-]+$/,
 		);
 
 		const invalidCourseResponse = await app.request("/courses", {
@@ -194,10 +246,7 @@ test("courses and lessons persist through the API", {
 
 		await db.$client.end();
 		db = createDatabase(databaseUrl);
-		app = createApp(db, {
-			corsOrigins: ["http://localhost:3000"],
-			logger,
-		});
+		app = withSession(createTestApp(db), cookie);
 
 		const persistedLessonResponse = await app.request(`/lessons/${lesson.id}`);
 		assert.equal(persistedLessonResponse.status, 200);
@@ -234,6 +283,16 @@ test("courses and lessons persist through the API", {
 
 		const missingCourseResponse = await app.request(`/courses/${randomUUID()}`);
 		assert.equal(missingCourseResponse.status, 404);
+
+		assert.equal(
+			(
+				await app.request("/api/auth/sign-out", {
+					method: "POST",
+					headers: { origin: webOrigin },
+				})
+			).status,
+			200,
+		);
 	} finally {
 		if (courseId) {
 			await app.request(`/courses/${courseId}`, { method: "DELETE" });

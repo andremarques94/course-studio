@@ -1,3 +1,4 @@
+import type { Auth } from "@course-studio/auth";
 import type { Database } from "@course-studio/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -13,8 +14,10 @@ import {
 	type AppEnv,
 	createRequestLogger,
 } from "./shared/http/request-logger.js";
+import { createRequireAuth } from "./shared/http/require-auth.js";
 
 type AppOptions = {
+	auth: Auth;
 	corsOrigins: string[];
 	logger: Logger;
 };
@@ -23,20 +26,24 @@ export function createApp(db: Database, options: AppOptions) {
 	const coursesService = createCoursesService(db);
 	const lessonsService = createLessonsService(db);
 	const healthService = createHealthService(db);
-	const corsOrigin = options.corsOrigins.includes("*")
-		? "*"
-		: options.corsOrigins;
+	const requireAuth = createRequireAuth(options.auth);
 	const app = new Hono<AppEnv>()
 		.use("*", createRequestLogger(options.logger))
 		.use(
 			"*",
 			cors({
-				origin: corsOrigin,
+				origin: options.corsOrigins,
+				credentials: true,
 				exposeHeaders: ["X-Request-Id"],
 				maxAge: 86_400,
 			}),
 		)
+		.all("/api/auth/*", (context) => options.auth.handler(context.req.raw))
 		.route("/", createHealthRoutes(healthService))
+		.use("/courses", requireAuth)
+		.use("/courses/*", requireAuth)
+		.use("/lessons", requireAuth)
+		.use("/lessons/*", requireAuth)
 		.route("/courses", createCoursesRoutes(coursesService, lessonsService))
 		.route("/lessons", createLessonsRoutes(lessonsService));
 

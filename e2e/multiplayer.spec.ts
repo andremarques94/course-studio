@@ -9,6 +9,7 @@ import {
 } from "@playwright/test";
 import { e2eEnvironment } from "./environment";
 import {
+	authenticate,
 	CollaborationProcess,
 	editor,
 	openLesson,
@@ -23,7 +24,11 @@ const courseIds: string[] = [];
 let api: APIRequestContext | undefined;
 
 test.beforeAll(async () => {
-	api = await request.newContext({ baseURL: e2eEnvironment.urls.api });
+	api = await request.newContext({
+		baseURL: e2eEnvironment.urls.api,
+		extraHTTPHeaders: { origin: e2eEnvironment.urls.web },
+	});
+	await authenticate(api);
 	await collaboration.start();
 });
 
@@ -165,6 +170,7 @@ test("a fresh client restores the persisted document after a server restart", as
 
 	const restoredContext = await browser.newContext();
 	try {
+		await authenticate(restoredContext.request);
 		const restoredPage = await restoredContext.newPage();
 		await openLesson(restoredPage, lesson.courseId, lesson.lessonId);
 		await waitForMarkdown(restoredPage, persistedMarkdown);
@@ -198,6 +204,7 @@ async function createClients(browser: Browser) {
 		browser.newContext(),
 		browser.newContext(),
 	]);
+	await Promise.all(contexts.map((context) => authenticate(context.request)));
 	const pages = await Promise.all(contexts.map((context) => context.newPage()));
 	return { contexts, pages };
 }

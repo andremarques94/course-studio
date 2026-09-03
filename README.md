@@ -15,6 +15,8 @@ Course Studio is a Markdown-first course authoring app. Write lessons in Markdow
 ## What works today
 
 - Courses and lessons that persist between sessions
+- Email/password and GitHub authentication with database-backed sessions
+- Authenticated HTTP authoring and JWKS-verified collaboration connections
 - Yjs-backed Markdown editing with persisted collaborative drafts
 - Live slide preview; type `---` to start a new slide
 - Minimal, Academic, and Dark presentation themes
@@ -43,6 +45,7 @@ Prerequisites: Node.js, pnpm, and Docker.
 git clone https://github.com/andremarques94/course-studio.git
 cd course-studio
 cp .env.example .env
+# Replace BETTER_AUTH_SECRET in .env with: openssl rand -base64 32
 pnpm install
 pnpm db:up                                   # PostgreSQL in Docker
 pnpm --filter @course-studio/db db:migrate   # apply the schema
@@ -76,11 +79,12 @@ packages/presentation  Markdown presentation renderer
 packages/themes        Presentation theme definitions and visual recipes
 packages/ui            Shared UI components and styles
 packages/db            Drizzle schema, migrations, and database client
+packages/auth          Better Auth server configuration
 ```
 
 ## Direction
 
-Development moves one milestone at a time. Next: publishing and versioning. Accounts and public deployments are out of scope in the pre-alpha.
+Development moves one milestone at a time. Next: course ownership and lesson authorization.
 
 ## Contributing
 

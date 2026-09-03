@@ -7,6 +7,7 @@ export type ErrorCode =
 	| "LESSON_NOT_FOUND"
 	| "NOT_FOUND"
 	| "SLUG_ALREADY_EXISTS"
+	| "UNAUTHORIZED"
 	| "VALIDATION_ERROR";
 
 export class ApiError extends Error {

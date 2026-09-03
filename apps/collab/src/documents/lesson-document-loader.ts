@@ -1,7 +1,7 @@
+import { type Database, lessons } from "@course-studio/db";
+import { eq } from "drizzle-orm";
 import type * as Y from "yjs";
 import { z } from "zod";
-
-type Fetch = typeof globalThis.fetch;
 
 type LoadLessonDocumentInput = {
 	document: Y.Doc;
@@ -9,8 +9,7 @@ type LoadLessonDocumentInput = {
 };
 
 type LessonDocumentLoaderOptions = {
-	apiUrl: string;
-	fetch?: Fetch;
+	findLesson(lessonId: string): Promise<unknown>;
 };
 
 const lessonRoomSchema = z
@@ -29,26 +28,19 @@ export function parseLessonDocumentName(documentName: string) {
 }
 
 export function createLessonDocumentLoader({
-	apiUrl,
-	fetch: fetchLesson = globalThis.fetch,
+	findLesson,
 }: LessonDocumentLoaderOptions) {
 	return async function loadLessonDocument({
 		document,
 		documentName,
 	}: LoadLessonDocumentInput) {
 		const lessonId = parseLessonDocumentName(documentName);
-		const response = await fetchLesson(
-			`${apiUrl}/lessons/${encodeURIComponent(lessonId)}`,
-			{ signal: AbortSignal.timeout(5_000) },
-		);
-
-		if (!response.ok) {
+		const lesson = lessonSchema.optional().parse(await findLesson(lessonId));
+		if (!lesson) {
 			throw new Error(
-				`Could not initialize ${documentName}: lesson API returned ${response.status}.`,
+				`Could not initialize ${documentName}: lesson not found.`,
 			);
 		}
-
-		const lesson = lessonSchema.parse(await response.json());
 		const markdown = document.getText("markdown");
 		const metadata = document.getMap<unknown>("metadata");
 		if (markdown.length === 0 && lesson.markdown.length > 0) {
@@ -57,5 +49,16 @@ export function createLessonDocumentLoader({
 		if (!metadata.has("themeId")) {
 			metadata.set("themeId", lesson.themeId);
 		}
+	};
+}
+
+export function createPostgresLessonFinder(db: Database) {
+	return async (lessonId: string) => {
+		const [lesson] = await db
+			.select({ markdown: lessons.markdown, themeId: lessons.themeId })
+			.from(lessons)
+			.where(eq(lessons.id, lessonId))
+			.limit(1);
+		return lesson;
 	};
 }

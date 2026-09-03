@@ -1,5 +1,5 @@
 {
-	"name": "@course-studio/db",
+	"name": "@course-studio/auth",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -14,22 +14,18 @@
 		"check": "biome check",
 		"format": "biome format",
 		"lint": "biome lint",
-		"typecheck": "tsc --noEmit",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"drizzle-orm": "^0.45.2",
-		"kysely": "0.29.5",
-		"pg": "^8.16.3"
+		"@better-auth/drizzle-adapter": "^1.7.2",
+		"@course-studio/db": "workspace:*",
+		"better-auth": "^1.7.2",
+		"drizzle-orm": "^0.45.2"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",
 		"@course-studio/typescript-config": "workspace:*",
 		"@types/node": "^26.1.1",
-		"@types/pg": "^8.15.5",
-		"drizzle-kit": "^0.31.8",
 		"typescript": "^6.0.2"
 	}
 }

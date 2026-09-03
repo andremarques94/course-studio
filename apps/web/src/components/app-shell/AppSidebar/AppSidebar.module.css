@@ -58,6 +58,19 @@
 	stroke-width: 1.7;
 }
 
+.accountButton {
+	display: grid;
+	place-items: center;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+}
+
+.accountButton:focus-visible {
+	outline: 2px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
+	outline-offset: 2px;
+}
+
 .active {
 	background: color-mix(in oklch, var(--color-primary) 13%, transparent);
 	color: var(--color-primary);

@@ -1,3 +1,4 @@
+import { createAuth } from "@course-studio/auth";
 import { createDatabase } from "@course-studio/db";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
@@ -7,7 +8,17 @@ import { createLogger } from "./infrastructure/logger.js";
 const env = loadEnv();
 const logger = createLogger(env.logLevel);
 const db = createDatabase(env.databaseUrl);
-const app = createApp(db, { corsOrigins: env.corsOrigins, logger });
+const auth = createAuth(db, {
+	baseURL: env.betterAuthUrl,
+	github: env.github,
+	secret: env.betterAuthSecret,
+	trustedOrigins: env.trustedOrigins,
+});
+const app = createApp(db, {
+	auth,
+	corsOrigins: env.trustedOrigins,
+	logger,
+});
 
 const server = serve(
 	{

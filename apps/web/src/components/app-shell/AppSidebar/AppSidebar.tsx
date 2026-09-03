@@ -3,10 +3,11 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@course-studio/ui/components/tooltip";
-import { Link } from "@tanstack/react-router";
-import { Files, House, Search, Settings } from "lucide-react";
+import { Link, useNavigate, useRouteContext } from "@tanstack/react-router";
+import { Files, House, LogOut, Search } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { authClient } from "@/features/auth/auth-client";
 
 import styles from "./AppSidebar.module.css";
 
@@ -27,6 +28,20 @@ function RailTooltip({ label, children }: RailTooltipProps) {
 }
 
 export function AppSidebar() {
+	const { user } = useRouteContext({ from: "/studio" });
+	const navigate = useNavigate();
+	const initials = user.name
+		.split(/\s+/)
+		.map((part) => part[0])
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
+
+	async function signOut() {
+		await authClient.signOut();
+		await navigate({ to: "/sign-in", search: { redirect: "/studio" } });
+	}
+
 	return (
 		<aside className={styles.sidebar} aria-label="Studio navigation">
 			<nav className={styles.primaryNavigation}>
@@ -65,16 +80,45 @@ export function AppSidebar() {
 				</RailTooltip>
 			</nav>
 
-			<RailTooltip label="Settings (coming later)">
-				<button
-					type="button"
-					className={styles.railButton}
-					aria-label="Settings (coming later)"
-					disabled
+			<DropdownMenu>
+				<DropdownMenuTrigger
+					render={
+						<button
+							type="button"
+							className={styles.accountButton}
+							aria-label={`Account menu for ${user.name}`}
+						/>
+					}
 				>
-					<Settings />
-				</button>
-			</RailTooltip>
+					<Avatar size="sm">
+						{user.image && <AvatarImage src={user.image} alt="" />}
+						<AvatarFallback>{initials}</AvatarFallback>
+					</Avatar>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent side="right" align="end">
+					<DropdownMenuGroup>
+						<DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+						<DropdownMenuItem onClick={signOut}>
+							<LogOut />
+							Sign out
+						</DropdownMenuItem>
+					</DropdownMenuGroup>
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</aside>
 	);
 }
+
+import {
+	Avatar,
+	AvatarFallback,
+	AvatarImage,
+} from "@course-studio/ui/components/avatar";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuTrigger,
+} from "@course-studio/ui/components/dropdown-menu";

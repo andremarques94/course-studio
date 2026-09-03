@@ -1,6 +1,7 @@
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
+import { authClient } from "@/features/auth/auth-client";
 import { getSessionEditorIdentity } from "./identity";
 import { createLessonDocumentModel, type LessonDocument } from "./model";
 import { createCollaborationPresence } from "./presence";
@@ -26,6 +27,13 @@ export function createCollaborativeLessonDocument({
 		url,
 		name: `lesson:${lessonId}`,
 		document: ydoc,
+		token: async () => {
+			const { data, error } = await authClient.token();
+			if (error || !data?.token) {
+				throw new Error("Could not authenticate the collaboration connection.");
+			}
+			return data.token;
+		},
 		onOpen() {
 			collaborationStatus.setTransportStatus("connected");
 		},

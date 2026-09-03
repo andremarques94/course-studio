@@ -12,12 +12,13 @@
 		"lint": "biome lint",
 		"typecheck": "tsc --noEmit",
 		"pretest": "pnpm --filter @course-studio/db build",
-		"test": "tsx --test test/*.test.ts"
+		"test": "tsx --env-file-if-exists=../../.env --test test/*.test.ts"
 	},
 	"dependencies": {
 		"@course-studio/db": "workspace:*",
 		"@hocuspocus/server": "^4.6.0",
 		"drizzle-orm": "^0.45.2",
+		"jose": "^6.2.10",
 		"pino": "^9.7.0",
 		"yjs": "^13.6.32",
 		"zod": "^4.4.3"

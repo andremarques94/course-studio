@@ -39,16 +39,15 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 			themeId: "dark",
 		});
 
-		let lessonFetchCount = 0;
+		let lessonLoadCount = 0;
 		const initializeDocument = createLessonDocumentLoader({
-			apiUrl: "http://api.test",
-			fetch: async (input) => {
-				lessonFetchCount += 1;
-				assert.equal(input, `http://api.test/lessons/${lessonId}`);
-				return Response.json({
+			findLesson: async (id) => {
+				lessonLoadCount += 1;
+				assert.equal(id, lessonId);
+				return {
 					markdown: "# PostgreSQL\n\nExact collaborative state.",
 					themeId: "dark",
-				});
+				};
 			},
 		});
 		const firstDocument = new Y.Doc();
@@ -61,7 +60,7 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 			document: firstDocument,
 			documentName,
 		});
-		assert.equal(lessonFetchCount, 1);
+		assert.equal(lessonLoadCount, 1);
 		const expectedState = Y.encodeStateAsUpdate(firstDocument);
 		firstDocument.destroy();
 

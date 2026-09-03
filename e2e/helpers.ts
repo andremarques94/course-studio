@@ -1,7 +1,8 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { createConnection } from "node:net";
 import { resolve } from "node:path";
-import { expect, type Page } from "@playwright/test";
+import { type APIRequestContext, expect, type Page } from "@playwright/test";
 import { e2eEnvironment } from "./environment";
 
 const projectRoot = resolve(__dirname, "..");
@@ -32,7 +33,7 @@ export class CollaborationProcess {
 				cwd: projectRoot,
 				env: {
 					...process.env,
-					API_URL: e2eEnvironment.urls.api,
+					BETTER_AUTH_URL: e2eEnvironment.urls.api,
 					COLLAB_HOST: e2eEnvironment.host,
 					COLLAB_PORT: String(e2eEnvironment.ports.collaboration),
 					LOG_LEVEL: process.env.CI ? "warn" : "info",
@@ -76,6 +77,21 @@ export class CollaborationProcess {
 	private captureOutput(chunk: unknown) {
 		this.output = `${this.output}${String(chunk)}`.slice(-8_000);
 	}
+}
+
+export async function authenticate(request: APIRequestContext) {
+	const response = await request.post(
+		`${e2eEnvironment.urls.api}/api/auth/sign-up/email`,
+		{
+			headers: { origin: e2eEnvironment.urls.web },
+			data: {
+				email: `playwright-${randomUUID()}@example.com`,
+				name: "Playwright Author",
+				password: "playwright-password",
+			},
+		},
+	);
+	expect(response.ok()).toBe(true);
 }
 
 export function editor(page: Page) {

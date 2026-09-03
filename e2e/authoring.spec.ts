@@ -7,6 +7,7 @@ import {
 } from "@playwright/test";
 import { e2eEnvironment } from "./environment";
 import {
+	authenticate,
 	CollaborationProcess,
 	replaceMarkdown,
 	waitForMarkdown,
@@ -18,7 +19,11 @@ let api: APIRequestContext | undefined;
 let courseId: string | undefined;
 
 test.beforeAll(async () => {
-	api = await request.newContext({ baseURL: e2eEnvironment.urls.api });
+	api = await request.newContext({
+		baseURL: e2eEnvironment.urls.api,
+		extraHTTPHeaders: { origin: e2eEnvironment.urls.web },
+	});
+	await authenticate(api);
 	await collaboration.start();
 });
 
@@ -57,6 +62,7 @@ test.afterAll(async () => {
 test("an author creates a lesson and sees presentation changes", async ({
 	page,
 }) => {
+	await authenticate(page.request);
 	const courseTitle = `Playwright course ${randomUUID()}`;
 	const lessonTitle = `Lesson ${randomUUID()}`;
 
@@ -109,4 +115,9 @@ test("an author creates a lesson and sees presentation changes", async ({
 	).toBeVisible();
 	await page.keyboard.press("Escape");
 	await expect(page.getByRole("region", { name: "Preview" })).toBeVisible();
+});
+
+test("anonymous authors are redirected to sign in", async ({ page }) => {
+	await page.goto("/studio/courses");
+	await expect(page).toHaveURL(/\/sign-in\?redirect=%2Fstudio%2Fcourses/);
 });

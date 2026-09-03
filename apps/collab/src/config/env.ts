@@ -11,7 +11,7 @@ const envSchema = z
 			.pipe(z.int().min(1).max(65_535))
 			.default(3002),
 		DATABASE_URL: z.url(),
-		API_URL: z.url().default("http://localhost:3001"),
+		BETTER_AUTH_URL: z.url().default("http://localhost:3001"),
 		LOG_LEVEL: z
 			.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
 			.default("info"),
@@ -22,7 +22,7 @@ const envSchema = z
 				code: "custom",
 				path: ["NODE_ENV"],
 				message:
-					"The collaboration server is development-only until authentication and authorization are implemented.",
+					"The collaboration server is development-only until lesson authorization is implemented.",
 			});
 		}
 	})
@@ -31,7 +31,7 @@ const envSchema = z
 		host: env.COLLAB_HOST,
 		port: env.COLLAB_PORT,
 		databaseUrl: env.DATABASE_URL,
-		apiUrl: env.API_URL.replace(/\/$/, ""),
+		betterAuthUrl: env.BETTER_AUTH_URL.replace(/\/$/, ""),
 		logLevel: env.LOG_LEVEL,
 	}));
 

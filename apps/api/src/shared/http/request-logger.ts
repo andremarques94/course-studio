@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
+import type { Session } from "@course-studio/auth";
 import type { MiddlewareHandler } from "hono";
 import type { Logger } from "../../infrastructure/logger.js";
 
 export type AppEnv = {
 	Variables: {
 		requestId: string;
+		session: Session;
 	};
 };
 

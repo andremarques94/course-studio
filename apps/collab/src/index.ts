@@ -1,7 +1,11 @@
 import { createDatabase } from "@course-studio/db";
 import pino from "pino";
+import { createJwtAuthenticator } from "./auth/jwt.js";
 import { loadEnv } from "./config/env.js";
-import { createLessonDocumentLoader } from "./documents/lesson-document-loader.js";
+import {
+	createLessonDocumentLoader,
+	createPostgresLessonFinder,
+} from "./documents/lesson-document-loader.js";
 import {
 	createLessonDocumentPersistence,
 	createPostgresLessonDocumentStore,
@@ -11,7 +15,9 @@ import { createCollaborationServer } from "./server/create-collaboration-server.
 const env = loadEnv();
 const logger = pino({ level: env.logLevel });
 const db = createDatabase(env.databaseUrl);
-const initializeDocument = createLessonDocumentLoader({ apiUrl: env.apiUrl });
+const initializeDocument = createLessonDocumentLoader({
+	findLesson: createPostgresLessonFinder(db),
+});
 const persistence = createLessonDocumentPersistence({
 	store: createPostgresLessonDocumentStore(db),
 	initializeDocument,
@@ -20,6 +26,7 @@ const server = createCollaborationServer({
 	host: env.host,
 	port: env.port,
 	logger,
+	authenticateToken: createJwtAuthenticator(env.betterAuthUrl),
 	loadDocument: persistence.load,
 	storeDocument: persistence.store,
 });
