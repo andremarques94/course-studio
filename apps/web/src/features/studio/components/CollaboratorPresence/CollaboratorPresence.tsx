@@ -3,6 +3,7 @@ import {
 	AvatarFallback,
 	AvatarGroup,
 	AvatarGroupCount,
+	AvatarImage,
 } from "@course-studio/ui/components/avatar";
 import {
 	HoverCard,
@@ -68,11 +69,23 @@ function CollaboratorAvatar({
 }) {
 	return (
 		<Avatar size="sm">
+			{collaborator.avatarUrl ? (
+				<AvatarImage src={collaborator.avatarUrl} alt="" />
+			) : null}
 			<AvatarFallback
 				style={{ backgroundColor: collaborator.color, color: "white" }}
 			>
-				{collaborator.name.slice(-2)}
+				{getInitials(collaborator.name)}
 			</AvatarFallback>
 		</Avatar>
 	);
+}
+
+function getInitials(name: string): string {
+	return name
+		.split(/\s+/)
+		.map((part) => part[0])
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
 }

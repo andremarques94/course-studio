@@ -1,22 +1,25 @@
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
-import { authClient } from "@/features/auth/auth-client";
-import { getSessionEditorIdentity } from "./identity";
+import { type AuthSession, authClient } from "@/features/auth/auth-client";
+import { createEditorIdentity } from "./identity";
 import { createLessonDocumentModel, type LessonDocument } from "./model";
 import { createCollaborationPresence } from "./presence";
 import { createCollaborationStatusStore } from "./status";
 
 type CollaborativeLessonDocument = LessonDocument & { destroy(): void };
+type CollaborationUser = Pick<AuthSession["user"], "id" | "name" | "image">;
 
 type CollaborativeLessonDocumentOptions = {
 	lessonId: string;
 	url: string;
+	user: CollaborationUser;
 };
 
 export function createCollaborativeLessonDocument({
 	lessonId,
 	url,
+	user,
 }: CollaborativeLessonDocumentOptions): CollaborativeLessonDocument {
 	const ydoc = new Y.Doc();
 	const document = createLessonDocumentModel(ydoc, false);
@@ -53,7 +56,7 @@ export function createCollaborativeLessonDocument({
 	if (!provider.awareness) {
 		throw new Error("Collaboration awareness is unavailable.");
 	}
-	provider.awareness.setLocalStateField("user", getSessionEditorIdentity());
+	provider.awareness.setLocalStateField("user", createEditorIdentity(user));
 	const presence = createCollaborationPresence(provider.awareness);
 	document.setPresence(presence);
 	const destroyDocument = document.destroy;
@@ -73,20 +76,26 @@ export function createCollaborativeLessonDocument({
 export function useCollaborativeLessonDocument({
 	lessonId,
 	url,
+	user,
 }: CollaborativeLessonDocumentOptions): LessonDocument | null {
+	const { id, image, name } = user;
 	const [document, setDocument] = useState<CollaborativeLessonDocument | null>(
 		null,
 	);
 
 	useEffect(() => {
-		const nextDocument = createCollaborativeLessonDocument({ lessonId, url });
+		const nextDocument = createCollaborativeLessonDocument({
+			lessonId,
+			url,
+			user: { id, image, name },
+		});
 		setDocument(nextDocument);
 
 		return () => {
 			setDocument(null);
 			nextDocument.destroy();
 		};
-	}, [lessonId, url]);
+	}, [id, image, lessonId, name, url]);
 
 	return document;
 }

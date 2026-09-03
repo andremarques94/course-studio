@@ -45,7 +45,6 @@
 		"react-dom": "^19.2.0",
 		"remeda": "^2.45.0",
 		"tailwindcss": "^4",
-		"uuid": "^14.0.2",
 		"y-codemirror.next": "^0.3.6",
 		"y-protocols": "^1.0.7",
 		"yjs": "^13.6.32",

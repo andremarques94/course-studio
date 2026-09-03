@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import type { AuthSession } from "@/features/auth/auth-client";
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
 import { collaborationConfig } from "@/integrations/collaboration/config";
@@ -15,12 +16,14 @@ type WebStudioProps = {
 	course: Course;
 	lesson: Lesson;
 	lessons: Lesson[];
+	user: AuthSession["user"];
 };
 
-export function WebStudio({ course, lesson, lessons }: WebStudioProps) {
+export function WebStudio({ course, lesson, lessons, user }: WebStudioProps) {
 	const lessonDocument = useCollaborativeLessonDocument({
 		lessonId: lesson.id,
 		url: collaborationConfig.url,
+		user,
 	});
 
 	if (!lessonDocument) {
@@ -42,7 +45,7 @@ function ConnectedWebStudio({
 	lesson,
 	lessons,
 	lessonDocument,
-}: WebStudioProps & { lessonDocument: LessonDocument }) {
+}: Omit<WebStudioProps, "user"> & { lessonDocument: LessonDocument }) {
 	const queryClient = useQueryClient();
 	const commands = createWebStudioCommands({
 		queryClient,

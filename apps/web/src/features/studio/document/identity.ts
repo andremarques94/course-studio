@@ -1,15 +1,15 @@
-import { v4 as uuid } from "uuid";
 import { z } from "zod";
+import type { AuthSession } from "@/features/auth/auth-client";
 
-const STORAGE_KEY = "course-studio:editor-identity";
+const avatarUrlSchema = z.httpUrl().max(2_048);
 
 const editorIdentitySchema = z
 	.object({
-		id: z.uuid(),
-		name: z.string().length(10).refine(isGuestName),
+		id: z.string().min(1).max(255),
+		name: z.string().trim().min(1).max(100),
 		color: z.string().max(32),
 		colorLight: z.string().max(40),
-		avatarUrl: z.httpUrl().max(2_048).optional(),
+		avatarUrl: avatarUrlSchema.optional(),
 	})
 	.refine(
 		({ id, color, colorLight }) =>
@@ -19,34 +19,18 @@ const editorIdentitySchema = z
 
 export type EditorIdentity = z.infer<typeof editorIdentitySchema>;
 
-export function createEditorIdentity(): EditorIdentity {
-	const id = uuid();
-	const guestNumber = crypto.getRandomValues(new Uint16Array(1))[0] % 10_000;
+export function createEditorIdentity(
+	user: Pick<AuthSession["user"], "id" | "name" | "image">,
+): EditorIdentity {
+	const avatarUrl = avatarUrlSchema.safeParse(user.image);
 
 	return {
-		id,
-		name: `Guest ${guestNumber.toString().padStart(4, "0")}`,
-		color: editorColorForId(id),
-		colorLight: editorSelectionColorForId(id),
+		id: user.id,
+		name: user.name,
+		color: editorColorForId(user.id),
+		colorLight: editorSelectionColorForId(user.id),
+		...(avatarUrl.success ? { avatarUrl: avatarUrl.data } : {}),
 	};
-}
-
-export function getSessionEditorIdentity(): EditorIdentity {
-	const storedIdentity = sessionStorage.getItem(STORAGE_KEY);
-	if (storedIdentity) {
-		try {
-			const result = editorIdentitySchema.safeParse(JSON.parse(storedIdentity));
-			if (result.success) {
-				return result.data;
-			}
-		} catch {
-			// Replace malformed development identity data below.
-		}
-	}
-
-	const identity = createEditorIdentity();
-	sessionStorage.setItem(STORAGE_KEY, JSON.stringify(identity));
-	return identity;
 }
 
 export function parseEditorIdentity(value: unknown): EditorIdentity | null {
@@ -69,16 +53,4 @@ function editorHueForId(id: string): string {
 		2_166_136_261,
 	);
 	return (((hash >>> 0) / 0xff_ff_ff_ff) * 360).toFixed(2);
-}
-
-function isGuestName(name: string): boolean {
-	if (!name.startsWith("Guest ")) {
-		return false;
-	}
-	const suffix = name.slice("Guest ".length);
-	const guestNumber = Number(suffix);
-	return (
-		Number.isInteger(guestNumber) &&
-		guestNumber.toString().padStart(4, "0") === suffix
-	);
 }

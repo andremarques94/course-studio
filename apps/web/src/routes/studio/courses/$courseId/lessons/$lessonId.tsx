@@ -35,6 +35,7 @@ export const Route = createFileRoute(
 
 function LessonEditorRoute() {
 	const { courseId, lessonId } = Route.useParams();
+	const { user } = Route.useRouteContext();
 	const { data: course } = useSuspenseQuery(courseQueries.detail(courseId));
 	const { data: lessons } = useSuspenseQuery(courseQueries.lessons(courseId));
 	const { data: lesson } = useSuspenseQuery(lessonQueries.detail(lessonId));
@@ -65,6 +66,7 @@ function LessonEditorRoute() {
 			course={course}
 			lesson={lesson}
 			lessons={lessons}
+			user={user}
 		/>
 	);
 }
