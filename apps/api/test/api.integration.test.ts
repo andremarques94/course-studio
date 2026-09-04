@@ -44,15 +44,18 @@ test("courses and lessons persist through the API", {
 	let courseId: string | undefined;
 
 	try {
-		const healthResponse = await app.request("/health");
+		const healthResponse = await app.request("/api/health");
 		assert.equal(healthResponse.status, 200);
 		assert.deepEqual(await healthResponse.json(), { status: "ok" });
 
-		const dbHealthResponse = await app.request("/health/db");
+		const dbHealthResponse = await app.request("/api/health/db");
 		assert.equal(dbHealthResponse.status, 200);
 		assert.ok(dbHealthResponse.headers.get("x-request-id"));
+		assert.equal((await app.request("/health")).status, 404);
+		assert.equal((await app.request("/courses")).status, 404);
+		assert.equal((await app.request("/auth/get-session")).status, 404);
 
-		const corsResponse = await app.request("/courses", {
+		const corsResponse = await app.request("/api/courses", {
 			headers: { origin: webOrigin },
 		});
 		assert.equal(
@@ -65,7 +68,7 @@ test("courses and lessons persist through the API", {
 		);
 
 		const localApp = createTestApp(db);
-		const localCorsResponse = await localApp.request("/health", {
+		const localCorsResponse = await localApp.request("/api/health", {
 			headers: { origin: webOrigin },
 		});
 		assert.equal(
@@ -73,7 +76,7 @@ test("courses and lessons persist through the API", {
 			webOrigin,
 		);
 
-		assert.equal((await app.request("/courses")).status, 401);
+		assert.equal((await app.request("/api/courses")).status, 401);
 		const signUpResponse = await app.request("/api/auth/sign-up/email", {
 			method: "POST",
 			headers: { "content-type": "application/json", origin: webOrigin },
@@ -100,7 +103,7 @@ test("courses and lessons persist through the API", {
 			/^[\w-]+\.[\w-]+\.[\w-]+$/,
 		);
 
-		const invalidCourseResponse = await app.request("/courses", {
+		const invalidCourseResponse = await app.request("/api/courses", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ title: "" }),
@@ -108,7 +111,7 @@ test("courses and lessons persist through the API", {
 		assert.equal(invalidCourseResponse.status, 400);
 
 		const title = `Persistence ${randomUUID()}`;
-		const createCourseResponse = await app.request("/courses", {
+		const createCourseResponse = await app.request("/api/courses", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ title }),
@@ -120,7 +123,7 @@ test("courses and lessons persist through the API", {
 			title: string;
 		};
 		courseId = course.id;
-		const coursesResponse = await app.request("/courses");
+		const coursesResponse = await app.request("/api/courses");
 		assert.equal(coursesResponse.status, 200);
 		const courseList = (await coursesResponse.json()) as Array<{ id: string }>;
 		assert.equal(
@@ -128,14 +131,14 @@ test("courses and lessons persist through the API", {
 			true,
 		);
 
-		const duplicateCourseResponse = await app.request("/courses", {
+		const duplicateCourseResponse = await app.request("/api/courses", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ title }),
 		});
 		assert.equal(duplicateCourseResponse.status, 409);
 
-		const updateCourseResponse = await app.request(`/courses/${courseId}`, {
+		const updateCourseResponse = await app.request(`/api/courses/${courseId}`, {
 			method: "PATCH",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ title: `${title} updated` }),
@@ -149,7 +152,7 @@ test("courses and lessons persist through the API", {
 
 		const lessonTitle = "Introduction";
 		const createLessonResponse = await app.request(
-			`/courses/${courseId}/lessons`,
+			`/api/courses/${courseId}/lessons`,
 			{
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -161,7 +164,9 @@ test("courses and lessons persist through the API", {
 			id: string;
 			slug: string;
 		};
-		const lessonsResponse = await app.request(`/courses/${courseId}/lessons`);
+		const lessonsResponse = await app.request(
+			`/api/courses/${courseId}/lessons`,
+		);
 		assert.equal(lessonsResponse.status, 200);
 		const lessonList = (await lessonsResponse.json()) as Array<{ id: string }>;
 		assert.equal(
@@ -170,7 +175,7 @@ test("courses and lessons persist through the API", {
 		);
 
 		const duplicateLessonResponse = await app.request(
-			`/courses/${courseId}/lessons`,
+			`/api/courses/${courseId}/lessons`,
 			{
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -180,21 +185,27 @@ test("courses and lessons persist through the API", {
 		assert.equal(duplicateLessonResponse.status, 409);
 
 		const initialMarkdown = `# ${lessonTitle}`;
-		const markdownUpdateResponse = await app.request(`/lessons/${lesson.id}`, {
-			method: "PATCH",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ markdown: "# Must use Yjs" }),
-		});
+		const markdownUpdateResponse = await app.request(
+			`/api/lessons/${lesson.id}`,
+			{
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ markdown: "# Must use Yjs" }),
+			},
+		);
 		assert.equal(markdownUpdateResponse.status, 400);
 
-		const updateLessonResponse = await app.request(`/lessons/${lesson.id}`, {
-			method: "PATCH",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({
-				title: "Updated introduction",
-				themeId: "academic",
-			}),
-		});
+		const updateLessonResponse = await app.request(
+			`/api/lessons/${lesson.id}`,
+			{
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					title: "Updated introduction",
+					themeId: "academic",
+				}),
+			},
+		);
 		assert.equal(updateLessonResponse.status, 200);
 		const updatedLesson = (await updateLessonResponse.json()) as {
 			slug: string;
@@ -204,7 +215,7 @@ test("courses and lessons persist through the API", {
 		assert.equal(updatedLesson.slug, lesson.slug);
 
 		const secondLessonResponse = await app.request(
-			`/courses/${courseId}/lessons`,
+			`/api/courses/${courseId}/lessons`,
 			{
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -214,7 +225,7 @@ test("courses and lessons persist through the API", {
 		assert.equal(secondLessonResponse.status, 201);
 		const secondLesson = (await secondLessonResponse.json()) as { id: string };
 		const incompleteOrderResponse = await app.request(
-			`/courses/${courseId}/lessons/order`,
+			`/api/courses/${courseId}/lessons/order`,
 			{
 				method: "PUT",
 				headers: { "content-type": "application/json" },
@@ -224,7 +235,7 @@ test("courses and lessons persist through the API", {
 		assert.equal(incompleteOrderResponse.status, 400);
 
 		const reorderResponse = await app.request(
-			`/courses/${courseId}/lessons/order`,
+			`/api/courses/${courseId}/lessons/order`,
 			{
 				method: "PUT",
 				headers: { "content-type": "application/json" },
@@ -248,7 +259,9 @@ test("courses and lessons persist through the API", {
 		db = createDatabase(databaseUrl);
 		app = withSession(createTestApp(db), cookie);
 
-		const persistedLessonResponse = await app.request(`/lessons/${lesson.id}`);
+		const persistedLessonResponse = await app.request(
+			`/api/lessons/${lesson.id}`,
+		);
 		assert.equal(persistedLessonResponse.status, 200);
 		const persistedLesson = (await persistedLessonResponse.json()) as {
 			markdown: string;
@@ -257,7 +270,7 @@ test("courses and lessons persist through the API", {
 		assert.equal(persistedLesson.markdown, initialMarkdown);
 		assert.equal(persistedLesson.themeId, "academic");
 		const persistedOrderResponse = await app.request(
-			`/courses/${courseId}/lessons`,
+			`/api/courses/${courseId}/lessons`,
 		);
 		const persistedOrder = (await persistedOrderResponse.json()) as Array<{
 			id: string;
@@ -267,21 +280,28 @@ test("courses and lessons persist through the API", {
 			[secondLesson.id, lesson.id],
 		);
 
-		const deleteLessonResponse = await app.request(`/lessons/${lesson.id}`, {
-			method: "DELETE",
-		});
+		const deleteLessonResponse = await app.request(
+			`/api/lessons/${lesson.id}`,
+			{
+				method: "DELETE",
+			},
+		);
 		assert.equal(deleteLessonResponse.status, 204);
 
-		const deleteCourseResponse = await app.request(`/courses/${courseId}`, {
+		const deleteCourseResponse = await app.request(`/api/courses/${courseId}`, {
 			method: "DELETE",
 		});
 		assert.equal(deleteCourseResponse.status, 204);
 		courseId = undefined;
 
-		const cascadeResponse = await app.request(`/lessons/${secondLesson.id}`);
+		const cascadeResponse = await app.request(
+			`/api/lessons/${secondLesson.id}`,
+		);
 		assert.equal(cascadeResponse.status, 404);
 
-		const missingCourseResponse = await app.request(`/courses/${randomUUID()}`);
+		const missingCourseResponse = await app.request(
+			`/api/courses/${randomUUID()}`,
+		);
 		assert.equal(missingCourseResponse.status, 404);
 
 		assert.equal(
@@ -295,7 +315,7 @@ test("courses and lessons persist through the API", {
 		);
 	} finally {
 		if (courseId) {
-			await app.request(`/courses/${courseId}`, { method: "DELETE" });
+			await app.request(`/api/courses/${courseId}`, { method: "DELETE" });
 		}
 		await db.$client.end();
 	}

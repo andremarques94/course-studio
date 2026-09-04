@@ -28,6 +28,7 @@ export function createApp(db: Database, options: AppOptions) {
 	const healthService = createHealthService(db);
 	const requireAuth = createRequireAuth(options.auth);
 	const app = new Hono<AppEnv>()
+		.basePath("/api")
 		.use("*", createRequestLogger(options.logger))
 		.use(
 			"*",
@@ -38,7 +39,7 @@ export function createApp(db: Database, options: AppOptions) {
 				maxAge: 86_400,
 			}),
 		)
-		.all("/api/auth/*", (context) => options.auth.handler(context.req.raw))
+		.all("/auth/*", (context) => options.auth.handler(context.req.raw))
 		.route("/", createHealthRoutes(healthService))
 		.use("/courses", requireAuth)
 		.use("/courses/*", requireAuth)

@@ -37,7 +37,7 @@ test.afterAll(async () => {
 
 	try {
 		if (api && courseId) {
-			const response = await api.delete(`/courses/${courseId}`);
+			const response = await api.delete(`/api/courses/${courseId}`);
 			if (!response.ok()) {
 				throw new Error(
 					`Failed to delete test course ${courseId}: ${response.status()}`,

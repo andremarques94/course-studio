@@ -46,7 +46,7 @@ export default defineConfig({
 				BETTER_AUTH_TRUSTED_ORIGINS: e2eEnvironment.urls.web,
 				BETTER_AUTH_URL: e2eEnvironment.urls.api,
 			},
-			url: `${e2eEnvironment.urls.api}/health/db`,
+			url: `${e2eEnvironment.urls.api}/api/health/db`,
 			gracefulShutdown: { signal: "SIGTERM", timeout: 5_000 },
 			reuseExistingServer: !process.env.CI,
 			timeout: 120_000,

@@ -44,7 +44,9 @@ test.afterAll(async () => {
 		const requestContext = api;
 		const deleteResults = await Promise.allSettled(
 			courseIds.map(async (courseId) => {
-				const response = await requestContext.delete(`/courses/${courseId}`);
+				const response = await requestContext.delete(
+					`/api/courses/${courseId}`,
+				);
 				if (!response.ok()) {
 					throw new Error(
 						`Failed to delete test course ${courseId}: ${response.status()}`,
@@ -184,14 +186,14 @@ async function createLesson() {
 		throw new Error("API request context is not initialized");
 	}
 
-	const courseResponse = await api.post("/courses", {
+	const courseResponse = await api.post("/api/courses", {
 		data: { title: `Playwright ${randomUUID()}` },
 	});
 	expect(courseResponse.ok()).toBe(true);
 	const courseId = getId(await courseResponse.json());
 	courseIds.push(courseId);
 
-	const lessonResponse = await api.post(`/courses/${courseId}/lessons`, {
+	const lessonResponse = await api.post(`/api/courses/${courseId}/lessons`, {
 		data: { title: "Multiplayer lesson" },
 	});
 	expect(lessonResponse.ok()).toBe(true);

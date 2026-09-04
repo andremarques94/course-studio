@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { lessonSchema, lessonsSchema } from "@/features/lessons/schemas";
-import { api } from "@/integrations/api/client";
+import { api as client } from "@/integrations/api/client";
 import {
 	courseSchema,
 	coursesSchema,
@@ -32,7 +32,7 @@ async function throwRequestError(response: Response): Promise<never> {
 
 export const honoCourseRepository: CourseRepository = {
 	async getCourses() {
-		const response = await api.courses.$get();
+		const response = await client.api.courses.$get();
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
@@ -40,7 +40,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async getCourse(id: string) {
-		const response = await api.courses[":courseId"].$get({
+		const response = await client.api.courses[":courseId"].$get({
 			param: { courseId: id },
 		});
 		if (response.status === 404) {
@@ -54,7 +54,7 @@ export const honoCourseRepository: CourseRepository = {
 
 	async createCourse(input: CreateCourseInput) {
 		const json = createTitleInputSchema.parse(input);
-		const response = await api.courses.$post({ json });
+		const response = await client.api.courses.$post({ json });
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
@@ -63,7 +63,7 @@ export const honoCourseRepository: CourseRepository = {
 
 	async updateCourse(id: string, input: UpdateCourseInput) {
 		const json = createTitleInputSchema.parse(input);
-		const response = await api.courses[":courseId"].$patch({
+		const response = await client.api.courses[":courseId"].$patch({
 			param: { courseId: id },
 			json,
 		});
@@ -74,7 +74,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async deleteCourse(id: string) {
-		const response = await api.courses[":courseId"].$delete({
+		const response = await client.api.courses[":courseId"].$delete({
 			param: { courseId: id },
 		});
 		if (!response.ok) {
@@ -83,7 +83,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async getLessons(courseId: string) {
-		const response = await api.courses[":courseId"].lessons.$get({
+		const response = await client.api.courses[":courseId"].lessons.$get({
 			param: { courseId },
 		});
 		if (!response.ok) {
@@ -93,7 +93,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async getLesson(id: string) {
-		const response = await api.lessons[":lessonId"].$get({
+		const response = await client.api.lessons[":lessonId"].$get({
 			param: { lessonId: id },
 		});
 		if (response.status === 404) {
@@ -107,7 +107,7 @@ export const honoCourseRepository: CourseRepository = {
 
 	async createLesson(courseId: string, input: CreateLessonInput) {
 		const json = createTitleInputSchema.parse(input);
-		const response = await api.courses[":courseId"].lessons.$post({
+		const response = await client.api.courses[":courseId"].lessons.$post({
 			param: { courseId },
 			json,
 		});
@@ -118,7 +118,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async updateLesson(id: string, input: UpdateLessonInput) {
-		const response = await api.lessons[":lessonId"].$patch({
+		const response = await client.api.lessons[":lessonId"].$patch({
 			param: { lessonId: id },
 			json: input,
 		});
@@ -129,7 +129,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async deleteLesson(id: string) {
-		const response = await api.lessons[":lessonId"].$delete({
+		const response = await client.api.lessons[":lessonId"].$delete({
 			param: { lessonId: id },
 		});
 		if (!response.ok) {
@@ -138,7 +138,7 @@ export const honoCourseRepository: CourseRepository = {
 	},
 
 	async reorderLessons(courseId: string, lessonIds: string[]) {
-		const response = await api.courses[":courseId"].lessons.order.$put({
+		const response = await client.api.courses[":courseId"].lessons.order.$put({
 			param: { courseId },
 			json: { lessonIds },
 		});
