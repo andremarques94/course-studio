@@ -7,8 +7,12 @@ RUN corepack enable \
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
+
 RUN pnpm --filter @course-studio/collab... build
-RUN pnpm --filter @course-studio/collab... deploy --prod --legacy /app/deploy
+RUN pnpm --filter @course-studio/collab deploy \
+    --prod \
+    --legacy \
+    /app/deploy
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

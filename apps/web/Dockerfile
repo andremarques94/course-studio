@@ -23,23 +23,10 @@ RUN test -n "$VITE_COLLAB_URL"
 
 RUN pnpm --filter @course-studio/web... build
 
-# Produce a self-contained production directory with React and other
-# runtime dependencies, then add the generated TanStack/Nitro output.
-RUN pnpm --filter @course-studio/web deploy \
-    --prod \
-    --legacy \
-    /app/deploy \
-    && cp -R /app/apps/web/.output /app/deploy/.output
 
-
-FROM node:24-alpine AS runtime
+FROM build AS runtime
 
 WORKDIR /app
-
-COPY --from=build --chown=node:node /app/deploy ./
-
-RUN rm -rf /usr/local/lib/node_modules/npm \
-    && rm -f /usr/local/bin/npm /usr/local/bin/npx
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
@@ -56,4 +43,4 @@ HEALTHCHECK \
 
 USER node
 
-CMD ["node", ".output/server/index.mjs"]
+CMD ["node", "apps/web/.output/server/index.mjs"]
