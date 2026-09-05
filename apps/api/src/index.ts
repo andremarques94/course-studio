@@ -1,9 +1,9 @@
 import { createAuth } from "@course-studio/auth";
 import { createDatabase } from "@course-studio/db";
 import { serve } from "@hono/node-server";
-import { createApp } from "./app.js";
-import { loadEnv } from "./config/env.js";
-import { createLogger } from "./infrastructure/logger.js";
+import { createApp } from "#api/app";
+import { loadEnv } from "#api/env";
+import { createLogger } from "#api/logger";
 
 const env = loadEnv();
 const logger = createLogger(env.logLevel);
@@ -60,4 +60,4 @@ function shutdown() {
 process.once("SIGINT", shutdown);
 process.once("SIGTERM", shutdown);
 
-export type { AppType } from "./app.js";
+export type { AppType } from "#api/app";

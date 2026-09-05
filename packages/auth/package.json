@@ -7,6 +7,10 @@
 		".": {
 			"types": "./src/index.ts",
 			"default": "./dist/index.js"
+		},
+		"./authorization": {
+			"types": "./src/authorization.ts",
+			"default": "./dist/authorization.js"
 		}
 	},
 	"scripts": {
@@ -14,6 +18,7 @@
 		"check": "biome check",
 		"format": "biome format",
 		"lint": "biome lint",
+		"test": "tsx --test test/*.test.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
@@ -26,6 +31,7 @@
 		"@biomejs/biome": "2.4.5",
 		"@course-studio/typescript-config": "workspace:*",
 		"@types/node": "^26.1.1",
+		"tsx": "^4.23.0",
 		"typescript": "^6.0.2"
 	}
 }

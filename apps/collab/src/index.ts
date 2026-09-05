@@ -1,6 +1,10 @@
 import { createDatabase } from "@course-studio/db";
 import pino from "pino";
 import { createJwtAuthenticator } from "./auth/jwt.js";
+import {
+	createLessonAuthorizer,
+	createPostgresLessonOwnerFinder,
+} from "./auth/lesson-authorization.js";
 import { loadEnv } from "./config/env.js";
 import {
 	createLessonDocumentLoader,
@@ -27,6 +31,7 @@ const server = createCollaborationServer({
 	port: env.port,
 	logger,
 	authenticateToken: createJwtAuthenticator(env.betterAuthUrl),
+	authorizeLesson: createLessonAuthorizer(createPostgresLessonOwnerFinder(db)),
 	loadDocument: persistence.load,
 	storeDocument: persistence.store,
 });

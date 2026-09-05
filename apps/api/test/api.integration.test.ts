@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { createAuth } from "@course-studio/auth";
 import { createDatabase } from "@course-studio/db";
-import { createApp } from "../src/app.js";
-import { createLogger } from "../src/infrastructure/logger.js";
+import { createApp } from "#api/app";
+import { createLogger } from "#api/logger";
 
 const databaseUrl = process.env.DATABASE_URL;
 const logger = createLogger("silent");
@@ -13,9 +13,12 @@ const authSecret =
 	"integration-test-secret-with-32-characters";
 const webOrigin = "http://localhost:3000";
 
-function createTestApp(db: ReturnType<typeof createDatabase>) {
+function createTestApp(
+	db: ReturnType<typeof createDatabase>,
+	baseURL = "http://localhost:3001",
+) {
 	const auth = createAuth(db, {
-		baseURL: "http://localhost:3001",
+		baseURL,
 		secret: authSecret,
 		trustedOrigins: [webOrigin],
 	});
@@ -54,6 +57,16 @@ test("courses and lessons persist through the API", {
 		assert.equal((await app.request("/health")).status, 404);
 		assert.equal((await app.request("/courses")).status, 404);
 		assert.equal((await app.request("/auth/get-session")).status, 404);
+		assert.equal((await app.request("/api/unknown")).status, 404);
+		assert.equal(
+			(
+				await app.request("/api/unknown", {
+					method: "POST",
+					headers: { origin: "https://untrusted.example" },
+				})
+			).status,
+			404,
+		);
 
 		const corsResponse = await app.request("/api/courses", {
 			headers: { origin: webOrigin },
@@ -89,13 +102,19 @@ test("courses and lessons persist through the API", {
 		assert.equal(signUpResponse.status, 200);
 		const cookie = signUpResponse.headers.get("set-cookie")?.split(";", 1)[0];
 		assert.ok(cookie);
+		const sessionCookie = signUpResponse.headers.get("set-cookie");
+		assert.ok(sessionCookie);
+		assert.match(sessionCookie, /; HttpOnly/i);
+		assert.match(sessionCookie, /; SameSite=Lax/i);
+		assert.match(sessionCookie, /; Path=\//i);
+		assert.match(sessionCookie, /; Max-Age=\d+/i);
 		app = withSession(app, cookie);
 		const sessionResponse = await app.request("/api/auth/get-session");
 		assert.equal(sessionResponse.status, 200);
-		assert.equal(
-			((await sessionResponse.json()) as { user: { name: string } }).user.name,
-			"Integration User",
-		);
+		const session = (await sessionResponse.json()) as {
+			user: { id: string; name: string };
+		};
+		assert.equal(session.user.name, "Integration User");
 		const tokenResponse = await app.request("/api/auth/token");
 		assert.equal(tokenResponse.status, 200);
 		assert.match(
@@ -119,10 +138,12 @@ test("courses and lessons persist through the API", {
 		assert.equal(createCourseResponse.status, 201);
 		const course = (await createCourseResponse.json()) as {
 			id: string;
+			ownerId: string;
 			slug: string;
 			title: string;
 		};
 		courseId = course.id;
+		assert.equal(course.ownerId, session.user.id);
 		const coursesResponse = await app.request("/api/courses");
 		assert.equal(coursesResponse.status, 200);
 		const courseList = (await coursesResponse.json()) as Array<{ id: string }>;
@@ -224,6 +245,129 @@ test("courses and lessons persist through the API", {
 		);
 		assert.equal(secondLessonResponse.status, 201);
 		const secondLesson = (await secondLessonResponse.json()) as { id: string };
+
+		const untrustedOriginResponse = await app.request(
+			`/api/lessons/${lesson.id}`,
+			{
+				method: "PATCH",
+				headers: {
+					"content-type": "application/json",
+					origin: "https://evil.example",
+				},
+				body: JSON.stringify({ title: "Cross-site mutation" }),
+			},
+		);
+		assert.equal(untrustedOriginResponse.status, 403);
+		assert.equal(
+			((await untrustedOriginResponse.json()) as { error: { code: string } })
+				.error.code,
+			"UNTRUSTED_ORIGIN",
+		);
+
+		const bobSignUpResponse = await createTestApp(db).request(
+			"/api/auth/sign-up/email",
+			{
+				method: "POST",
+				headers: { "content-type": "application/json", origin: webOrigin },
+				body: JSON.stringify({
+					email: `integration-bob-${randomUUID()}@example.com`,
+					name: "Integration Bob",
+					password: "test-password",
+				}),
+			},
+		);
+		assert.equal(bobSignUpResponse.status, 200);
+		const bobCookie = bobSignUpResponse.headers
+			.get("set-cookie")
+			?.split(";", 1)[0];
+		assert.ok(bobCookie);
+		const bobApp = withSession(createTestApp(db), bobCookie);
+		const bobCourseResponse = await bobApp.request("/api/courses", {
+			method: "POST",
+			headers: { "content-type": "application/json", origin: webOrigin },
+			body: JSON.stringify({ title: `Bob ${randomUUID()}` }),
+		});
+		assert.equal(bobCourseResponse.status, 201);
+		const bobCourse = (await bobCourseResponse.json()) as { id: string };
+
+		const bobCourses = (await (
+			await bobApp.request("/api/courses")
+		).json()) as Array<{ id: string }>;
+		assert.equal(
+			bobCourses.some(({ id }) => id === courseId),
+			false,
+		);
+
+		const hostileRequests: Array<[string, RequestInit | undefined]> = [
+			[`/api/courses/${courseId}`, undefined],
+			[
+				`/api/courses/${courseId}`,
+				{
+					method: "PATCH",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ title: "Taken over" }),
+				},
+			],
+			[`/api/courses/${courseId}`, { method: "DELETE" }],
+			[`/api/courses/${courseId}/lessons`, undefined],
+			[
+				`/api/courses/${courseId}/lessons`,
+				{
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ title: "Unauthorized lesson" }),
+				},
+			],
+			[`/api/lessons/${lesson.id}`, undefined],
+			[
+				`/api/lessons/${lesson.id}`,
+				{
+					method: "PATCH",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ title: "Taken over" }),
+				},
+			],
+			[`/api/lessons/${lesson.id}`, { method: "DELETE" }],
+		];
+		for (const [path, init] of hostileRequests) {
+			assert.equal((await bobApp.request(path, init)).status, 404);
+		}
+		assert.equal(
+			(
+				await bobApp.request(`/api/courses/${courseId}/lessons/order`, {
+					method: "PUT",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ lessonIds: [lesson.id, secondLesson.id] }),
+				})
+			).status,
+			404,
+		);
+		assert.equal(
+			(
+				await bobApp.request(`/api/courses/${bobCourse.id}`, {
+					method: "DELETE",
+				})
+			).status,
+			204,
+		);
+
+		const secureSignUpResponse = await createTestApp(
+			db,
+			"https://api.example.test",
+		).request("/api/auth/sign-up/email", {
+			method: "POST",
+			headers: { "content-type": "application/json", origin: webOrigin },
+			body: JSON.stringify({
+				email: `integration-secure-${randomUUID()}@example.com`,
+				name: "Secure Cookie User",
+				password: "test-password",
+			}),
+		});
+		assert.equal(secureSignUpResponse.status, 200);
+		assert.match(
+			secureSignUpResponse.headers.get("set-cookie") ?? "",
+			/; Secure/i,
+		);
 		const incompleteOrderResponse = await app.request(
 			`/api/courses/${courseId}/lessons/order`,
 			{

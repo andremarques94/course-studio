@@ -84,7 +84,7 @@ packages/auth          Better Auth server configuration
 
 ## Direction
 
-Development moves one milestone at a time. Next: course ownership and lesson authorization.
+Development moves one milestone at a time. Next: course membership and invitations.
 
 ## Contributing
 

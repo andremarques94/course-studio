@@ -62,7 +62,10 @@ test.afterAll(async () => {
 test("an author creates a lesson and sees presentation changes", async ({
 	page,
 }) => {
-	await authenticate(page.request);
+	if (!api) {
+		throw new Error("API request context is not initialized");
+	}
+	await page.context().addCookies((await api.storageState()).cookies);
 	const courseTitle = `Playwright course ${randomUUID()}`;
 	const lessonTitle = `Lesson ${randomUUID()}`;
 

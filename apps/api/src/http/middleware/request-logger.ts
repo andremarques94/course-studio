@@ -1,14 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { Session } from "@course-studio/auth";
 import type { MiddlewareHandler } from "hono";
-import type { Logger } from "../../infrastructure/logger.js";
-
-export type AppEnv = {
-	Variables: {
-		requestId: string;
-		session: Session;
-	};
-};
+import type { AppEnv } from "#api/http/context";
+import type { Logger } from "#api/logger";
 
 export function createRequestLogger(logger: Logger): MiddlewareHandler<AppEnv> {
 	return async (context, next) => {

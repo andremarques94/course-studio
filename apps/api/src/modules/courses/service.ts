@@ -1,30 +1,39 @@
 import { courses, type Database } from "@course-studio/db";
 import { asc, eq } from "drizzle-orm";
-import { slugify } from "../../shared/domain/slug.js";
-import { ApiError, findPostgresError } from "../../shared/http/errors.js";
-import type { CreateCourseInput, UpdateCourseInput } from "./course.schema.js";
+import { slugify } from "#api/content-naming";
+import { findPostgresError } from "#api/database-errors";
+import { ApiError } from "#api/http/errors/api-error";
+import { createCourseAccess } from "#api/modules/courses/access";
+import type {
+	CreateCourseInput,
+	UpdateCourseInput,
+} from "#api/modules/courses/schema";
 
 export function createCoursesService(db: Database) {
-	return {
-		async findAll() {
-			return db.select().from(courses).orderBy(asc(courses.createdAt));
-		},
+	const access = createCourseAccess(db);
 
-		async findById(id: string) {
-			const [course] = await db
+	return {
+		async findAll(userId: string) {
+			return db
 				.select()
 				.from(courses)
-				.where(eq(courses.id, id))
-				.limit(1);
-
-			return course;
+				.where(eq(courses.ownerId, userId))
+				.orderBy(asc(courses.createdAt));
 		},
 
-		async create(input: CreateCourseInput) {
+		async findById(userId: string, id: string) {
+			return access.findViewable(userId, id);
+		},
+
+		async create(userId: string, input: CreateCourseInput) {
 			try {
 				const [course] = await db
 					.insert(courses)
-					.values({ title: input.title, slug: slugify(input.title) })
+					.values({
+						ownerId: userId,
+						title: input.title,
+						slug: slugify(input.title),
+					})
 					.returning();
 
 				if (!course) {
@@ -44,7 +53,8 @@ export function createCoursesService(db: Database) {
 			}
 		},
 
-		async update(id: string, input: UpdateCourseInput) {
+		async update(userId: string, id: string, input: UpdateCourseInput) {
+			await access.requireEditable(userId, id);
 			const [course] = await db
 				.update(courses)
 				.set({ title: input.title, updatedAt: new Date() })
@@ -58,7 +68,8 @@ export function createCoursesService(db: Database) {
 			return course;
 		},
 
-		async delete(id: string) {
+		async delete(userId: string, id: string) {
+			await access.requireEditable(userId, id);
 			const [course] = await db
 				.delete(courses)
 				.where(eq(courses.id, id))

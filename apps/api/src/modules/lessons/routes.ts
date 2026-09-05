@@ -1,17 +1,22 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { ApiError } from "../../shared/http/errors.js";
-import { validationHook } from "../../shared/http/validation.js";
-import { lessonIdSchema, updateLessonSchema } from "./lesson.schema.js";
-import type { LessonsService } from "./lesson.service.js";
+import type { AppEnv } from "#api/http/context";
+import { ApiError } from "#api/http/errors/api-error";
+import { validationHook } from "#api/http/validation";
+import {
+	lessonIdSchema,
+	updateLessonSchema,
+} from "#api/modules/lessons/schema";
+import type { LessonsService } from "#api/modules/lessons/service";
 
 export function createLessonsRoutes(lessonsService: LessonsService) {
-	return new Hono()
+	return new Hono<AppEnv>()
 		.get(
 			"/:lessonId",
 			zValidator("param", lessonIdSchema, validationHook),
 			async (c) => {
 				const lesson = await lessonsService.findById(
+					c.get("session").user.id,
 					c.req.valid("param").lessonId,
 				);
 				if (!lesson) {
@@ -27,6 +32,7 @@ export function createLessonsRoutes(lessonsService: LessonsService) {
 			async (c) =>
 				c.json(
 					await lessonsService.update(
+						c.get("session").user.id,
 						c.req.valid("param").lessonId,
 						c.req.valid("json"),
 					),
@@ -36,7 +42,10 @@ export function createLessonsRoutes(lessonsService: LessonsService) {
 			"/:lessonId",
 			zValidator("param", lessonIdSchema, validationHook),
 			async (c) => {
-				await lessonsService.delete(c.req.valid("param").lessonId);
+				await lessonsService.delete(
+					c.get("session").user.id,
+					c.req.valid("param").lessonId,
+				);
 				return c.body(null, 204);
 			},
 		);

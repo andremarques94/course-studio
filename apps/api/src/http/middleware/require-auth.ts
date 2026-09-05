@@ -1,6 +1,6 @@
 import type { Auth } from "@course-studio/auth";
 import type { MiddlewareHandler } from "hono";
-import type { AppEnv } from "./request-logger.js";
+import type { AppEnv } from "#api/http/context";
 
 export function createRequireAuth(auth: Auth): MiddlewareHandler<AppEnv> {
 	return async (context, next) => {
