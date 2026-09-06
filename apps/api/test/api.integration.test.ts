@@ -3,8 +3,11 @@ import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { createAuth } from "@course-studio/auth";
 import { createDatabase } from "@course-studio/db";
+import { Hono } from "hono";
 import { createApp } from "#api/app";
+import type { AppEnv } from "#api/http/context";
 import { createLogger } from "#api/logger";
+import { createPrivateRoutes } from "#api/private-routes";
 
 const databaseUrl = process.env.DATABASE_URL;
 const logger = createLogger("silent");
@@ -47,6 +50,23 @@ test("courses and lessons persist through the API", {
 	let courseId: string | undefined;
 
 	try {
+		const alternateAuth = createAuth(db, {
+			baseURL: "http://localhost:3001",
+			secret: authSecret,
+			trustedOrigins: [webOrigin],
+		});
+		const alternateMount = new Hono<AppEnv>().route(
+			"/private",
+			createPrivateRoutes(db, {
+				auth: alternateAuth,
+				trustedOrigins: [webOrigin],
+			}),
+		);
+		assert.equal(
+			(await alternateMount.request("/private/courses")).status,
+			401,
+		);
+
 		const healthResponse = await app.request("/api/health");
 		assert.equal(healthResponse.status, 200);
 		assert.deepEqual(await healthResponse.json(), { status: "ok" });
@@ -285,10 +305,14 @@ test("courses and lessons persist through the API", {
 		const bobCourseResponse = await bobApp.request("/api/courses", {
 			method: "POST",
 			headers: { "content-type": "application/json", origin: webOrigin },
-			body: JSON.stringify({ title: `Bob ${randomUUID()}` }),
+			body: JSON.stringify({ title }),
 		});
 		assert.equal(bobCourseResponse.status, 201);
-		const bobCourse = (await bobCourseResponse.json()) as { id: string };
+		const bobCourse = (await bobCourseResponse.json()) as {
+			id: string;
+			slug: string;
+		};
+		assert.equal(bobCourse.slug, course.slug);
 
 		const bobCourses = (await (
 			await bobApp.request("/api/courses")
