@@ -115,6 +115,20 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 		assert.equal(restoredDocument.getMap("metadata").get("themeId"), "dark");
 		assert.equal(restoredDocument.getMap("writers").get("first"), "A");
 		assert.equal(restoredDocument.getMap("writers").get("second"), "B");
+		const [projection] = await db
+			.select({
+				markdown: lessons.markdown,
+				themeId: lessons.themeId,
+				updatedAt: lessons.updatedAt,
+			})
+			.from(lessons)
+			.where(eq(lessons.id, lessonId));
+		assert.equal(
+			projection?.markdown,
+			"# PostgreSQL\n\nExact collaborative state.",
+		);
+		assert.equal(projection?.themeId, "dark");
+		assert.ok(projection?.updatedAt);
 		restoredDocument.destroy();
 	} finally {
 		await db.delete(courses).where(eq(courses.id, courseId));

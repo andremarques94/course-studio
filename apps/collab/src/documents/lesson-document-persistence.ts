@@ -1,4 +1,4 @@
-import { type Database, lessonDocuments } from "@course-studio/db";
+import { type Database, lessonDocuments, lessons } from "@course-studio/db";
 import { eq, sql } from "drizzle-orm";
 import * as Y from "yjs";
 import { parseLessonDocumentName } from "./lesson-document-loader.js";
@@ -67,16 +67,39 @@ export function createPostgresLessonDocumentStore(
 				const mergedState = existing
 					? Y.mergeUpdates([new Uint8Array(existing.ydoc), state])
 					: state;
+				const projection = readDocumentProjection(mergedState);
+				const updatedAt = new Date();
 				await transaction
 					.insert(lessonDocuments)
 					.values({ lessonId, ydoc: Buffer.from(mergedState) })
 					.onConflictDoUpdate({
 						target: lessonDocuments.lessonId,
-						set: { ydoc: Buffer.from(mergedState), updatedAt: new Date() },
+						set: { ydoc: Buffer.from(mergedState), updatedAt },
 					});
+				await transaction
+					.update(lessons)
+					.set({ ...projection, updatedAt })
+					.where(eq(lessons.id, lessonId));
 			});
 		},
 	};
+}
+
+function readDocumentProjection(state: Uint8Array) {
+	const document = new Y.Doc();
+	try {
+		Y.applyUpdate(document, state);
+		const themeId = document.getMap("metadata").get("themeId");
+		return {
+			markdown: document.getText("markdown").toString(),
+			themeId:
+				themeId === "minimal" || themeId === "academic" || themeId === "dark"
+					? themeId
+					: "minimal",
+		};
+	} finally {
+		document.destroy();
+	}
 }
 
 export function createLessonDocumentPersistence({

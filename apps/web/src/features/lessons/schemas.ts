@@ -22,5 +22,5 @@ export const lessonSchema = z.object({
 export const lessonsSchema = z.array(lessonSchema);
 
 export const updateLessonInputSchema = lessonSchema
-	.pick({ title: true, themeId: true })
+	.pick({ title: true })
 	.partial();

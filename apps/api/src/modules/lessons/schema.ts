@@ -13,7 +13,6 @@ export const reorderLessonsSchema = z.object({
 export const updateLessonSchema = z
 	.object({
 		title: titleSchema.optional(),
-		themeId: z.enum(["minimal", "academic", "dark"]).optional(),
 	})
 	.strict()
 	.refine((input) => Object.keys(input).length > 0, {
