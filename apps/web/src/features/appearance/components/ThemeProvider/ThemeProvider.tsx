@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 import type { Theme } from "../../theme.types";
 import { getThemeScript } from "../../theme-script";
 import { ThemeProviderContext } from "./ThemeProviderContext";
-import { useApplyTheme } from "./useApplyTheme";
-import { useThemeState } from "./useThemeState";
+import { applyTheme, useApplyTheme } from "./useApplyTheme";
 
 type ThemeProviderProps = {
 	children: ReactNode;
@@ -17,11 +16,15 @@ export function ThemeProvider({
 	defaultTheme = "system",
 	storageKey = "theme",
 }: ThemeProviderProps) {
-	const { theme, setTheme, mounted } = useThemeState(defaultTheme, storageKey);
-	useApplyTheme(theme, mounted);
+	useApplyTheme(storageKey, defaultTheme);
+
+	const setTheme = (theme: Theme) => {
+		localStorage.setItem(storageKey, theme);
+		applyTheme(theme);
+	};
 
 	return (
-		<ThemeProviderContext value={{ theme, setTheme }}>
+		<ThemeProviderContext value={{ setTheme }}>
 			<ScriptOnce>{getThemeScript(storageKey, defaultTheme)}</ScriptOnce>
 			{children}
 		</ThemeProviderContext>
