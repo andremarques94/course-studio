@@ -4,6 +4,12 @@ import * as Y from "yjs";
 import { type AuthSession, authClient } from "@/features/auth/auth-client";
 import { createEditorIdentity } from "./identity";
 import { createLessonDocumentModel, type LessonDocument } from "./model";
+import {
+	createBrowserLessonDraftStorage,
+	createDraftStorageStatusStore,
+	lessonDraftStorageKey,
+	persistLessonDraft,
+} from "./persistence";
 import { createCollaborationPresence } from "./presence";
 import { createCollaborationStatusStore } from "./status";
 
@@ -25,6 +31,17 @@ export function createCollaborativeLessonDocument({
 	const document = createLessonDocumentModel(ydoc, false);
 	const collaborationStatus = createCollaborationStatusStore();
 	document.setCollaborationStatus(collaborationStatus);
+	const draftStorageStatus = createDraftStorageStatusStore();
+	document.setDraftStorageStatus(draftStorageStatus);
+	const persistedDraft = persistLessonDraft({
+		document: ydoc,
+		key: lessonDraftStorageKey(user.id, lessonId),
+		storage: createBrowserLessonDraftStorage(window.localStorage),
+		onError: () => draftStorageStatus.setError(),
+	});
+	if (persistedDraft.restored) {
+		document.markReady();
+	}
 
 	const provider = new HocuspocusProvider({
 		url,
@@ -43,6 +60,9 @@ export function createCollaborativeLessonDocument({
 		onStatus({ status }) {
 			collaborationStatus.setTransportStatus(status);
 		},
+		onAuthenticationFailed() {
+			collaborationStatus.setTransportStatus("auth-failed");
+		},
 		onSynced({ state }) {
 			collaborationStatus.setSynced(state);
 			if (state) {
@@ -52,6 +72,10 @@ export function createCollaborativeLessonDocument({
 		onUnsyncedChanges({ number }) {
 			collaborationStatus.setUnsyncedChanges(number);
 		},
+	});
+	document.setRetryCollaboration(() => {
+		collaborationStatus.setTransportStatus("connecting");
+		provider.connect();
 	});
 	if (!provider.awareness) {
 		throw new Error("Collaboration awareness is unavailable.");
@@ -67,6 +91,8 @@ export function createCollaborativeLessonDocument({
 		destroy() {
 			presence.destroy();
 			provider.destroy();
+			persistedDraft.destroy();
+			draftStorageStatus.destroy();
 			collaborationStatus.destroy();
 			destroyDocument();
 		},
