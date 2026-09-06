@@ -46,7 +46,7 @@ export function createCoursesService(db: Database) {
 					throw new ApiError(
 						409,
 						"SLUG_ALREADY_EXISTS",
-						"A course with this slug already exists.",
+						"A course with this slug already exists in your account.",
 					);
 				}
 				throw error;
