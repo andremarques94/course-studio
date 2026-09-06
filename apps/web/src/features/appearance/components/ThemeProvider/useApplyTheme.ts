@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Theme } from "../../theme.types";
 
-function applyTheme(theme: Theme) {
+export function applyTheme(theme: Theme) {
 	const root = document.documentElement;
 	root.classList.remove("light", "dark");
 
@@ -16,22 +16,19 @@ function applyTheme(theme: Theme) {
 	root.style.colorScheme = resolved;
 }
 
-export function useApplyTheme(theme: Theme, mounted: boolean) {
-	useEffect(() => {
-		if (!mounted) {
-			return;
-		}
-		applyTheme(theme);
-	}, [theme, mounted]);
+function readTheme(storageKey: string, defaultTheme: Theme): Theme {
+	const stored = localStorage.getItem(storageKey);
+	return stored === "light" || stored === "dark" || stored === "system"
+		? stored
+		: defaultTheme;
+}
 
+export function useApplyTheme(storageKey: string, defaultTheme: Theme) {
 	useEffect(() => {
-		if (!mounted || theme !== "system") {
-			return;
-		}
-
 		const media = window.matchMedia("(prefers-color-scheme: dark)");
-		const onChange = () => applyTheme("system");
+		const onChange = () => applyTheme(readTheme(storageKey, defaultTheme));
+		onChange();
 		media.addEventListener("change", onChange);
 		return () => media.removeEventListener("change", onChange);
-	}, [theme, mounted]);
+	}, [defaultTheme, storageKey]);
 }

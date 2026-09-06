@@ -3,6 +3,7 @@ import { AuthForm } from "@/features/auth/AuthForm";
 import { getSafeStudioRedirect } from "@/features/auth/session";
 
 export const Route = createFileRoute("/(public)/sign-up")({
+	ssr: false,
 	validateSearch: (search: Record<string, unknown>) => ({
 		redirect: getSafeStudioRedirect(search.redirect),
 	}),

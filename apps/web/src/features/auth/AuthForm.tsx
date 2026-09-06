@@ -19,7 +19,6 @@ import { Input } from "@course-studio/ui/components/input";
 import { Spinner } from "@course-studio/ui/components/spinner";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
 import { PublicHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
 import styles from "./AuthForm.module.css";
@@ -32,8 +31,6 @@ type AuthFormProps = {
 
 export function AuthForm({ mode, redirect }: AuthFormProps) {
 	const isSignUp = mode === "sign-up";
-	const [isHydrated, setIsHydrated] = useState(false);
-	useEffect(() => setIsHydrated(true), []);
 	const {
 		notice,
 		error,
@@ -145,10 +142,7 @@ export function AuthForm({ mode, redirect }: AuthFormProps) {
 										</Field>
 									)}
 									<Field>
-										<Button
-											type="submit"
-											disabled={!isHydrated || isEmailPending}
-										>
+										<Button type="submit" disabled={isEmailPending}>
 											{isEmailPending && <Spinner data-icon="inline-start" />}
 											{isSignUp ? "Create account" : "Sign in"}
 										</Button>
