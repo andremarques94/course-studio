@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import type { SubmitEvent } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -34,7 +33,6 @@ type UseAuthFormOptions = {
 };
 
 export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
-	const navigate = useNavigate();
 	const [notice, setNotice] = useState<string>();
 	const authenticate = useMutation({
 		mutationFn: async (request: AuthRequest) => {
@@ -52,7 +50,9 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 
 			const values = Object.fromEntries(request.formData);
 			const result =
-				mode === "sign-up" ? await signUp(values) : await signIn(values);
+				mode === "sign-up"
+					? await signUp(values)
+					: await signIn(values, redirect);
 			if (result.error) {
 				if (result.error.code === "EMAIL_NOT_VERIFIED") {
 					throw new Error(
@@ -66,7 +66,8 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 				setNotice("Check your email to verify your account, then sign in.");
 				return;
 			}
-			await navigate({ to: redirect });
+			// Better Auth follows the password sign-in callback URL after setting
+			// the session cookie. A second router navigation races that redirect.
 		},
 	});
 	const pendingRequest = authenticate.isPending
@@ -104,14 +105,14 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 	};
 }
 
-function signIn(values: unknown) {
+function signIn(values: unknown, redirect: string) {
 	const result = credentialsSchema.safeParse(values);
 	if (!result.success) {
 		throw new Error(result.error.issues[0]?.message ?? "Invalid credentials.");
 	}
 	return authClient.signIn.email({
 		...result.data,
-		callbackURL: new URL("/sign-in", window.location.origin).toString(),
+		callbackURL: new URL(redirect, window.location.origin).toString(),
 	});
 }
 

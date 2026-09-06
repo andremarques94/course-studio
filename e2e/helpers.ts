@@ -218,6 +218,7 @@ export async function getVerificationURL(
 			async () => {
 				const response = await request.get(
 					`http://127.0.0.1:8025/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+					{ headers: { origin: "http://127.0.0.1:8025" } },
 				);
 				if (!response.ok()) {
 					return false;
@@ -231,6 +232,7 @@ export async function getVerificationURL(
 				}
 				const message = await request.get(
 					`http://127.0.0.1:8025/api/v1/message/${id}`,
+					{ headers: { origin: "http://127.0.0.1:8025" } },
 				);
 				const content = (await message.json()) as { Text: string };
 				verificationURL = content.Text.match(
