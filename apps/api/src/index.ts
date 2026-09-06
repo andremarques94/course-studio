@@ -2,14 +2,20 @@ import { createAuth } from "@course-studio/auth";
 import { createDatabase } from "@course-studio/db";
 import { serve } from "@hono/node-server";
 import { createApp } from "#api/app";
+import { createSmtpEmailSender } from "#api/email";
 import { loadEnv } from "#api/env";
 import { createLogger } from "#api/logger";
+import { createCourseInvitationDelivery } from "#api/modules/invitations/email";
 import { createVerificationEmailSender } from "#api/verification-email";
 
 const env = loadEnv();
 const logger = createLogger(env.logLevel);
 const db = createDatabase(env.databaseUrl);
 const sendVerificationEmail = createVerificationEmailSender(env);
+const sendEmail = createSmtpEmailSender(env);
+if (!sendEmail && env.nodeEnv === "production") {
+	throw new Error("Course invitations require SMTP in production.");
+}
 const auth = createAuth(db, {
 	baseURL: env.betterAuthUrl,
 	github: env.github,
@@ -22,6 +28,13 @@ const app = createApp(db, {
 	auth,
 	corsOrigins: env.trustedOrigins,
 	logger,
+	webOrigin: env.webOrigin,
+	sendCourseInvitation: sendEmail
+		? createCourseInvitationDelivery(sendEmail)
+		: async ({ url }) => {
+				// Development fallback only. Production startup requires SMTP above.
+				console.info("Development course invitation link:", url);
+			},
 });
 
 const server = serve(

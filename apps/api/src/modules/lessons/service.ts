@@ -1,5 +1,6 @@
-import { type Database, lessons } from "@course-studio/db";
+import { type Database, lessonDocuments, lessons } from "@course-studio/db";
 import { asc, eq, max } from "drizzle-orm";
+import * as Y from "yjs";
 import { slugify } from "#api/content-naming";
 import { findPostgresError } from "#api/database-errors";
 import { ApiError } from "#api/http/errors/api-error";
@@ -28,59 +29,97 @@ export function createLessonsService(db: Database) {
 		},
 
 		async findById(userId: string, id: string) {
-			return access.findViewable(userId, id);
+			const lesson = await access.findViewable(userId, id);
+			if (!lesson) {
+				return undefined;
+			}
+
+			const [persisted] = await db
+				.select({ ydoc: lessonDocuments.ydoc })
+				.from(lessonDocuments)
+				.where(eq(lessonDocuments.lessonId, id))
+				.limit(1);
+			if (!persisted) {
+				return lesson;
+			}
+
+			const document = new Y.Doc();
+			try {
+				Y.applyUpdate(document, new Uint8Array(persisted.ydoc));
+				const themeId = document.getMap<unknown>("metadata").get("themeId");
+				return {
+					...lesson,
+					markdown: document.getText("markdown").toString(),
+					themeId:
+						themeId === "minimal" ||
+						themeId === "academic" ||
+						themeId === "dark"
+							? themeId
+							: lesson.themeId,
+				};
+			} finally {
+				document.destroy();
+			}
 		},
 
 		async create(userId: string, courseId: string, input: CreateLessonInput) {
-			await access.requireEditableCourse(userId, courseId);
+			return db.transaction(async (tx) => {
+				const transactionAccess = createLessonAccess(tx);
+				await transactionAccess.lockCourse(courseId);
+				await transactionAccess.requireEditableCourse(userId, courseId);
 
-			const [positionResult] = await db
-				.select({ position: max(lessons.position) })
-				.from(lessons)
-				.where(eq(lessons.courseId, courseId));
+				const [positionResult] = await tx
+					.select({ position: max(lessons.position) })
+					.from(lessons)
+					.where(eq(lessons.courseId, courseId));
 
-			try {
-				const [lesson] = await db
-					.insert(lessons)
-					.values({
-						courseId,
-						title: input.title,
-						slug: slugify(input.title),
-						markdown: `# ${input.title}`,
-						position: (positionResult?.position ?? -1) + 1,
-					})
-					.returning();
+				try {
+					const [lesson] = await tx
+						.insert(lessons)
+						.values({
+							courseId,
+							title: input.title,
+							slug: slugify(input.title),
+							markdown: `# ${input.title}`,
+							position: (positionResult?.position ?? -1) + 1,
+						})
+						.returning();
 
-				if (!lesson) {
-					throw new Error("Lesson insert returned no row.");
+					if (!lesson) {
+						throw new Error("Lesson insert returned no row.");
+					}
+
+					return lesson;
+				} catch (error) {
+					if (findPostgresError(error)?.code === "23505") {
+						throw new ApiError(
+							409,
+							"SLUG_ALREADY_EXISTS",
+							"A lesson with this slug already exists in the course.",
+						);
+					}
+					throw error;
 				}
-
-				return lesson;
-			} catch (error) {
-				if (findPostgresError(error)?.code === "23505") {
-					throw new ApiError(
-						409,
-						"SLUG_ALREADY_EXISTS",
-						"A lesson with this slug already exists in the course.",
-					);
-				}
-				throw error;
-			}
+			});
 		},
 
 		async update(userId: string, id: string, input: UpdateLessonInput) {
-			await access.requireEditable(userId, id);
-			const [lesson] = await db
-				.update(lessons)
-				.set({ ...input, updatedAt: new Date() })
-				.where(eq(lessons.id, id))
-				.returning();
+			return db.transaction(async (tx) => {
+				const transactionAccess = createLessonAccess(tx);
+				await transactionAccess.lockCourseForLesson(id);
+				await transactionAccess.requireEditable(userId, id);
+				const [lesson] = await tx
+					.update(lessons)
+					.set({ ...input, updatedAt: new Date() })
+					.where(eq(lessons.id, id))
+					.returning();
 
-			if (!lesson) {
-				throw new ApiError(404, "LESSON_NOT_FOUND", "Lesson not found.");
-			}
+				if (!lesson) {
+					throw new ApiError(404, "LESSON_NOT_FOUND", "Lesson not found.");
+				}
 
-			return lesson;
+				return lesson;
+			});
 		},
 
 		async reorder(
@@ -92,15 +131,19 @@ export function createLessonsService(db: Database) {
 		},
 
 		async delete(userId: string, id: string) {
-			await access.requireEditable(userId, id);
-			const [lesson] = await db
-				.delete(lessons)
-				.where(eq(lessons.id, id))
-				.returning({ id: lessons.id });
+			return db.transaction(async (tx) => {
+				const transactionAccess = createLessonAccess(tx);
+				await transactionAccess.lockCourseForLesson(id);
+				await transactionAccess.requireEditable(userId, id);
+				const [lesson] = await tx
+					.delete(lessons)
+					.where(eq(lessons.id, id))
+					.returning({ id: lessons.id });
 
-			if (!lesson) {
-				throw new ApiError(404, "LESSON_NOT_FOUND", "Lesson not found.");
-			}
+				if (!lesson) {
+					throw new ApiError(404, "LESSON_NOT_FOUND", "Lesson not found.");
+				}
+			});
 		},
 	};
 }

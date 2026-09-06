@@ -10,7 +10,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { courseQueries } from "@/features/courses/queries";
 import { lessonQueries } from "@/features/lessons/queries";
-import { WebStudio } from "@/features/studio/components";
+import { ReadOnlyStudio, WebStudio } from "@/features/studio/components";
 
 export const Route = createFileRoute(
 	"/studio/courses/$courseId/lessons/$lessonId",
@@ -58,6 +58,10 @@ function LessonEditorRoute() {
 				</Empty>
 			</main>
 		);
+	}
+
+	if (course.accessRole === "viewer") {
+		return <ReadOnlyStudio course={course} lesson={lesson} lessons={lessons} />;
 	}
 
 	return (

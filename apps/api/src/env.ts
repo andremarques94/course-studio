@@ -32,6 +32,7 @@ const envSchema = z
 		BETTER_AUTH_SECRET: z.string().min(32),
 		BETTER_AUTH_URL: originSchema.optional(),
 		BETTER_AUTH_TRUSTED_ORIGINS: originsSchema.optional(),
+		WEB_ORIGIN: originSchema.optional(),
 		GITHUB_CLIENT_ID: z.string().trim().min(1).optional(),
 		GITHUB_CLIENT_SECRET: z.string().trim().min(1).optional(),
 		GOOGLE_CLIENT_ID: z.string().trim().min(1).optional(),
@@ -82,6 +83,11 @@ const envSchema = z
 				message: "BETTER_AUTH_TRUSTED_ORIGINS is required in production.",
 			},
 			{
+				invalid: env.NODE_ENV === "production" && !env.WEB_ORIGIN,
+				path: "WEB_ORIGIN",
+				message: "WEB_ORIGIN is required in production.",
+			},
+			{
 				invalid:
 					Boolean(env.GITHUB_CLIENT_ID) !== Boolean(env.GITHUB_CLIENT_SECRET),
 				path: "GITHUB_CLIENT_ID",
@@ -116,6 +122,7 @@ const envSchema = z
 		apiPort: env.API_PORT ?? env.PORT ?? 3001,
 		betterAuthSecret: env.BETTER_AUTH_SECRET,
 		betterAuthUrl: env.BETTER_AUTH_URL ?? "http://localhost:3001",
+		webOrigin: env.WEB_ORIGIN ?? "http://localhost:3000",
 		trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS ?? [
 			"http://localhost:3000",
 		],

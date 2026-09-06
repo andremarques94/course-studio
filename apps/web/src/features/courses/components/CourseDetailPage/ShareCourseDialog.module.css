@@ -1,0 +1,115 @@
+.dialog {
+	max-height: min(760px, calc(100dvh - 32px));
+	overflow: hidden;
+	grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
+.inviteFields {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 120px auto;
+	align-items: end;
+}
+
+.roleTrigger {
+	width: 100%;
+	justify-content: space-between;
+}
+
+.accessList {
+	display: flex;
+	min-height: 0;
+	flex-direction: column;
+	gap: 22px;
+	overflow-y: auto;
+	padding-right: 4px;
+}
+
+.accessList section {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.accessList h3 {
+	margin: 0 0 4px;
+	font-size: 12px;
+	font-weight: 650;
+}
+
+.personRow {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto auto;
+	align-items: center;
+	gap: 10px;
+	min-height: 48px;
+	padding: 6px 0;
+}
+
+.identity {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+}
+
+.identity strong,
+.identity span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.identity strong {
+	font-weight: 580;
+}
+
+.identity span,
+.empty {
+	color: var(--color-muted-foreground);
+	font-size: 11px;
+}
+
+.empty {
+	margin: 4px 0;
+}
+
+.loader {
+	margin: 8px auto;
+}
+
+.rowActions {
+	display: flex;
+	gap: 2px;
+}
+
+.error {
+	margin: 0;
+	color: var(--color-destructive);
+	font-size: 11px;
+}
+
+@media (max-width: 560px) {
+	.dialog {
+		max-height: calc(100dvh - 16px);
+	}
+
+	.inviteFields {
+		grid-template-columns: minmax(0, 1fr) 112px;
+	}
+
+	.inviteFields > button {
+		grid-column: 1 / -1;
+	}
+
+	.personRow {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+	}
+
+	.rowActions {
+		grid-column: 3;
+	}
+
+	.personRow > :global([data-slot="badge"]) {
+		grid-column: 2;
+		justify-self: start;
+	}
+}

@@ -7,12 +7,15 @@ import { createAppErrorHandler } from "#api/http/errors/error-handler";
 import { createRequestLogger } from "#api/http/middleware/request-logger";
 import type { Logger } from "#api/logger";
 import { createHealthRoutes } from "#api/modules/health";
+import type { CourseInvitationDelivery } from "#api/modules/invitations/email";
 import { createPrivateRoutes } from "#api/private-routes";
 
 type AppOptions = {
 	auth: Auth;
 	corsOrigins: string[];
 	logger: Logger;
+	webOrigin: string;
+	sendCourseInvitation: CourseInvitationDelivery;
 };
 
 export function createApp(db: Database, options: AppOptions) {
@@ -35,6 +38,8 @@ export function createApp(db: Database, options: AppOptions) {
 			createPrivateRoutes(db, {
 				auth: options.auth,
 				trustedOrigins: options.corsOrigins,
+				webOrigin: options.webOrigin,
+				sendCourseInvitation: options.sendCourseInvitation,
 			}),
 		);
 

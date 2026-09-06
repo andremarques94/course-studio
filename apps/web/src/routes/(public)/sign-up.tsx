@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthForm } from "@/features/auth/AuthForm";
-import { getSafeStudioRedirect } from "@/features/auth/session";
+import { getSafeAuthRedirect } from "@/features/auth/session";
 
 export const Route = createFileRoute("/(public)/sign-up")({
 	ssr: false,
 	validateSearch: (search: Record<string, unknown>) => ({
-		redirect: getSafeStudioRedirect(search.redirect),
+		redirect: getSafeAuthRedirect(search.redirect),
 	}),
 	head: () => ({ meta: [{ title: "Create account | Course Studio" }] }),
 	component: SignUpPage,

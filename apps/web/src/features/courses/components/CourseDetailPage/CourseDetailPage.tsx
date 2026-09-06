@@ -52,12 +52,18 @@ export function CourseDetailPage({ courseId }: CourseDetailPageProps) {
 							this course
 						</p>
 					</div>
-					<div className={styles.createPanel}>
-						<CreateLessonForm courseId={courseId} />
-					</div>
+					{course.accessRole !== "viewer" ? (
+						<div className={styles.createPanel}>
+							<CreateLessonForm courseId={courseId} />
+						</div>
+					) : null}
 				</header>
 
-				<LessonList courseId={courseId} lessons={lessons} />
+				<LessonList
+					courseId={courseId}
+					lessons={lessons}
+					canEdit={course.accessRole !== "viewer"}
+				/>
 			</div>
 		</ManagementPage>
 	);

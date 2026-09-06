@@ -1,13 +1,19 @@
 import type { z } from "zod";
 import type { updateLessonInputSchema } from "@/features/lessons/schemas";
 import type { Lesson } from "@/features/lessons/types";
-import type { createTitleInputSchema } from "../schemas";
-import type { Course } from "../types";
+import type {
+	createInvitationInputSchema,
+	createTitleInputSchema,
+	invitationTokenSchema,
+} from "../schemas";
+import type { Course, CourseInvitation, CourseMember } from "../types";
 
 export type CreateCourseInput = z.input<typeof createTitleInputSchema>;
 export type CreateLessonInput = z.input<typeof createTitleInputSchema>;
 export type UpdateCourseInput = z.input<typeof createTitleInputSchema>;
 export type UpdateLessonInput = z.input<typeof updateLessonInputSchema>;
+export type CreateInvitationInput = z.input<typeof createInvitationInputSchema>;
+export type AcceptInvitationInput = z.input<typeof invitationTokenSchema>;
 
 export type CourseRepository = {
 	getCourses(): Promise<Course[]>;
@@ -21,4 +27,19 @@ export type CourseRepository = {
 	updateLesson(id: string, input: UpdateLessonInput): Promise<Lesson>;
 	deleteLesson(id: string): Promise<void>;
 	reorderLessons(courseId: string, lessonIds: string[]): Promise<Lesson[]>;
+	getMembers(courseId: string): Promise<CourseMember[]>;
+	removeMember(courseId: string, memberId: string): Promise<void>;
+	getInvitations(courseId: string): Promise<CourseInvitation[]>;
+	createInvitation(
+		courseId: string,
+		input: CreateInvitationInput,
+	): Promise<CourseInvitation>;
+	resendInvitation(
+		courseId: string,
+		invitationId: string,
+	): Promise<CourseInvitation>;
+	revokeInvitation(courseId: string, invitationId: string): Promise<void>;
+	acceptInvitation(
+		token: AcceptInvitationInput,
+	): Promise<{ courseId: string; role: "editor" | "viewer" }>;
 };

@@ -51,7 +51,7 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 			const values = Object.fromEntries(request.formData);
 			const result =
 				mode === "sign-up"
-					? await signUp(values)
+					? await signUp(values, redirect)
 					: await signIn(values, redirect);
 			if (result.error) {
 				if (result.error.code === "EMAIL_NOT_VERIFIED") {
@@ -116,7 +116,7 @@ function signIn(values: unknown, redirect: string) {
 	});
 }
 
-function signUp(values: unknown) {
+function signUp(values: unknown, redirect: string) {
 	const result = signUpSchema.safeParse(values);
 	if (!result.success) {
 		throw new Error(
@@ -124,8 +124,10 @@ function signUp(values: unknown) {
 		);
 	}
 	const { confirmPassword: _, ...credentials } = result.data;
+	const signInURL = new URL("/sign-in", window.location.origin);
+	signInURL.searchParams.set("redirect", redirect);
 	return authClient.signUp.email({
 		...credentials,
-		callbackURL: new URL("/sign-in", window.location.origin).toString(),
+		callbackURL: signInURL.toString(),
 	});
 }

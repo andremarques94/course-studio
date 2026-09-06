@@ -8,6 +8,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@course-studio/ui/components/alert-dialog";
+import { Badge } from "@course-studio/ui/components/badge";
 import { Button } from "@course-studio/ui/components/button";
 import {
 	DropdownMenu,
@@ -21,13 +22,14 @@ import { Input } from "@course-studio/ui/components/input";
 import { toast } from "@course-studio/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Ellipsis, Pencil, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Trash2, Users } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
 import { courseQueries } from "../../queries";
 import { courseRepository } from "../../repository";
 import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
 import type { Course } from "../../types";
 import styles from "./CourseDetailPage.module.css";
+import { ShareCourseDialog } from "./ShareCourseDialog";
 
 type CourseActionsProps = {
 	course: Course;
@@ -37,6 +39,7 @@ type CourseActionsProps = {
 export function CourseActions({ course, lessonCount }: CourseActionsProps) {
 	const [editing, setEditing] = useState(false);
 	const [confirmingDelete, setConfirmingDelete] = useState(false);
+	const [sharing, setSharing] = useState(false);
 	const [title, setTitle] = useState(course.title);
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -129,82 +132,105 @@ export function CourseActions({ course, lessonCount }: CourseActionsProps) {
 	}
 
 	return (
-		<div className={styles.courseTitleRow}>
-			<h1>{course.title}</h1>
-			<DropdownMenu>
-				<DropdownMenuTrigger
-					render={
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							aria-label="Course actions"
-						/>
-					}
+		<>
+			<div className={styles.courseTitleRow}>
+				<h1>{course.title}</h1>
+				{course.accessRole !== "owner" ? (
+					<Badge variant="outline" className={styles.accessBadge}>
+						{course.accessRole === "editor" ? "Editor" : "View only"}
+					</Badge>
+				) : null}
+				{course.accessRole !== "viewer" ? (
+					<DropdownMenu>
+						<DropdownMenuTrigger
+							render={
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									aria-label="Course actions"
+								/>
+							}
+						>
+							<Ellipsis />
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuGroup>
+								<DropdownMenuItem onClick={() => setEditing(true)}>
+									<Pencil />
+									Rename course
+								</DropdownMenuItem>
+							</DropdownMenuGroup>
+							{course.accessRole === "owner" ? <DropdownMenuSeparator /> : null}
+							{course.accessRole === "owner" ? (
+								<DropdownMenuGroup>
+									<DropdownMenuItem onClick={() => setSharing(true)}>
+										<Users />
+										Share course
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										variant="destructive"
+										onClick={() => {
+											deleteCourse.reset();
+											setConfirmingDelete(true);
+										}}
+									>
+										<Trash2 />
+										Delete course
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
+							) : null}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
+				<AlertDialog
+					open={confirmingDelete}
+					onOpenChange={(open) => {
+						setConfirmingDelete(open);
+						if (!open) {
+							deleteCourse.reset();
+						}
+					}}
 				>
-					<Ellipsis />
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
-					<DropdownMenuGroup>
-						<DropdownMenuItem onClick={() => setEditing(true)}>
-							<Pencil />
-							Rename course
-						</DropdownMenuItem>
-					</DropdownMenuGroup>
-					<DropdownMenuSeparator />
-					<DropdownMenuGroup>
-						<DropdownMenuItem
-							variant="destructive"
-							onClick={() => {
-								deleteCourse.reset();
-								setConfirmingDelete(true);
-							}}
-						>
-							<Trash2 />
-							Delete course
-						</DropdownMenuItem>
-					</DropdownMenuGroup>
-				</DropdownMenuContent>
-			</DropdownMenu>
-			<AlertDialog
-				open={confirmingDelete}
-				onOpenChange={(open) => {
-					setConfirmingDelete(open);
-					if (!open) {
-						deleteCourse.reset();
-					}
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Delete "{course.title}"?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This permanently deletes the course and its {lessonCount}{" "}
-							{lessonCount === 1 ? "lesson" : "lessons"}. This cannot be undone.
-						</AlertDialogDescription>
-						{deleteCourse.error ? (
-							<p className={styles.actionError} role="alert">
-								{deleteCourse.error.message}
-							</p>
-						) : null}
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel
-							variant="ghost"
-							disabled={deleteCourse.isPending}
-						>
-							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
-							variant="destructive"
-							onClick={() => deleteCourse.mutate()}
-							disabled={deleteCourse.isPending}
-						>
-							{deleteCourse.isPending ? "Deleting..." : "Delete course"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-		</div>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete "{course.title}"?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This permanently deletes the course and its {lessonCount}{" "}
+								{lessonCount === 1 ? "lesson" : "lessons"}. This cannot be
+								undone.
+							</AlertDialogDescription>
+							{deleteCourse.error ? (
+								<p className={styles.actionError} role="alert">
+									{deleteCourse.error.message}
+								</p>
+							) : null}
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel
+								variant="ghost"
+								disabled={deleteCourse.isPending}
+							>
+								Cancel
+							</AlertDialogCancel>
+							<AlertDialogAction
+								variant="destructive"
+								onClick={() => deleteCourse.mutate()}
+								disabled={deleteCourse.isPending}
+							>
+								{deleteCourse.isPending ? "Deleting..." : "Delete course"}
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			</div>
+			{course.accessRole === "owner" ? (
+				<ShareCourseDialog
+					course={course}
+					open={sharing}
+					onOpenChange={setSharing}
+				/>
+			) : null}
+		</>
 	);
 }

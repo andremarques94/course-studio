@@ -8,6 +8,8 @@ export {
 	userRelations,
 	verification,
 } from "./auth.js";
+export { courseInvitations } from "./course-invitations.js";
+export { courseMembers, courseRole } from "./course-members.js";
 export { courses } from "./courses.js";
 export { lessonDocuments } from "./lesson-documents.js";
 export { lessons } from "./lessons.js";

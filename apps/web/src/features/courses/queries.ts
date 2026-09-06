@@ -17,4 +17,14 @@ export const courseQueries = {
 			queryKey: ["courses", courseId, "lessons"] as const,
 			queryFn: () => courseRepository.getLessons(courseId),
 		}),
+	members: (courseId: string) =>
+		queryOptions({
+			queryKey: ["courses", courseId, "members"] as const,
+			queryFn: () => courseRepository.getMembers(courseId),
+		}),
+	invitations: (courseId: string) =>
+		queryOptions({
+			queryKey: ["courses", courseId, "invitations"] as const,
+			queryFn: () => courseRepository.getInvitations(courseId),
+		}),
 };

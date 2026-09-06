@@ -59,6 +59,10 @@
 	align-items: center;
 }
 
+.accessBadge {
+	align-self: center;
+}
+
 .courseTitleRow > button {
 	width: 36px;
 	height: 36px;

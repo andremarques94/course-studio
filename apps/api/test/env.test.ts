@@ -49,6 +49,7 @@ test("development uses the local web origin when trusted origins are omitted", (
 	const env = loadEnv(baseEnv);
 
 	assert.deepEqual(env.trustedOrigins, ["http://localhost:3000"]);
+	assert.equal(env.webOrigin, "http://localhost:3000");
 	assert.equal(env.nodeEnv, "development");
 });
 
@@ -63,12 +64,28 @@ test("production requires explicit auth URL and trusted origins", () => {
 		BETTER_AUTH_URL: "https://api.example.com",
 		BETTER_AUTH_TRUSTED_ORIGINS:
 			"https://studio.example.com, https://admin.example.com",
+		WEB_ORIGIN: "https://studio.example.com",
 	});
 
 	assert.deepEqual(env.trustedOrigins, [
 		"https://studio.example.com",
 		"https://admin.example.com",
 	]);
+});
+
+test("production requires an explicit web origin for invitation links", () => {
+	assert.throws(
+		() =>
+			loadEnv({
+				...baseEnv,
+				NODE_ENV: "production",
+				SMTP_HOST: "smtp.example.com",
+				MAIL_FROM: "noreply@example.com",
+				BETTER_AUTH_URL: "https://api.example.com",
+				BETTER_AUTH_TRUSTED_ORIGINS: "https://studio.example.com",
+			}),
+		/WEB_ORIGIN/,
+	);
 });
 
 test("normalizes configured URLs to browser origins", () => {

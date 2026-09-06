@@ -29,7 +29,13 @@ function createTestApp(
 			verificationLinks.set(user.email, url);
 		},
 	});
-	return createApp(db, { auth, corsOrigins: [webOrigin], logger });
+	return createApp(db, {
+		auth,
+		corsOrigins: [webOrigin],
+		logger,
+		webOrigin,
+		sendCourseInvitation: async () => undefined,
+	});
 }
 
 function withSession(app: ReturnType<typeof createTestApp>, cookie: string) {
@@ -64,6 +70,8 @@ test("courses and lessons persist through the API", {
 			createPrivateRoutes(db, {
 				auth: alternateAuth,
 				trustedOrigins: [webOrigin],
+				webOrigin,
+				sendCourseInvitation: async () => undefined,
 			}),
 		);
 		assert.equal(

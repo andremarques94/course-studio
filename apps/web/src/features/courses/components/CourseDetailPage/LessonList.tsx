@@ -49,9 +49,10 @@ import styles from "./CourseDetailPage.module.css";
 type LessonListProps = {
 	courseId: string;
 	lessons: readonly Lesson[];
+	canEdit: boolean;
 };
 
-export function LessonList({ courseId, lessons }: LessonListProps) {
+export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 	const [editingLessonId, setEditingLessonId] = useState<string>();
 	const [deletingLessonId, setDeletingLessonId] = useState<string>();
 	const [reordering, setReordering] = useState(false);
@@ -137,10 +138,12 @@ export function LessonList({ courseId, lessons }: LessonListProps) {
 						<p className={styles.lessonSummary}>
 							{lessons.length === 0
 								? "Add the first lesson to begin writing."
-								: "Open a lesson to continue writing."}
+								: canEdit
+									? "Open a lesson to continue writing."
+									: "Open a lesson to view its presentation."}
 						</p>
 					</div>
-					{lessons.length > 1 ? (
+					{canEdit && lessons.length > 1 ? (
 						<Button
 							type="button"
 							variant={reordering ? "default" : "outline"}
@@ -229,11 +232,14 @@ export function LessonList({ courseId, lessons }: LessonListProps) {
 										<FileText aria-hidden="true" />
 									</span>
 									<span className={styles.lessonTitle}>{lesson.title}</span>
-									<span className={styles.openLabel}>Open editor</span>
+									<span className={styles.openLabel}>
+										{canEdit ? "Open editor" : "View lesson"}
+									</span>
 									<ArrowRight className={styles.arrow} aria-hidden="true" />
 								</Link>
 							)}
-							{editingLessonId === lesson.id ? null : reordering ? (
+							{!canEdit ? null : editingLessonId ===
+								lesson.id ? null : reordering ? (
 								<div className={styles.reorderActions}>
 									<Button
 										type="button"

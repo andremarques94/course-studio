@@ -1,5 +1,5 @@
-import { courses, type Database } from "@course-studio/db";
-import { asc, eq } from "drizzle-orm";
+import { courseMembers, courses, type Database } from "@course-studio/db";
+import { and, asc, eq, or } from "drizzle-orm";
 import { slugify } from "#api/content-naming";
 import { findPostgresError } from "#api/database-errors";
 import { ApiError } from "#api/http/errors/api-error";
@@ -9,16 +9,44 @@ import type {
 	UpdateCourseInput,
 } from "#api/modules/courses/schema";
 
+function accessRole(
+	userId: string,
+	ownerId: string,
+	membershipRole: "editor" | "viewer" | null,
+) {
+	if (ownerId === userId) {
+		return "owner" as const;
+	}
+	if (!membershipRole) {
+		throw new Error("Accessible course has no access role.");
+	}
+	return membershipRole;
+}
+
 export function createCoursesService(db: Database) {
 	const access = createCourseAccess(db);
 
 	return {
 		async findAll(userId: string) {
-			return db
-				.select()
+			const results = await db
+				.select({ course: courses, membershipRole: courseMembers.role })
 				.from(courses)
-				.where(eq(courses.ownerId, userId))
+				.leftJoin(
+					courseMembers,
+					and(
+						eq(courseMembers.courseId, courses.id),
+						eq(courseMembers.userId, userId),
+					),
+				)
+				.where(
+					or(eq(courses.ownerId, userId), eq(courseMembers.userId, userId)),
+				)
 				.orderBy(asc(courses.createdAt));
+
+			return results.map(({ course, membershipRole }) => ({
+				...course,
+				accessRole: accessRole(userId, course.ownerId, membershipRole),
+			}));
 		},
 
 		async findById(userId: string, id: string) {
@@ -40,7 +68,7 @@ export function createCoursesService(db: Database) {
 					throw new Error("Course insert returned no row.");
 				}
 
-				return course;
+				return { ...course, accessRole: "owner" as const };
 			} catch (error) {
 				if (findPostgresError(error)?.code === "23505") {
 					throw new ApiError(
@@ -54,22 +82,29 @@ export function createCoursesService(db: Database) {
 		},
 
 		async update(userId: string, id: string, input: UpdateCourseInput) {
-			await access.requireEditable(userId, id);
-			const [course] = await db
-				.update(courses)
-				.set({ title: input.title, updatedAt: new Date() })
-				.where(eq(courses.id, id))
-				.returning();
+			return db.transaction(async (tx) => {
+				const transactionAccess = createCourseAccess(tx);
+				await transactionAccess.lock(id);
+				const accessibleCourse = await transactionAccess.requireEditable(
+					userId,
+					id,
+				);
+				const [course] = await tx
+					.update(courses)
+					.set({ title: input.title, updatedAt: new Date() })
+					.where(eq(courses.id, id))
+					.returning();
 
-			if (!course) {
-				throw new ApiError(404, "COURSE_NOT_FOUND", "Course not found.");
-			}
+				if (!course) {
+					throw new ApiError(404, "COURSE_NOT_FOUND", "Course not found.");
+				}
 
-			return course;
+				return { ...course, accessRole: accessibleCourse.accessRole };
+			});
 		},
 
 		async delete(userId: string, id: string) {
-			await access.requireEditable(userId, id);
+			await access.requireManageable(userId, id);
 			const [course] = await db
 				.delete(courses)
 				.where(eq(courses.id, id))
