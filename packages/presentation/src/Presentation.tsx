@@ -6,6 +6,7 @@ import "reveal.js/reveal.css";
 import "@course-studio/themes/styles.css";
 import "./reveal-adapter.css";
 import styles from "./Presentation.module.css";
+import { safeMarkdownOptions } from "./safe-markdown";
 import { getThemeStyle } from "./theme-style";
 import {
 	type PresentationHandle,
@@ -57,7 +58,14 @@ export function Presentation({
 				className={`${styles.deck} course-studio-presentation`}
 				config={defaultConfig}
 			>
-				<Markdown data-presentation-slide="">{markdown}</Markdown>
+				<Markdown
+					data-presentation-slide=""
+					options={safeMarkdownOptions}
+					elementAttributesSeparator="(?!)"
+					slideAttributesSeparator="(?!)"
+				>
+					{markdown}
+				</Markdown>
 			</Deck>
 		</div>
 	);

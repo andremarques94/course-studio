@@ -80,18 +80,30 @@ export class CollaborationProcess {
 }
 
 export async function authenticate(request: APIRequestContext) {
+	const email = `playwright-${randomUUID()}@example.com`;
 	const response = await request.post(
 		`${e2eEnvironment.urls.api}/api/auth/sign-up/email`,
 		{
 			headers: { origin: e2eEnvironment.urls.web },
 			data: {
-				email: `playwright-${randomUUID()}@example.com`,
+				email,
 				name: "Playwright Author",
 				password: "playwright-password",
 			},
 		},
 	);
 	expect(response.ok()).toBe(true);
+	const verificationURL = await getVerificationURL(request, email);
+	const verified = await request.get(verificationURL, { maxRedirects: 0 });
+	expect(verified.status()).toBeLessThan(400);
+	const signedIn = await request.post(
+		`${e2eEnvironment.urls.api}/api/auth/sign-in/email`,
+		{
+			headers: { origin: e2eEnvironment.urls.web },
+			data: { email, password: "playwright-password" },
+		},
+	);
+	expect(signedIn.ok()).toBe(true);
 }
 
 export function editor(page: Page) {
@@ -194,4 +206,43 @@ function waitForExit(child: ChildProcess, timeout: number) {
 		}, timeout);
 		child.once("exit", onExit);
 	});
+}
+
+export async function getVerificationURL(
+	request: APIRequestContext,
+	email: string,
+) {
+	let verificationURL: string | undefined;
+	await expect
+		.poll(
+			async () => {
+				const response = await request.get(
+					`http://127.0.0.1:8025/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+				);
+				if (!response.ok()) {
+					return false;
+				}
+				const body = (await response.json()) as {
+					messages: Array<{ ID: string }>;
+				};
+				const id = body.messages[0]?.ID;
+				if (!id) {
+					return false;
+				}
+				const message = await request.get(
+					`http://127.0.0.1:8025/api/v1/message/${id}`,
+				);
+				const content = (await message.json()) as { Text: string };
+				verificationURL = content.Text.match(
+					/https?:\/\/[^\s]+\/api\/auth\/verify-email\?[^\s]+/,
+				)?.[0];
+				return Boolean(verificationURL);
+			},
+			{ timeout: 15000 },
+		)
+		.toBe(true);
+	if (!verificationURL) {
+		throw new Error("Verification email was not delivered");
+	}
+	return verificationURL;
 }

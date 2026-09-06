@@ -14,20 +14,27 @@ export type AuthOptions = {
 	google?: OAuthConfig;
 	secret: string;
 	trustedOrigins: string[];
+	sendVerificationEmail?: (input: {
+		user: { email: string };
+		url: string;
+	}) => Promise<void>;
 };
 
-export function createAuth(db: Database, options: AuthOptions) {
-	return betterAuth({
+export function createAuthConfiguration(options: AuthOptions) {
+	return {
 		appName: "Course Studio",
 		baseURL: options.baseURL,
 		secret: options.secret,
 		trustedOrigins: options.trustedOrigins,
-		database: drizzleAdapter(db, {
-			provider: "pg",
-			schema: authSchema,
-		}),
 		emailAndPassword: {
 			enabled: true,
+			requireEmailVerification: true,
+		},
+		emailVerification: {
+			sendOnSignUp: true,
+			sendOnSignIn: true,
+			autoSignInAfterVerification: false,
+			sendVerificationEmail: options.sendVerificationEmail,
 		},
 		socialProviders: {
 			...(options.github ? { github: options.github } : {}),
@@ -35,7 +42,8 @@ export function createAuth(db: Database, options: AuthOptions) {
 		},
 		account: {
 			accountLinking: {
-				requireLocalEmailVerified: false,
+				requireLocalEmailVerified: true,
+				disableImplicitLinking: true,
 			},
 			encryptOAuthTokens: true,
 			identityStrategy: "provider-id",
@@ -52,6 +60,13 @@ export function createAuth(db: Database, options: AuthOptions) {
 				},
 			}),
 		],
+	};
+}
+
+export function createAuth(db: Database, options: AuthOptions) {
+	return betterAuth({
+		...createAuthConfiguration(options),
+		database: drizzleAdapter(db, { provider: "pg", schema: authSchema }),
 	});
 }
 

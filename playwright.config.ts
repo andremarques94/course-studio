@@ -42,6 +42,10 @@ export default defineConfig({
 			command: "node --env-file-if-exists=.env apps/api/dist/index.js",
 			env: {
 				API_PORT: String(e2eEnvironment.ports.api),
+				SMTP_HOST: "127.0.0.1",
+				SMTP_PORT: "1025",
+				SMTP_SECURE: "false",
+				MAIL_FROM: "noreply@example.com",
 				BETTER_AUTH_SECRET: authSecret,
 				BETTER_AUTH_TRUSTED_ORIGINS: e2eEnvironment.urls.web,
 				BETTER_AUTH_URL: e2eEnvironment.urls.api,

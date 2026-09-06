@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { SubmitEvent } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { authClient } from "./auth-client";
 
@@ -34,6 +35,7 @@ type UseAuthFormOptions = {
 
 export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 	const navigate = useNavigate();
+	const [notice, setNotice] = useState<string>();
 	const authenticate = useMutation({
 		mutationFn: async (request: AuthRequest) => {
 			if (request.type !== "email") {
@@ -52,9 +54,18 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 			const result =
 				mode === "sign-up" ? await signUp(values) : await signIn(values);
 			if (result.error) {
+				if (result.error.code === "EMAIL_NOT_VERIFIED") {
+					throw new Error(
+						"Verify your email before signing in. Check your inbox for a verification link, including spam.",
+					);
+				}
 				throw new Error("Unable to authenticate with those details.");
 			}
 
+			if (mode === "sign-up") {
+				setNotice("Check your email to verify your account, then sign in.");
+				return;
+			}
 			await navigate({ to: redirect });
 		},
 	});
@@ -63,6 +74,7 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 		: undefined;
 
 	return {
+		notice,
 		error: authenticate.error?.message,
 		handleEmailSubmit(event: SubmitEvent<HTMLFormElement>) {
 			event.preventDefault();
@@ -97,7 +109,10 @@ function signIn(values: unknown) {
 	if (!result.success) {
 		throw new Error(result.error.issues[0]?.message ?? "Invalid credentials.");
 	}
-	return authClient.signIn.email(result.data);
+	return authClient.signIn.email({
+		...result.data,
+		callbackURL: new URL("/sign-in", window.location.origin).toString(),
+	});
 }
 
 function signUp(values: unknown) {
@@ -108,5 +123,8 @@ function signUp(values: unknown) {
 		);
 	}
 	const { confirmPassword: _, ...credentials } = result.data;
-	return authClient.signUp.email(credentials);
+	return authClient.signUp.email({
+		...credentials,
+		callbackURL: new URL("/sign-in", window.location.origin).toString(),
+	});
 }
