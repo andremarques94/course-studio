@@ -69,7 +69,6 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 		});
 		assert.equal(lessonLoadCount, 1);
 		const expectedState = Y.encodeStateAsUpdate(firstDocument);
-		firstDocument.destroy();
 
 		const competingDocument = new Y.Doc();
 		competingDocument.getText("markdown").insert(0, "Competing migration");
@@ -79,6 +78,20 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 		);
 		competingDocument.destroy();
 		assert.deepEqual(conflictWinner, expectedState);
+
+		const secondWriter = new Y.Doc();
+		Y.applyUpdate(secondWriter, expectedState);
+		firstDocument.getMap("writers").set("first", "A");
+		secondWriter.getMap("writers").set("second", "B");
+		await Promise.all([
+			firstStore.store(lessonId, Y.encodeStateAsUpdate(firstDocument)),
+			createPostgresLessonDocumentStore(db).store(
+				lessonId,
+				Y.encodeStateAsUpdate(secondWriter),
+			),
+		]);
+		secondWriter.destroy();
+		firstDocument.destroy();
 
 		await db.$client.end();
 		db = createDatabase(databaseUrl);
@@ -100,7 +113,8 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 			"# PostgreSQL\n\nExact collaborative state.",
 		);
 		assert.equal(restoredDocument.getMap("metadata").get("themeId"), "dark");
-		assert.deepEqual(Y.encodeStateAsUpdate(restoredDocument), expectedState);
+		assert.equal(restoredDocument.getMap("writers").get("first"), "A");
+		assert.equal(restoredDocument.getMap("writers").get("second"), "B");
 		restoredDocument.destroy();
 	} finally {
 		await db.delete(courses).where(eq(courses.id, courseId));
