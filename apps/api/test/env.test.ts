@@ -6,6 +6,45 @@ const databaseUrl = "postgresql://user:password@localhost:5432/course_studio";
 const secret = "test-secret-that-is-at-least-32-characters";
 const baseEnv = { BETTER_AUTH_SECRET: secret, DATABASE_URL: databaseUrl };
 
+test("production cannot start without verification email delivery configured", () => {
+	assert.throws(
+		() =>
+			loadEnv({
+				...baseEnv,
+				NODE_ENV: "production",
+				BETTER_AUTH_URL: "https://api.example.com",
+				BETTER_AUTH_TRUSTED_ORIGINS: "https://studio.example.com",
+			}),
+		/SMTP_HOST and MAIL_FROM/,
+	);
+});
+
+test("SMTP configuration requires complete host, sender and credential pairs", () => {
+	assert.throws(() => loadEnv({ ...baseEnv, SMTP_HOST: "localhost" }));
+	assert.throws(() =>
+		loadEnv({ ...baseEnv, MAIL_FROM: "noreply@example.com" }),
+	);
+	assert.throws(() => loadEnv({ ...baseEnv, SMTP_USER: "user" }));
+	assert.throws(() => loadEnv({ ...baseEnv, SMTP_PASSWORD: "password" }));
+	const env = loadEnv({
+		...baseEnv,
+		SMTP_HOST: "smtp.example.com",
+		SMTP_PORT: "465",
+		SMTP_SECURE: "true",
+		SMTP_USER: "user",
+		SMTP_PASSWORD: "password",
+		MAIL_FROM: "noreply@example.com",
+	});
+	assert.deepEqual(env.smtp, {
+		host: "smtp.example.com",
+		port: 465,
+		secure: true,
+		user: "user",
+		password: "password",
+		from: "noreply@example.com",
+	});
+});
+
 test("development uses the local web origin when trusted origins are omitted", () => {
 	const env = loadEnv(baseEnv);
 
@@ -19,6 +58,8 @@ test("production requires explicit auth URL and trusted origins", () => {
 	const env = loadEnv({
 		...baseEnv,
 		NODE_ENV: "production",
+		SMTP_HOST: "smtp.example.com",
+		MAIL_FROM: "noreply@example.com",
 		BETTER_AUTH_URL: "https://api.example.com",
 		BETTER_AUTH_TRUSTED_ORIGINS:
 			"https://studio.example.com, https://admin.example.com",

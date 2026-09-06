@@ -10,7 +10,8 @@
 		"check": "biome check",
 		"format": "biome format",
 		"lint": "biome lint",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "tsx --test src/*.test.ts"
 	},
 	"peerDependencies": {
 		"react": "^19.0.0",
@@ -21,13 +22,17 @@
 		"@revealjs/react": "^0.2.1",
 		"remeda": "^2.45.0",
 		"reveal.js": "^6.0.1",
+		"sanitize-html": "^2.17.7",
 		"usehooks-ts": "^3.1.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",
 		"@course-studio/typescript-config": "workspace:*",
+		"@types/node": "^22.20.1",
 		"@types/react": "^19.2.18",
 		"@types/react-dom": "^19.2.5",
+		"@types/sanitize-html": "^2.16.1",
+		"tsx": "^4.23.13",
 		"typescript": "^6.0.2"
 	}
 }

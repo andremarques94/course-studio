@@ -1,4 +1,5 @@
 {
 	"extends": "@course-studio/typescript-config/react.json",
-	"include": ["src"]
+	"include": ["src"],
+	"compilerOptions": { "types": ["node"] }
 }

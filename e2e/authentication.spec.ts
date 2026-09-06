@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { e2eEnvironment } from "./environment";
+import { getVerificationURL } from "./helpers";
 
 test("sign-up, refresh, sign-out, and sign-in work through the UI", async ({
 	page,
@@ -14,6 +15,15 @@ test("sign-up, refresh, sign-out, and sign-in work through the UI", async ({
 	await page.getByLabel("Password", { exact: true }).fill(password);
 	await page.getByLabel("Confirm password").fill(password);
 	await page.getByRole("button", { name: "Create account" }).click();
+	await expect(page.getByRole("status")).toContainText("Check your email");
+	expect(
+		(await page.request.get(`${e2eEnvironment.urls.api}/api/courses`)).status(),
+	).toBe(401);
+	await page.goto(await getVerificationURL(page.request, email));
+	await expect(page).toHaveURL(/\/sign-in/);
+	await page.getByLabel("Email").fill(email);
+	await page.getByLabel("Password", { exact: true }).fill(password);
+	await page.getByRole("button", { name: "Sign in", exact: true }).click();
 	await expect(page).toHaveURL(/\/studio/);
 
 	await page.reload();

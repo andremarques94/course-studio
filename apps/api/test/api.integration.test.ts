@@ -14,6 +14,7 @@ const logger = createLogger("silent");
 const authSecret =
 	process.env.BETTER_AUTH_SECRET ??
 	"integration-test-secret-with-32-characters";
+const verificationLinks = new Map<string, string>();
 const webOrigin = "http://localhost:3000";
 
 function createTestApp(
@@ -24,6 +25,9 @@ function createTestApp(
 		baseURL,
 		secret: authSecret,
 		trustedOrigins: [webOrigin],
+		sendVerificationEmail: async ({ user, url }) => {
+			verificationLinks.set(user.email, url);
+		},
 	});
 	return createApp(db, { auth, corsOrigins: [webOrigin], logger });
 }
@@ -110,7 +114,7 @@ test("courses and lessons persist through the API", {
 		);
 
 		assert.equal((await app.request("/api/courses")).status, 401);
-		const signUpResponse = await app.request("/api/auth/sign-up/email", {
+		const signUpResponse = await createVerifiedAccount(app, {
 			method: "POST",
 			headers: { "content-type": "application/json", origin: webOrigin },
 			body: JSON.stringify({
@@ -284,18 +288,15 @@ test("courses and lessons persist through the API", {
 			"UNTRUSTED_ORIGIN",
 		);
 
-		const bobSignUpResponse = await createTestApp(db).request(
-			"/api/auth/sign-up/email",
-			{
-				method: "POST",
-				headers: { "content-type": "application/json", origin: webOrigin },
-				body: JSON.stringify({
-					email: `integration-bob-${randomUUID()}@example.com`,
-					name: "Integration Bob",
-					password: "test-password",
-				}),
-			},
-		);
+		const bobSignUpResponse = await createVerifiedAccount(createTestApp(db), {
+			method: "POST",
+			headers: { "content-type": "application/json", origin: webOrigin },
+			body: JSON.stringify({
+				email: `integration-bob-${randomUUID()}@example.com`,
+				name: "Integration Bob",
+				password: "test-password",
+			}),
+		});
 		assert.equal(bobSignUpResponse.status, 200);
 		const bobCookie = bobSignUpResponse.headers
 			.get("set-cookie")
@@ -375,18 +376,18 @@ test("courses and lessons persist through the API", {
 			204,
 		);
 
-		const secureSignUpResponse = await createTestApp(
-			db,
-			"https://api.example.test",
-		).request("/api/auth/sign-up/email", {
-			method: "POST",
-			headers: { "content-type": "application/json", origin: webOrigin },
-			body: JSON.stringify({
-				email: `integration-secure-${randomUUID()}@example.com`,
-				name: "Secure Cookie User",
-				password: "test-password",
-			}),
-		});
+		const secureSignUpResponse = await createVerifiedAccount(
+			createTestApp(db, "https://api.example.test"),
+			{
+				method: "POST",
+				headers: { "content-type": "application/json", origin: webOrigin },
+				body: JSON.stringify({
+					email: `integration-secure-${randomUUID()}@example.com`,
+					name: "Secure Cookie User",
+					password: "test-password",
+				}),
+			},
+		);
 		assert.equal(secureSignUpResponse.status, 200);
 		assert.match(
 			secureSignUpResponse.headers.get("set-cookie") ?? "",
@@ -488,3 +489,23 @@ test("courses and lessons persist through the API", {
 		await db.$client.end();
 	}
 });
+
+async function createVerifiedAccount(
+	app: ReturnType<typeof createTestApp>,
+	init: RequestInit,
+) {
+	const credentials = JSON.parse(String(init.body)) as {
+		email: string;
+		password: string;
+	};
+	const signup = await app.request("/api/auth/sign-up/email", init);
+	assert.equal(signup.status, 200);
+	assert.equal(signup.headers.get("set-cookie"), null);
+	const blocked = await app.request("/api/auth/sign-in/email", init);
+	assert.equal(blocked.status, 403);
+	const url = verificationLinks.get(credentials.email);
+	assert.ok(url);
+	const verified = await app.request(url);
+	assert.ok(verified.status < 400);
+	return app.request("/api/auth/sign-in/email", init);
+}

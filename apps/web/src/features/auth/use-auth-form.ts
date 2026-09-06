@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import type { SubmitEvent } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { authClient } from "./auth-client";
 
@@ -33,7 +33,7 @@ type UseAuthFormOptions = {
 };
 
 export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
-	const navigate = useNavigate();
+	const [notice, setNotice] = useState<string>();
 	const authenticate = useMutation({
 		mutationFn: async (request: AuthRequest) => {
 			if (request.type !== "email") {
@@ -50,12 +50,24 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 
 			const values = Object.fromEntries(request.formData);
 			const result =
-				mode === "sign-up" ? await signUp(values) : await signIn(values);
+				mode === "sign-up"
+					? await signUp(values)
+					: await signIn(values, redirect);
 			if (result.error) {
+				if (result.error.code === "EMAIL_NOT_VERIFIED") {
+					throw new Error(
+						"Verify your email before signing in. Check your inbox for a verification link, including spam.",
+					);
+				}
 				throw new Error("Unable to authenticate with those details.");
 			}
 
-			await navigate({ to: redirect });
+			if (mode === "sign-up") {
+				setNotice("Check your email to verify your account, then sign in.");
+				return;
+			}
+			// Better Auth follows the password sign-in callback URL after setting
+			// the session cookie. A second router navigation races that redirect.
 		},
 	});
 	const pendingRequest = authenticate.isPending
@@ -63,6 +75,7 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 		: undefined;
 
 	return {
+		notice,
 		error: authenticate.error?.message,
 		handleEmailSubmit(event: SubmitEvent<HTMLFormElement>) {
 			event.preventDefault();
@@ -92,12 +105,15 @@ export function useAuthForm({ mode, redirect }: UseAuthFormOptions) {
 	};
 }
 
-function signIn(values: unknown) {
+function signIn(values: unknown, redirect: string) {
 	const result = credentialsSchema.safeParse(values);
 	if (!result.success) {
 		throw new Error(result.error.issues[0]?.message ?? "Invalid credentials.");
 	}
-	return authClient.signIn.email(result.data);
+	return authClient.signIn.email({
+		...result.data,
+		callbackURL: new URL(redirect, window.location.origin).toString(),
+	});
 }
 
 function signUp(values: unknown) {
@@ -108,5 +124,8 @@ function signUp(values: unknown) {
 		);
 	}
 	const { confirmPassword: _, ...credentials } = result.data;
-	return authClient.signUp.email(credentials);
+	return authClient.signUp.email({
+		...credentials,
+		callbackURL: new URL("/sign-in", window.location.origin).toString(),
+	});
 }

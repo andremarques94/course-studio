@@ -35,6 +35,7 @@ export function AuthForm({ mode, redirect }: AuthFormProps) {
 	const [isHydrated, setIsHydrated] = useState(false);
 	useEffect(() => setIsHydrated(true), []);
 	const {
+		notice,
 		error,
 		handleEmailSubmit,
 		handleGitHubSignIn,
@@ -74,6 +75,11 @@ export function AuthForm({ mode, redirect }: AuthFormProps) {
 						<CardContent>
 							<form method="post" onSubmit={handleEmailSubmit}>
 								<FieldGroup>
+									{notice && (
+										<Alert role="status">
+											<AlertDescription>{notice}</AlertDescription>
+										</Alert>
+									)}
 									{error && (
 										<Alert variant="destructive">
 											<TriangleAlert />

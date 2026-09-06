@@ -4,16 +4,19 @@ import { serve } from "@hono/node-server";
 import { createApp } from "#api/app";
 import { loadEnv } from "#api/env";
 import { createLogger } from "#api/logger";
+import { createVerificationEmailSender } from "#api/verification-email";
 
 const env = loadEnv();
 const logger = createLogger(env.logLevel);
 const db = createDatabase(env.databaseUrl);
+const sendVerificationEmail = createVerificationEmailSender(env);
 const auth = createAuth(db, {
 	baseURL: env.betterAuthUrl,
 	github: env.github,
 	google: env.google,
 	secret: env.betterAuthSecret,
 	trustedOrigins: env.trustedOrigins,
+	sendVerificationEmail,
 });
 const app = createApp(db, {
 	auth,

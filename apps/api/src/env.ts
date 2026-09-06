@@ -38,12 +38,38 @@ const envSchema = z
 		GOOGLE_CLIENT_SECRET: z.string().trim().min(1).optional(),
 		API_PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
 		PORT: z.coerce.number().pipe(z.int().min(1).max(65_535)).optional(),
+		SMTP_HOST: z.string().trim().min(1).optional(),
+		SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+		SMTP_SECURE: z
+			.enum(["true", "false"])
+			.default("false")
+			.transform((v) => v === "true"),
+		SMTP_USER: z.string().min(1).optional(),
+		SMTP_PASSWORD: z.string().min(1).optional(),
+		MAIL_FROM: z.email().optional(),
 		LOG_LEVEL: z
 			.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
 			.default("info"),
 	})
 	.superRefine((env, context) => {
 		[
+			{
+				invalid:
+					env.NODE_ENV === "production" && (!env.SMTP_HOST || !env.MAIL_FROM),
+				path: "SMTP_HOST",
+				message:
+					"SMTP_HOST and MAIL_FROM are required in production for email verification.",
+			},
+			{
+				invalid: Boolean(env.SMTP_HOST) !== Boolean(env.MAIL_FROM),
+				path: "MAIL_FROM",
+				message: "SMTP_HOST and MAIL_FROM must be configured together.",
+			},
+			{
+				invalid: Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD),
+				path: "SMTP_USER",
+				message: "SMTP_USER and SMTP_PASSWORD must be configured together.",
+			},
 			{
 				invalid: env.NODE_ENV === "production" && !env.BETTER_AUTH_URL,
 				path: "BETTER_AUTH_URL",
@@ -75,6 +101,17 @@ const envSchema = z
 	})
 	.transform((env) => ({
 		nodeEnv: env.NODE_ENV,
+		smtp:
+			env.SMTP_HOST && env.MAIL_FROM
+				? {
+						host: env.SMTP_HOST,
+						port: env.SMTP_PORT,
+						secure: env.SMTP_SECURE,
+						user: env.SMTP_USER,
+						password: env.SMTP_PASSWORD,
+						from: env.MAIL_FROM,
+					}
+				: undefined,
 		databaseUrl: env.DATABASE_URL,
 		apiPort: env.API_PORT ?? env.PORT ?? 3001,
 		betterAuthSecret: env.BETTER_AUTH_SECRET,
