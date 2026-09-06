@@ -48,6 +48,15 @@ test("keeps transport state authoritative over pending changes", () => {
 	status.destroy();
 });
 
+test("exposes authentication failures separately from an offline network", () => {
+	const status = createCollaborationStatusStore();
+	status.setTransportStatus("auth-failed");
+	assert.equal(status.getSnapshot(), "auth-failed");
+	status.setTransportStatus("connecting");
+	assert.equal(status.getSnapshot(), "connecting");
+	status.destroy();
+});
+
 test("keeps Syncing visible until acknowledged changes remain settled", async () => {
 	const status = createCollaborationStatusStore({ syncedSettleDelayMs: 10 });
 	status.setTransportStatus("connected");

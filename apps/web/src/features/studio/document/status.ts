@@ -5,14 +5,19 @@ export type CollaborationStatus =
 	| "connected"
 	| "syncing"
 	| "synced"
-	| "offline";
+	| "offline"
+	| "auth-failed";
 
 export type CollaborationStatusStore = {
 	readonly getSnapshot: () => CollaborationStatus;
 	readonly subscribe: (listener: () => void) => () => void;
 };
 
-type TransportStatus = "connecting" | "connected" | "disconnected";
+type TransportStatus =
+	| "connecting"
+	| "connected"
+	| "disconnected"
+	| "auth-failed";
 
 type CollaborationStatusStoreOptions = {
 	syncedSettleDelayMs?: number;
@@ -92,7 +97,7 @@ export function createCollaborationStatusStore({
 		},
 		setTransportStatus(status) {
 			state.transportStatus = status;
-			if (status === "disconnected") {
+			if (status === "disconnected" || status === "auth-failed") {
 				state.synced = false;
 			}
 			publish();
@@ -128,6 +133,8 @@ function deriveStatus({
 	unsyncedChanges: number;
 }): CollaborationStatus {
 	switch (transportStatus) {
+		case "auth-failed":
+			return "auth-failed";
 		case "disconnected":
 			return "offline";
 		case "connecting":

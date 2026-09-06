@@ -1,5 +1,6 @@
 import { type BuiltinThemeId, isBuiltinThemeId } from "@course-studio/themes";
 import type * as Y from "yjs";
+import type { DraftStorageStatusStore } from "./persistence";
 import type { CollaborationPresence } from "./presence";
 import type { CollaborationStatusStore } from "./status";
 
@@ -14,6 +15,8 @@ export type LessonDocument = {
 	readonly markdown: Y.Text;
 	readonly presence: CollaborationPresence | null;
 	readonly collaborationStatus: CollaborationStatusStore | null;
+	readonly draftStorageStatus: DraftStorageStatusStore | null;
+	readonly retryCollaboration: (() => void) | null;
 	readonly getSnapshot: () => LessonDocumentSnapshot;
 	readonly subscribe: (listener: () => void) => () => void;
 	readonly setThemeId: (themeId: BuiltinThemeId) => void;
@@ -24,6 +27,8 @@ export type ManagedLessonDocument = LessonDocument & {
 	markReady(): void;
 	setPresence(presence: CollaborationPresence): void;
 	setCollaborationStatus(status: CollaborationStatusStore): void;
+	setDraftStorageStatus(status: DraftStorageStatusStore): void;
+	setRetryCollaboration(retry: () => void): void;
 };
 
 export function createLessonDocumentModel(
@@ -35,6 +40,8 @@ export function createLessonDocumentModel(
 	const listeners = new Set<() => void>();
 	const state = {
 		collaborationStatus: null as CollaborationStatusStore | null,
+		draftStorageStatus: null as DraftStorageStatusStore | null,
+		retryCollaboration: null as (() => void) | null,
 		presence: null as CollaborationPresence | null,
 		snapshot: readSnapshot(markdown, metadata, ready),
 	};
@@ -66,6 +73,12 @@ export function createLessonDocumentModel(
 		get collaborationStatus() {
 			return state.collaborationStatus;
 		},
+		get draftStorageStatus() {
+			return state.draftStorageStatus;
+		},
+		get retryCollaboration() {
+			return state.retryCollaboration;
+		},
 		getSnapshot: () => state.snapshot,
 		subscribe(listener) {
 			listeners.add(listener);
@@ -88,6 +101,12 @@ export function createLessonDocumentModel(
 		},
 		setCollaborationStatus(nextStatus) {
 			state.collaborationStatus = nextStatus;
+		},
+		setDraftStorageStatus(nextStatus) {
+			state.draftStorageStatus = nextStatus;
+		},
+		setRetryCollaboration(retry) {
+			state.retryCollaboration = retry;
 		},
 		destroy() {
 			markdown.unobserve(publish);

@@ -145,6 +145,45 @@ test("connected clients recover after the collaboration server restarts", async 
 	}
 });
 
+test("an offline draft survives reload and syncs after reconnecting", async ({
+	browser,
+}) => {
+	const lesson = await createLesson();
+	const contexts = await createClients(browser);
+	const offlineMarkdown = `Offline draft ${randomUUID()}`;
+	let serverStopped = false;
+
+	try {
+		await openLesson(contexts.pages[0], lesson.courseId, lesson.lessonId);
+		await collaboration.stop();
+		serverStopped = true;
+		await waitForStatus(contexts.pages[0], "offline");
+		await replaceMarkdown(contexts.pages[0], offlineMarkdown);
+		await expect(
+			contexts.pages[0].getByText("Saved on this device", { exact: true }),
+		).toBeVisible();
+
+		await contexts.pages[0].reload();
+		await waitForMarkdown(contexts.pages[0], offlineMarkdown);
+		await collaboration.start();
+		serverStopped = false;
+		await waitForStatus(contexts.pages[0], "synced");
+
+		const freshClients = await createClients(browser);
+		try {
+			await openLesson(freshClients.pages[0], lesson.courseId, lesson.lessonId);
+			await waitForMarkdown(freshClients.pages[0], offlineMarkdown);
+		} finally {
+			await closeContexts(freshClients.contexts);
+		}
+	} finally {
+		if (serverStopped) {
+			await collaboration.start();
+		}
+		await closeContexts(contexts.contexts);
+	}
+});
+
 test("a fresh client restores the persisted document after a server restart", async ({
 	browser,
 }) => {

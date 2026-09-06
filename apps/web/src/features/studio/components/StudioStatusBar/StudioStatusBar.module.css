@@ -50,6 +50,20 @@
 	white-space: nowrap;
 }
 
+.storageStatus[data-status="error"] {
+	color: var(--color-destructive);
+}
+
+.retry {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--color-primary);
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
 .statusDot {
 	width: 6px;
 	height: 6px;
@@ -74,6 +88,10 @@
 }
 
 .collaborationStatus[data-status="offline"] .statusDot {
+	color: var(--color-destructive);
+}
+
+.collaborationStatus[data-status="auth-failed"] .statusDot {
 	color: var(--color-destructive);
 }
 

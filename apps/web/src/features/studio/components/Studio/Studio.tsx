@@ -98,6 +98,8 @@ export function Studio({
 					slideCount={slideCount}
 					collaborationStatus={collaborationStatus}
 					collaborators={collaborators}
+					draftStorageStatus={lessonDocument.draftStorageStatus}
+					onRetry={lessonDocument.retryCollaboration}
 				/>
 			}
 		>
