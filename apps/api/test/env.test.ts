@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { loadEnv } from "../src/config/env.js";
+import { loadEnv } from "#api/env";
 
 const databaseUrl = "postgresql://user:password@localhost:5432/course_studio";
 const secret = "test-secret-that-is-at-least-32-characters";

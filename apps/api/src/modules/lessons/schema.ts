@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { titleSchema } from "../../shared/domain/title.js";
+import { titleSchema } from "#api/content-naming";
 
 export const lessonIdSchema = z.object({ lessonId: z.uuid() });
 export const createLessonSchema = z.object({ title: titleSchema });

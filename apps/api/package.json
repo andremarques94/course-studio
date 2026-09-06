@@ -2,6 +2,13 @@
 	"name": "@course-studio/api",
 	"private": true,
 	"type": "module",
+	"imports": {
+		"#api/*": {
+			"source": "./src/*.ts",
+			"types": "./src/*.ts",
+			"default": "./dist/*.js"
+		}
+	},
 	"exports": {
 		".": {
 			"types": "./src/app.ts",
@@ -10,7 +17,7 @@
 	},
 	"scripts": {
 		"predev": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
-		"dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+		"dev": "tsx --conditions=source watch --env-file-if-exists=../../.env src/index.ts",
 		"build": "tsc -p tsconfig.build.json",
 		"start": "node --env-file-if-exists=../../.env dist/index.js",
 		"check": "biome check",
@@ -18,8 +25,8 @@
 		"lint": "biome lint",
 		"typecheck": "tsc --noEmit",
 		"pretest": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
-		"test": "tsx --env-file-if-exists=../../.env --test test/*.test.ts",
-		"test:integration": "tsx --env-file-if-exists=../../.env --test test/api.integration.test.ts"
+		"test": "tsx --conditions=source --env-file-if-exists=../../.env --test test/*.test.ts",
+		"test:integration": "tsx --conditions=source --env-file-if-exists=../../.env --test test/api.integration.test.ts"
 	},
 	"dependencies": {
 		"@course-studio/auth": "workspace:*",

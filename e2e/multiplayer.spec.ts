@@ -172,7 +172,11 @@ test("a fresh client restores the persisted document after a server restart", as
 
 	const restoredContext = await browser.newContext();
 	try {
-		await authenticate(restoredContext.request);
+		if (!api) {
+			throw new Error("API request context is not initialized");
+		}
+		const ownerState = await api.storageState();
+		await restoredContext.addCookies(ownerState.cookies);
 		const restoredPage = await restoredContext.newPage();
 		await openLesson(restoredPage, lesson.courseId, lesson.lessonId);
 		await waitForMarkdown(restoredPage, persistedMarkdown);
@@ -202,11 +206,14 @@ async function createLesson() {
 }
 
 async function createClients(browser: Browser) {
+	if (!api) {
+		throw new Error("API request context is not initialized");
+	}
+	const storageState = await api.storageState();
 	const contexts = await Promise.all([
-		browser.newContext(),
-		browser.newContext(),
+		browser.newContext({ storageState }),
+		browser.newContext({ storageState }),
 	]);
-	await Promise.all(contexts.map((context) => authenticate(context.request)));
 	const pages = await Promise.all(contexts.map((context) => context.newPage()));
 	return { contexts, pages };
 }

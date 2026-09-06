@@ -16,16 +16,6 @@ const envSchema = z
 			.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
 			.default("info"),
 	})
-	.superRefine((env, context) => {
-		if (env.NODE_ENV === "production") {
-			context.addIssue({
-				code: "custom",
-				path: ["NODE_ENV"],
-				message:
-					"The collaboration server is development-only until lesson authorization is implemented.",
-			});
-		}
-	})
 	.transform((env) => ({
 		nodeEnv: env.NODE_ENV,
 		host: env.COLLAB_HOST,

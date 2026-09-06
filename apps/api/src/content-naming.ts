@@ -10,3 +10,13 @@ export const titleSchema = z
 		TITLE_MAX_LENGTH,
 		`Titles must be ${TITLE_MAX_LENGTH} characters or fewer.`,
 	);
+
+export function slugify(value: string): string {
+	return (
+		value
+			.normalize("NFKD")
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-|-$/g, "") || "untitled"
+	);
+}

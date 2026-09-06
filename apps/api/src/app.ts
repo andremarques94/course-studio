@@ -2,19 +2,12 @@ import type { Auth } from "@course-studio/auth";
 import type { Database } from "@course-studio/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { Logger } from "./infrastructure/logger.js";
-import { createCoursesRoutes } from "./modules/courses/course.routes.js";
-import { createCoursesService } from "./modules/courses/course.service.js";
-import { createHealthRoutes } from "./modules/health/health.routes.js";
-import { createHealthService } from "./modules/health/health.service.js";
-import { createLessonsRoutes } from "./modules/lessons/lesson.routes.js";
-import { createLessonsService } from "./modules/lessons/lesson.service.js";
-import { ApiError } from "./shared/http/errors.js";
-import {
-	type AppEnv,
-	createRequestLogger,
-} from "./shared/http/request-logger.js";
-import { createRequireAuth } from "./shared/http/require-auth.js";
+import type { AppEnv } from "#api/http/context";
+import { createAppErrorHandler } from "#api/http/errors/error-handler";
+import { createRequestLogger } from "#api/http/middleware/request-logger";
+import type { Logger } from "#api/logger";
+import { createHealthRoutes } from "#api/modules/health";
+import { createPrivateRoutes } from "#api/private-routes";
 
 type AppOptions = {
 	auth: Auth;
@@ -23,10 +16,6 @@ type AppOptions = {
 };
 
 export function createApp(db: Database, options: AppOptions) {
-	const coursesService = createCoursesService(db);
-	const lessonsService = createLessonsService(db);
-	const healthService = createHealthService(db);
-	const requireAuth = createRequireAuth(options.auth);
 	const app = new Hono<AppEnv>()
 		.basePath("/api")
 		.use("*", createRequestLogger(options.logger))
@@ -40,48 +29,22 @@ export function createApp(db: Database, options: AppOptions) {
 			}),
 		)
 		.all("/auth/*", (context) => options.auth.handler(context.req.raw))
-		.route("/", createHealthRoutes(healthService))
-		.use("/courses", requireAuth)
-		.use("/courses/*", requireAuth)
-		.use("/lessons", requireAuth)
-		.use("/lessons/*", requireAuth)
-		.route("/courses", createCoursesRoutes(coursesService, lessonsService))
-		.route("/lessons", createLessonsRoutes(lessonsService));
+		.route("/", createHealthRoutes(db))
+		.route(
+			"/",
+			createPrivateRoutes(db, {
+				auth: options.auth,
+				trustedOrigins: options.corsOrigins,
+			}),
+		);
 
-	app.notFound((c) =>
-		c.json(
+	app.notFound((context) =>
+		context.json(
 			{ error: { code: "NOT_FOUND" as const, message: "Route not found." } },
 			404,
 		),
 	);
-	app.onError((error, c) => {
-		if (error instanceof ApiError) {
-			return c.json(
-				{ error: { code: error.code, message: error.message } },
-				error.status,
-			);
-		}
-
-		options.logger.error(
-			{
-				event: "http.request.failed",
-				requestId: c.get("requestId"),
-				method: c.req.method,
-				path: c.req.path,
-				err: error,
-			},
-			"Request failed",
-		);
-		return c.json(
-			{
-				error: {
-					code: "INTERNAL_ERROR" as const,
-					message: "An unexpected error occurred.",
-				},
-			},
-			500,
-		);
-	});
+	app.onError(createAppErrorHandler(options.logger));
 
 	return app;
 }

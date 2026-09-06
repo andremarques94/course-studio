@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
-import { courses, createDatabase, lessons } from "@course-studio/db";
+import { courses, createDatabase, lessons, user } from "@course-studio/db";
 import { eq } from "drizzle-orm";
 import * as Y from "yjs";
 import { createLessonDocumentLoader } from "../src/documents/lesson-document-loader.js";
@@ -21,12 +21,19 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 
 	let db = createDatabase(databaseUrl);
 	const courseId = randomUUID();
+	const ownerId = randomUUID();
 	const lessonId = randomUUID();
 	const documentName = `lesson:${lessonId}`;
 
 	try {
+		await db.insert(user).values({
+			id: ownerId,
+			name: "Collaboration Owner",
+			email: `collaboration-${ownerId}@example.com`,
+		});
 		await db.insert(courses).values({
 			id: courseId,
+			ownerId,
 			title: "Collaboration persistence",
 			slug: `collaboration-persistence-${courseId}`,
 		});
@@ -97,6 +104,7 @@ test("migrates a legacy lesson once and restores it after recreating the databas
 		restoredDocument.destroy();
 	} finally {
 		await db.delete(courses).where(eq(courses.id, courseId));
+		await db.delete(user).where(eq(user.id, ownerId));
 		await db.$client.end();
 	}
 });
