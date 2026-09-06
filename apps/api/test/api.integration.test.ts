@@ -221,10 +221,7 @@ test("courses and lessons persist through the API", {
 			{
 				method: "PATCH",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					title: "Updated introduction",
-					themeId: "academic",
-				}),
+				body: JSON.stringify({ title: "Updated introduction" }),
 			},
 		);
 		assert.equal(updateLessonResponse.status, 200);
@@ -234,6 +231,12 @@ test("courses and lessons persist through the API", {
 		};
 		assert.equal(updatedLesson.title, "Updated introduction");
 		assert.equal(updatedLesson.slug, lesson.slug);
+		const legacyThemeUpdate = await app.request(`/api/lessons/${lesson.id}`, {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ themeId: "academic" }),
+		});
+		assert.equal(legacyThemeUpdate.status, 400);
 
 		const secondLessonResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
