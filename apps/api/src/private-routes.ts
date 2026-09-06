@@ -18,13 +18,16 @@ export function createPrivateRoutes(
 		options.trustedOrigins,
 	);
 	const requireAuth = createRequireAuth(options.auth);
-
-	return new Hono<AppEnv>()
+	const coursesRoutes = new Hono<AppEnv>()
 		.use("*", requireTrustedOrigin)
 		.use("*", requireAuth)
-		.route(
-			"/courses",
-			createCoursesRoutes(createCoursesService(db), lessonsService),
-		)
-		.route("/lessons", createLessonsRoutes(lessonsService));
+		.route("/", createCoursesRoutes(createCoursesService(db), lessonsService));
+	const lessonsRoutes = new Hono<AppEnv>()
+		.use("*", requireTrustedOrigin)
+		.use("*", requireAuth)
+		.route("/", createLessonsRoutes(lessonsService));
+
+	return new Hono<AppEnv>()
+		.route("/courses", coursesRoutes)
+		.route("/lessons", lessonsRoutes);
 }
