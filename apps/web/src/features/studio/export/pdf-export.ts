@@ -59,3 +59,11 @@ export function readPdfExport(): PdfExportPayload | null {
 
 	return null;
 }
+
+export function clearPdfExport() {
+	try {
+		sessionStorage.removeItem(PDF_EXPORT_STORAGE_KEY);
+	} catch {
+		// Storage may be unavailable. There is no in-memory export state to clear.
+	}
+}

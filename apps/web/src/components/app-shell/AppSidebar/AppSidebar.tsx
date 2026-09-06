@@ -1,13 +1,16 @@
+import { toast } from "@course-studio/ui/components/sonner";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@course-studio/ui/components/tooltip";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouteContext } from "@tanstack/react-router";
 import { Files, House, LogOut, Search } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactElement } from "react";
 import { authClient } from "@/features/auth/auth-client";
+import { clearPdfExport } from "@/features/studio/export";
 
 import styles from "./AppSidebar.module.css";
 
@@ -30,6 +33,7 @@ function RailTooltip({ label, children }: RailTooltipProps) {
 export function AppSidebar() {
 	const { user } = useRouteContext({ from: "/studio" });
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const initials = user.name
 		.split(/\s+/)
 		.map((part) => part[0])
@@ -38,7 +42,14 @@ export function AppSidebar() {
 		.toUpperCase();
 
 	async function signOut() {
-		await authClient.signOut();
+		const result = await authClient.signOut();
+		if (result.error) {
+			toast.error("Could not sign out. Try again.");
+			return;
+		}
+		await queryClient.cancelQueries();
+		queryClient.clear();
+		clearPdfExport();
 		await navigate({ to: "/sign-in", search: { redirect: "/studio" } });
 	}
 
