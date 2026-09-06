@@ -18,16 +18,23 @@ export function createPrivateRoutes(
 		options.trustedOrigins,
 	);
 	const requireAuth = createRequireAuth(options.auth);
-	const coursesRoutes = new Hono<AppEnv>()
-		.use("*", requireTrustedOrigin)
-		.use("*", requireAuth)
-		.route("/", createCoursesRoutes(createCoursesService(db), lessonsService));
-	const lessonsRoutes = new Hono<AppEnv>()
-		.use("*", requireTrustedOrigin)
-		.use("*", requireAuth)
-		.route("/", createLessonsRoutes(lessonsService));
+	const isPrivateRequest = (path: string) =>
+		["/api/courses", "/api/lessons"].some(
+			(prefix) => path === prefix || path.startsWith(`${prefix}/`),
+		);
 
 	return new Hono<AppEnv>()
-		.route("/courses", coursesRoutes)
-		.route("/lessons", lessonsRoutes);
+		.use("*", (context, next) =>
+			isPrivateRequest(context.req.path)
+				? requireTrustedOrigin(context, next)
+				: next(),
+		)
+		.use("*", (context, next) =>
+			isPrivateRequest(context.req.path) ? requireAuth(context, next) : next(),
+		)
+		.route(
+			"/courses",
+			createCoursesRoutes(createCoursesService(db), lessonsService),
+		)
+		.route("/lessons", createLessonsRoutes(lessonsService));
 }
