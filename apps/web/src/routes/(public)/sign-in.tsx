@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthForm } from "@/features/auth/AuthForm";
-import { getSafeAuthRedirect } from "@/features/auth/session";
+import { AuthForm, getSafeAuthRedirect } from "@/features/auth";
 
 export const Route = createFileRoute("/(public)/sign-in")({
 	ssr: false,

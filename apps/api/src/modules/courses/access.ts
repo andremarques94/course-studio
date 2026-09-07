@@ -7,9 +7,14 @@ import { courseMembers, courses, type Database } from "@course-studio/db";
 import { and, eq } from "drizzle-orm";
 import { ApiError } from "#api/http/errors/api-error";
 
+/**
+ * Minimal executor for course access checks. `lock()` issues SELECT ... FOR
+ * UPDATE, so pass a transaction client (`db.transaction((tx) => ...)`) whenever
+ * locking matters — on the root `db` it locks nothing meaningful.
+ */
 export type CourseAccessExecutor = Pick<Database, "select">;
 
-function accessRole(
+export function resolveAccessRole(
 	userId: string,
 	ownerId: string,
 	membershipRole: "editor" | "viewer" | null,
@@ -68,7 +73,7 @@ export function createCourseAccess(db: CourseAccessExecutor) {
 			}
 			return {
 				...result.course,
-				accessRole: accessRole(
+				accessRole: resolveAccessRole(
 					userId,
 					result.course.ownerId,
 					result.membershipRole,
@@ -89,7 +94,7 @@ export function createCourseAccess(db: CourseAccessExecutor) {
 			}
 			return {
 				...result.course,
-				accessRole: accessRole(
+				accessRole: resolveAccessRole(
 					userId,
 					result.course.ownerId,
 					result.membershipRole,

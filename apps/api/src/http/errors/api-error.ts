@@ -1,9 +1,9 @@
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export type ErrorCode =
+	| "ALREADY_HAS_ACCESS"
 	| "COURSE_NOT_FOUND"
 	| "INVALID_INVITATION"
-	| "INVALID_INVITEE"
 	| "INVALID_LESSON_ORDER"
 	| "INTERNAL_ERROR"
 	| "INVITATION_NOT_FOUND"

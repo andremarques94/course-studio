@@ -10,7 +10,7 @@ const collaborationEntryPoint = resolve(
 	projectRoot,
 	"apps/collab/dist/index.js",
 );
-const mailpitURL = "http://127.0.0.1:8025";
+const mailpitURL = e2eEnvironment.mailpit;
 const verificationSubject = "Verify your email | Course Studio";
 
 export type TestAccount = {

@@ -3,25 +3,14 @@ import { and, asc, eq, or } from "drizzle-orm";
 import { slugify } from "#api/content-naming";
 import { findPostgresError } from "#api/database-errors";
 import { ApiError } from "#api/http/errors/api-error";
-import { createCourseAccess } from "#api/modules/courses/access";
+import {
+	createCourseAccess,
+	resolveAccessRole,
+} from "#api/modules/courses/access";
 import type {
 	CreateCourseInput,
 	UpdateCourseInput,
 } from "#api/modules/courses/schema";
-
-function accessRole(
-	userId: string,
-	ownerId: string,
-	membershipRole: "editor" | "viewer" | null,
-) {
-	if (ownerId === userId) {
-		return "owner" as const;
-	}
-	if (!membershipRole) {
-		throw new Error("Accessible course has no access role.");
-	}
-	return membershipRole;
-}
 
 export function createCoursesService(db: Database) {
 	const access = createCourseAccess(db);
@@ -45,7 +34,7 @@ export function createCoursesService(db: Database) {
 
 			return results.map(({ course, membershipRole }) => ({
 				...course,
-				accessRole: accessRole(userId, course.ownerId, membershipRole),
+				accessRole: resolveAccessRole(userId, course.ownerId, membershipRole),
 			}));
 		},
 

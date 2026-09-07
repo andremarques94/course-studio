@@ -1,10 +1,10 @@
 import { type Database, lessonDocuments, lessons } from "@course-studio/db";
 import { asc, eq, max } from "drizzle-orm";
-import * as Y from "yjs";
 import { slugify } from "#api/content-naming";
 import { findPostgresError } from "#api/database-errors";
 import { ApiError } from "#api/http/errors/api-error";
 import { createLessonAccess } from "#api/modules/lessons/access";
+import { applyPersistedLessonContent } from "#api/modules/lessons/lesson-ydoc";
 import { createLessonOrderService } from "#api/modules/lessons/order";
 import type {
 	CreateLessonInput,
@@ -43,23 +43,10 @@ export function createLessonsService(db: Database) {
 				return lesson;
 			}
 
-			const document = new Y.Doc();
-			try {
-				Y.applyUpdate(document, new Uint8Array(persisted.ydoc));
-				const themeId = document.getMap<unknown>("metadata").get("themeId");
-				return {
-					...lesson,
-					markdown: document.getText("markdown").toString(),
-					themeId:
-						themeId === "minimal" ||
-						themeId === "academic" ||
-						themeId === "dark"
-							? themeId
-							: lesson.themeId,
-				};
-			} finally {
-				document.destroy();
-			}
+			return applyPersistedLessonContent(
+				lesson,
+				new Uint8Array(persisted.ydoc),
+			);
 		},
 
 		async create(userId: string, courseId: string, input: CreateLessonInput) {

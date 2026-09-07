@@ -16,12 +16,11 @@ import { createApp } from "#api/app";
 import { createLogger } from "#api/logger";
 import type { CourseInvitationDelivery } from "#api/modules/invitations/email";
 import { hashInvitationToken } from "#api/modules/invitations/token";
+import { integrationAuthSecret } from "./integration-auth.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const webOrigin = "http://localhost:3000";
-const authSecret =
-	process.env.BETTER_AUTH_SECRET ??
-	"invitation-integration-secret-32-characters";
+const authSecret = integrationAuthSecret;
 const logger = createLogger("silent");
 
 type TestApp = ReturnType<typeof createApp>;
@@ -233,7 +232,7 @@ test("course invitations enforce delivery, secrecy, lifecycle, and role access",
 				},
 			);
 			assert.equal(response.status, 400);
-			assert.equal(await errorCode(response), "INVALID_INVITEE");
+			assert.equal(await errorCode(response), "ALREADY_HAS_ACCESS");
 		}
 
 		assert.equal(

@@ -6,10 +6,7 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import pino from "pino";
 import * as Y from "yjs";
 import { createLessonAuthorizer } from "../src/auth/lesson-authorization.js";
-import {
-	createCollaborationServer,
-	requireAuthenticatedUserId,
-} from "../src/server/create-collaboration-server.js";
+import { createCollaborationServer } from "../src/server/create-collaboration-server.js";
 
 const lessonId = "550e8400-e29b-41d4-a716-446655440000";
 const secondLessonId = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
@@ -95,12 +92,6 @@ test("Hocuspocus hooks authorize only the guarded JWT subject and strict room", 
 		{ userId: "owner" },
 	);
 	assert.deepEqual(authorized, [["owner", lessonId]]);
-	assert.equal(requireAuthenticatedUserId({ userId: "owner" }), "owner");
-	assert.throws(() => requireAuthenticatedUserId({}), /missing a userId/);
-	assert.throws(
-		() => requireAuthenticatedUserId({ userId: 42 }),
-		/missing a userId/,
-	);
 
 	await assert.rejects(
 		authenticate({
@@ -116,6 +107,30 @@ test("Hocuspocus hooks authorize only the guarded JWT subject and strict room", 
 		authenticate({ documentName: `lesson:${lessonId}`, token: "" } as never),
 		/Authentication token is required/,
 	);
+});
+
+test("a malformed authentication context is rejected before authorization", async () => {
+	const server = createCollaborationServer({
+		host: "127.0.0.1",
+		port: 0,
+		logger: pino({ level: "silent" }),
+		// Simulates a misbehaving token backend resolving without a userId.
+		authenticateToken: async () => ({}) as never,
+		authorizeLesson: async () => true,
+		loadDocument: async ({ document }) => document,
+		storeDocument: async () => undefined,
+	});
+	const authenticate = server.hocuspocus.configuration.onAuthenticate;
+	assert.ok(authenticate);
+
+	await assert.rejects(
+		authenticate({
+			documentName: `lesson:${lessonId}`,
+			token: "owner",
+		} as never),
+		/missing a userId/,
+	);
+	await server.destroy();
 });
 
 test("owner and editor connect while viewer and outsider fail before document load", async () => {

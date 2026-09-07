@@ -14,12 +14,7 @@ export function getSafeAuthRedirect(value: unknown) {
 		return "/studio";
 	}
 
-	const studioURL = new URL(value, "https://course-studio.invalid");
-	if (
-		studioURL.origin === "https://course-studio.invalid" &&
-		studioURL.pathname === value &&
-		(value === "/studio" || value.startsWith("/studio/"))
-	) {
+	if (isStudioPath(value)) {
 		return value;
 	}
 
@@ -27,4 +22,15 @@ export function getSafeAuthRedirect(value: unknown) {
 		value,
 	);
 	return getInvitationPath(match?.[1]) ?? "/studio";
+}
+
+// Query strings on studio redirects are intentionally rejected: allowing them
+// would let a crafted `?next=` smuggle a post-login destination past this check.
+function isStudioPath(value: string) {
+	const studioURL = new URL(value, "https://course-studio.invalid");
+	return (
+		studioURL.origin === "https://course-studio.invalid" &&
+		studioURL.pathname === value &&
+		(value === "/studio" || value.startsWith("/studio/"))
+	);
 }

@@ -1,3 +1,10 @@
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@course-studio/ui/components/empty";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, SearchX } from "lucide-react";
@@ -68,11 +75,3 @@ export function CourseDetailPage({ courseId }: CourseDetailPageProps) {
 		</ManagementPage>
 	);
 }
-
-import {
-	Empty,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyTitle,
-} from "@course-studio/ui/components/empty";

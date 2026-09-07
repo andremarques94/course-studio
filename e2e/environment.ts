@@ -13,6 +13,7 @@ export const e2eEnvironment = {
 		api: `http://${host}:${ports.api}`,
 		collaboration: `ws://${host}:${ports.collaboration}`,
 	},
+	mailpit: process.env.E2E_MAILPIT_URL ?? "http://127.0.0.1:8025",
 } as const;
 
 function e2ePort(name: string, fallback: number) {

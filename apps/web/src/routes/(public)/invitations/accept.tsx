@@ -1,24 +1,24 @@
-import { Alert, AlertDescription } from "@course-studio/ui/components/alert";
-import { Button, buttonVariants } from "@course-studio/ui/components/button";
 import {
 	Card,
-	CardContent,
 	CardDescription,
-	CardFooter,
 	CardHeader,
 	CardTitle,
 } from "@course-studio/ui/components/card";
-import { Spinner } from "@course-studio/ui/components/spinner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { MailCheck, TriangleAlert } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { MailCheck } from "lucide-react";
 import { PublicHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
 import { getInvitationPath } from "@/features/auth/redirect";
 import { getSession } from "@/features/auth/session";
+import {
+	InvitationActions,
+	InvitationStatus,
+	useSwitchAccount,
+} from "@/features/courses/components/InvitationAccept";
+import styles from "@/features/courses/components/InvitationAccept/InvitationAccept.module.css";
 import { courseQueries } from "@/features/courses/queries";
 import { courseRepository } from "@/features/courses/repository";
-import styles from "./accept.module.css";
 
 export const Route = createFileRoute("/(public)/invitations/accept")({
 	ssr: false,
@@ -35,6 +35,7 @@ function AcceptInvitationPage() {
 	const { session } = Route.useRouteContext();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
+	const { signingOut, switchAccount } = useSwitchAccount();
 	const invitationPath = getInvitationPath(token);
 	const accept = useMutation({
 		mutationFn: () => courseRepository.acceptInvitation(token ?? ""),
@@ -49,7 +50,6 @@ function AcceptInvitationPage() {
 			});
 		},
 	});
-	const unavailable = !invitationPath || accept.isError;
 
 	return (
 		<div className={styles.page}>
@@ -67,59 +67,24 @@ function AcceptInvitationPage() {
 							Join the course to open its lessons in Course Studio.
 						</CardDescription>
 					</CardHeader>
-					<CardContent className={styles.content}>
-						{unavailable ? (
-							<Alert variant="destructive" role="alert">
-								<TriangleAlert />
-								<AlertDescription>
-									This invitation is invalid or no longer available.
-								</AlertDescription>
-							</Alert>
-						) : !session ? (
-							<p>
-								Sign in or create an account with the invited email address.
-							</p>
-						) : !session.user.emailVerified ? (
-							<Alert>
-								<AlertDescription>
-									Verify your email address before accepting this invitation.
-								</AlertDescription>
-							</Alert>
-						) : (
-							<p>You are signed in as {session.user.email}.</p>
-						)}
-					</CardContent>
-					{invitationPath && !session ? (
-						<CardFooter className={styles.actions}>
-							<Link
-								to="/sign-in"
-								search={{ redirect: invitationPath }}
-								className={buttonVariants()}
-							>
-								Sign in
-							</Link>
-							<Link
-								to="/sign-up"
-								search={{ redirect: invitationPath }}
-								className={buttonVariants({ variant: "outline" })}
-							>
-								Create account
-							</Link>
-						</CardFooter>
-					) : invitationPath &&
-						session?.user.emailVerified &&
-						!accept.isError ? (
-						<CardFooter>
-							<Button
-								type="button"
-								onClick={() => accept.mutate()}
-								disabled={accept.isPending}
-							>
-								{accept.isPending ? <Spinner data-icon="inline-start" /> : null}
-								Accept invitation
-							</Button>
-						</CardFooter>
-					) : null}
+					<InvitationStatus
+						invitationPath={invitationPath}
+						acceptError={accept.isError ? accept.error : null}
+						session={session}
+					/>
+					<InvitationActions
+						invitationPath={invitationPath}
+						acceptError={accept.isError ? accept.error : null}
+						acceptPending={accept.isPending}
+						session={session}
+						signingOut={signingOut}
+						onRetry={() => {
+							accept.reset();
+							accept.mutate();
+						}}
+						onAccept={() => accept.mutate()}
+						onSwitchAccount={switchAccount}
+					/>
 				</Card>
 			</main>
 		</div>

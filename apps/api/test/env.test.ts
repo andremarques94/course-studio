@@ -73,19 +73,25 @@ test("production requires explicit auth URL and trusted origins", () => {
 	]);
 });
 
-test("production requires an explicit web origin for invitation links", () => {
-	assert.throws(
-		() =>
-			loadEnv({
-				...baseEnv,
-				NODE_ENV: "production",
-				SMTP_HOST: "smtp.example.com",
-				MAIL_FROM: "noreply@example.com",
-				BETTER_AUTH_URL: "https://api.example.com",
-				BETTER_AUTH_TRUSTED_ORIGINS: "https://studio.example.com",
-			}),
-		/WEB_ORIGIN/,
-	);
+test("web origin defaults to the first trusted origin", () => {
+	const env = loadEnv({
+		...baseEnv,
+		NODE_ENV: "production",
+		SMTP_HOST: "smtp.example.com",
+		MAIL_FROM: "noreply@example.com",
+		BETTER_AUTH_URL: "https://api.example.com",
+		BETTER_AUTH_TRUSTED_ORIGINS:
+			"https://studio.example.com, https://admin.example.com",
+	});
+
+	assert.equal(env.webOrigin, "https://studio.example.com");
+
+	const explicit = loadEnv({
+		...baseEnv,
+		BETTER_AUTH_TRUSTED_ORIGINS: "https://studio.example.com",
+		WEB_ORIGIN: "https://links.example.com",
+	});
+	assert.equal(explicit.webOrigin, "https://links.example.com");
 });
 
 test("normalizes configured URLs to browser origins", () => {

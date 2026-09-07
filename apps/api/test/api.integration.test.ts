@@ -8,12 +8,11 @@ import { createApp } from "#api/app";
 import type { AppEnv } from "#api/http/context";
 import { createLogger } from "#api/logger";
 import { createPrivateRoutes } from "#api/private-routes";
+import { integrationAuthSecret } from "./integration-auth.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const logger = createLogger("silent");
-const authSecret =
-	process.env.BETTER_AUTH_SECRET ??
-	"integration-test-secret-with-32-characters";
+const authSecret = integrationAuthSecret;
 const verificationLinks = new Map<string, string>();
 const webOrigin = "http://localhost:3000";
 

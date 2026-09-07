@@ -74,7 +74,9 @@ export function ReadOnlyStudio({
 			}
 			sidebar={<AppSidebar />}
 			statusBar={
-				<footer className={styles.status}>Read-only presentation</footer>
+				<footer className={styles.status}>
+					Read-only — viewers can read this lesson but not edit it
+				</footer>
 			}
 		>
 			<main

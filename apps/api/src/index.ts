@@ -33,7 +33,10 @@ const app = createApp(db, {
 		? createCourseInvitationDelivery(sendEmail)
 		: async ({ url }) => {
 				// Development fallback only. Production startup requires SMTP above.
-				console.info("Development course invitation link:", url);
+				logger.info(
+					{ event: "api.dev.invitation-link", url },
+					"Development course invitation link",
+				);
 			},
 });
 

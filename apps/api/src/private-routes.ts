@@ -11,7 +11,7 @@ import {
 	createCourseInvitationRoutes,
 	createInvitationAcceptanceRoutes,
 } from "#api/modules/invitations/routes";
-import { createInvitationsService } from "#api/modules/invitations/service";
+import { createInvitationsService } from "#api/modules/invitations/service/index";
 import { createLessonsRoutes } from "#api/modules/lessons/routes";
 import { createLessonsService } from "#api/modules/lessons/service";
 

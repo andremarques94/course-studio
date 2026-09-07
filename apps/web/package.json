@@ -11,7 +11,7 @@
 		"build": "vite build",
 		"start": "node .output/server/index.mjs",
 		"preview": "vite preview",
-		"test": "tsx --test src/features/auth/*.test.ts src/features/studio/**/*.test.ts",
+		"test": "tsx --test \"src/**/*.test.ts\"",
 		"typecheck": "tsc --noEmit",
 		"format": "biome format",
 		"lint": "biome lint",

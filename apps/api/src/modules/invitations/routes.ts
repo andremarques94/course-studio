@@ -9,7 +9,7 @@ import {
 	invitationIdSchema,
 	memberIdSchema,
 } from "#api/modules/invitations/schema";
-import type { InvitationsService } from "#api/modules/invitations/service";
+import type { InvitationsService } from "#api/modules/invitations/service/index";
 
 export function createCourseInvitationRoutes(service: InvitationsService) {
 	return new Hono<AppEnv>()

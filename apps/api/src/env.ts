@@ -83,11 +83,6 @@ const envSchema = z
 				message: "BETTER_AUTH_TRUSTED_ORIGINS is required in production.",
 			},
 			{
-				invalid: env.NODE_ENV === "production" && !env.WEB_ORIGIN,
-				path: "WEB_ORIGIN",
-				message: "WEB_ORIGIN is required in production.",
-			},
-			{
 				invalid:
 					Boolean(env.GITHUB_CLIENT_ID) !== Boolean(env.GITHUB_CLIENT_SECRET),
 				path: "GITHUB_CLIENT_ID",
@@ -105,31 +100,36 @@ const envSchema = z
 			}
 		});
 	})
-	.transform((env) => ({
-		nodeEnv: env.NODE_ENV,
-		smtp:
-			env.SMTP_HOST && env.MAIL_FROM
-				? {
-						host: env.SMTP_HOST,
-						port: env.SMTP_PORT,
-						secure: env.SMTP_SECURE,
-						user: env.SMTP_USER,
-						password: env.SMTP_PASSWORD,
-						from: env.MAIL_FROM,
-					}
-				: undefined,
-		databaseUrl: env.DATABASE_URL,
-		apiPort: env.API_PORT ?? env.PORT ?? 3001,
-		betterAuthSecret: env.BETTER_AUTH_SECRET,
-		betterAuthUrl: env.BETTER_AUTH_URL ?? "http://localhost:3001",
-		webOrigin: env.WEB_ORIGIN ?? "http://localhost:3000",
-		trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS ?? [
+	.transform((env) => {
+		// Invitation links default to the first trusted origin so the two values
+		// can't drift. Set WEB_ORIGIN only when links must differ from CORS origins.
+		const trustedOrigins = env.BETTER_AUTH_TRUSTED_ORIGINS ?? [
 			"http://localhost:3000",
-		],
-		github: createOAuthConfig(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET),
-		google: createOAuthConfig(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET),
-		logLevel: env.LOG_LEVEL,
-	}));
+		];
+		return {
+			nodeEnv: env.NODE_ENV,
+			smtp:
+				env.SMTP_HOST && env.MAIL_FROM
+					? {
+							host: env.SMTP_HOST,
+							port: env.SMTP_PORT,
+							secure: env.SMTP_SECURE,
+							user: env.SMTP_USER,
+							password: env.SMTP_PASSWORD,
+							from: env.MAIL_FROM,
+						}
+					: undefined,
+			databaseUrl: env.DATABASE_URL,
+			apiPort: env.API_PORT ?? env.PORT ?? 3001,
+			betterAuthSecret: env.BETTER_AUTH_SECRET,
+			betterAuthUrl: env.BETTER_AUTH_URL ?? "http://localhost:3001",
+			webOrigin: env.WEB_ORIGIN ?? trustedOrigins[0] ?? "http://localhost:3000",
+			trustedOrigins,
+			github: createOAuthConfig(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET),
+			google: createOAuthConfig(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET),
+			logLevel: env.LOG_LEVEL,
+		};
+	});
 
 export function loadEnv(input: NodeJS.ProcessEnv = process.env) {
 	return envSchema.parse(input);

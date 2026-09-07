@@ -4,7 +4,7 @@ import type * as Y from "yjs";
 import type { AuthenticateToken } from "../auth/jwt.js";
 import { parseLessonDocumentName } from "../documents/lesson-document-loader.js";
 
-export type CollaborationContext = Readonly<{ userId: string }>;
+type CollaborationContext = Readonly<{ userId: string }>;
 
 type CollaborationServerOptions = {
 	host: string;
@@ -22,7 +22,7 @@ type CollaborationServerOptions = {
 	}): Promise<void>;
 };
 
-export function requireAuthenticatedUserId(context: unknown): string {
+function requireAuthenticatedUserId(context: unknown): string {
 	if (
 		typeof context !== "object" ||
 		context === null ||

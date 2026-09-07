@@ -3,11 +3,6 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 import type { AuthSession } from "./auth-client";
 
-export {
-	getSafeAuthRedirect,
-	getSafeAuthRedirect as getSafeStudioRedirect,
-} from "./redirect";
-
 const apiURL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 const authSessionSchema: z.ZodType<AuthSession> = z.object({
 	user: z.object({

@@ -136,11 +136,7 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 					<div>
 						<h2 id="lesson-list-title">Course outline</h2>
 						<p className={styles.lessonSummary}>
-							{lessons.length === 0
-								? "Add the first lesson to begin writing."
-								: canEdit
-									? "Open a lesson to continue writing."
-									: "Open a lesson to view its presentation."}
+							{getLessonSummary(lessons.length, canEdit)}
 						</p>
 					</div>
 					{canEdit && lessons.length > 1 ? (
@@ -165,7 +161,7 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 				<ol className={styles.lessonList}>
 					{lessons.map((lesson, index) => (
 						<li key={lesson.id} className={styles.lessonRow}>
-							{editingLessonId === lesson.id ? (
+							{editingLessonId === lesson.id && (
 								<form
 									className={styles.lessonTitleEditor}
 									onSubmit={handleRename}
@@ -209,7 +205,8 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 										Cancel
 									</Button>
 								</form>
-							) : reordering ? (
+							)}
+							{editingLessonId !== lesson.id && reordering && (
 								<div className={styles.lessonReorderItem}>
 									<span className={styles.position}>
 										{String(index + 1).padStart(2, "0")}
@@ -219,7 +216,8 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 									</span>
 									<span className={styles.lessonTitle}>{lesson.title}</span>
 								</div>
-							) : (
+							)}
+							{editingLessonId !== lesson.id && !reordering && (
 								<Link
 									to="/studio/courses/$courseId/lessons/$lessonId"
 									params={{ courseId, lessonId: lesson.id }}
@@ -238,75 +236,24 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 									<ArrowRight className={styles.arrow} aria-hidden="true" />
 								</Link>
 							)}
-							{!canEdit ? null : editingLessonId ===
-								lesson.id ? null : reordering ? (
-								<div className={styles.reorderActions}>
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										aria-label={`Move ${lesson.title} up`}
-										onClick={() => moveLesson(index, -1)}
-										disabled={index === 0 || reorderLessons.isPending}
-									>
-										<ArrowUp />
-									</Button>
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										aria-label={`Move ${lesson.title} down`}
-										onClick={() => moveLesson(index, 1)}
-										disabled={
-											index === lessons.length - 1 || reorderLessons.isPending
-										}
-									>
-										<ArrowDown />
-									</Button>
-								</div>
-							) : (
-								<DropdownMenu>
-									<DropdownMenuTrigger
-										render={
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												className={styles.lessonMenuTrigger}
-												aria-label={`Actions for ${lesson.title}`}
-											/>
-										}
-									>
-										<Ellipsis />
-									</DropdownMenuTrigger>
-									<DropdownMenuContent align="end">
-										<DropdownMenuGroup>
-											<DropdownMenuItem
-												onClick={() => {
-													setTitle(lesson.title);
-													setEditingLessonId(lesson.id);
-												}}
-											>
-												<Pencil />
-												Rename lesson
-											</DropdownMenuItem>
-										</DropdownMenuGroup>
-										<DropdownMenuSeparator />
-										<DropdownMenuGroup>
-											<DropdownMenuItem
-												variant="destructive"
-												onClick={() => {
-													deleteLesson.reset();
-													setDeletingLessonId(lesson.id);
-												}}
-											>
-												<Trash2 />
-												Delete lesson
-											</DropdownMenuItem>
-										</DropdownMenuGroup>
-									</DropdownMenuContent>
-								</DropdownMenu>
-							)}
+							<LessonRowActions
+								visible={canEdit && editingLessonId !== lesson.id}
+								reordering={reordering}
+								lessonTitle={lesson.title}
+								isFirst={index === 0}
+								isLast={index === lessons.length - 1}
+								isPending={reorderLessons.isPending}
+								onMoveUp={() => moveLesson(index, -1)}
+								onMoveDown={() => moveLesson(index, 1)}
+								onRename={() => {
+									setTitle(lesson.title);
+									setEditingLessonId(lesson.id);
+								}}
+								onDeleteRequest={() => {
+									deleteLesson.reset();
+									setDeletingLessonId(lesson.id);
+								}}
+							/>
 						</li>
 					))}
 				</ol>
@@ -385,5 +332,101 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 				</Empty>
 			) : null}
 		</>
+	);
+}
+
+function getLessonSummary(lessonCount: number, canEdit: boolean) {
+	if (lessonCount === 0) {
+		return "Add the first lesson to begin writing.";
+	}
+	if (canEdit) {
+		return "Open a lesson to continue writing.";
+	}
+	return "Open a lesson to view its presentation.";
+}
+
+function LessonRowActions({
+	visible,
+	reordering,
+	lessonTitle,
+	isFirst,
+	isLast,
+	isPending,
+	onMoveUp,
+	onMoveDown,
+	onRename,
+	onDeleteRequest,
+}: {
+	visible: boolean;
+	reordering: boolean;
+	lessonTitle: string;
+	isFirst: boolean;
+	isLast: boolean;
+	isPending: boolean;
+	onMoveUp(): void;
+	onMoveDown(): void;
+	onRename(): void;
+	onDeleteRequest(): void;
+}) {
+	if (!visible) {
+		return null;
+	}
+	if (reordering) {
+		return (
+			<div className={styles.reorderActions}>
+				<Button
+					type="button"
+					variant="outline"
+					size="icon"
+					aria-label={`Move ${lessonTitle} up`}
+					onClick={onMoveUp}
+					disabled={isFirst || isPending}
+				>
+					<ArrowUp />
+				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					size="icon"
+					aria-label={`Move ${lessonTitle} down`}
+					onClick={onMoveDown}
+					disabled={isLast || isPending}
+				>
+					<ArrowDown />
+				</Button>
+			</div>
+		);
+	}
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon"
+						className={styles.lessonMenuTrigger}
+						aria-label={`Actions for ${lessonTitle}`}
+					/>
+				}
+			>
+				<Ellipsis />
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end">
+				<DropdownMenuGroup>
+					<DropdownMenuItem onClick={onRename}>
+						<Pencil />
+						Rename lesson
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuGroup>
+					<DropdownMenuItem variant="destructive" onClick={onDeleteRequest}>
+						<Trash2 />
+						Delete lesson
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
