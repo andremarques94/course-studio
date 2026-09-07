@@ -73,7 +73,8 @@
 	color: var(--color-primary);
 }
 
-.collaborationStatus[data-status="offline"] .statusDot {
+.collaborationStatus[data-status="offline"] .statusDot,
+.collaborationStatus[data-status="access-revoked"] .statusDot {
 	color: var(--color-destructive);
 }
 

@@ -7,6 +7,7 @@ import { createRequireTrustedOrigin } from "#api/http/middleware/require-trusted
 import { createCoursesRoutes } from "#api/modules/courses/routes";
 import { createCoursesService } from "#api/modules/courses/service";
 import type { CourseInvitationDelivery } from "#api/modules/invitations/email";
+import type { InvitationRateLimits } from "#api/modules/invitations/rate-limit";
 import {
 	createCourseInvitationRoutes,
 	createInvitationAcceptanceRoutes,
@@ -22,12 +23,14 @@ export function createPrivateRoutes(
 		trustedOrigins: string[];
 		webOrigin: string;
 		sendCourseInvitation: CourseInvitationDelivery;
+		invitationRateLimits?: InvitationRateLimits;
 	},
 ) {
 	const lessonsService = createLessonsService(db);
 	const invitationsService = createInvitationsService(db, {
 		webOrigin: options.webOrigin,
 		sendInvitation: options.sendCourseInvitation,
+		rateLimits: options.invitationRateLimits,
 	});
 	const requireTrustedOrigin = createRequireTrustedOrigin(
 		options.trustedOrigins,

@@ -8,6 +8,7 @@ import { createRequestLogger } from "#api/http/middleware/request-logger";
 import type { Logger } from "#api/logger";
 import { createHealthRoutes } from "#api/modules/health";
 import type { CourseInvitationDelivery } from "#api/modules/invitations/email";
+import type { InvitationRateLimits } from "#api/modules/invitations/rate-limit";
 import { createPrivateRoutes } from "#api/private-routes";
 
 type AppOptions = {
@@ -16,6 +17,7 @@ type AppOptions = {
 	logger: Logger;
 	webOrigin: string;
 	sendCourseInvitation: CourseInvitationDelivery;
+	invitationRateLimits?: InvitationRateLimits;
 };
 
 export function createApp(db: Database, options: AppOptions) {
@@ -40,6 +42,7 @@ export function createApp(db: Database, options: AppOptions) {
 				trustedOrigins: options.corsOrigins,
 				webOrigin: options.webOrigin,
 				sendCourseInvitation: options.sendCourseInvitation,
+				invitationRateLimits: options.invitationRateLimits,
 			}),
 		);
 

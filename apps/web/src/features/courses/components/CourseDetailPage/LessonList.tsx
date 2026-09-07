@@ -40,8 +40,10 @@ import {
 	TriangleAlert,
 } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
+import { applyLessonMetadata } from "@/features/lessons/cache";
 import { lessonQueries } from "@/features/lessons/queries";
 import type { Lesson } from "@/features/lessons/types";
+import { courseQueries } from "../../queries";
 import { courseRepository } from "../../repository";
 import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
 import styles from "./CourseDetailPage.module.css";
@@ -58,7 +60,7 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 	const [reordering, setReordering] = useState(false);
 	const [title, setTitle] = useState("");
 	const queryClient = useQueryClient();
-	const lessonsQueryKey = ["courses", courseId, "lessons"] as const;
+	const lessonsQueryKey = courseQueries.lessons(courseId).queryKey;
 	const updateLesson = useMutation({
 		mutationFn: async ({
 			lessonId,
@@ -73,16 +75,18 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 			}
 			return courseRepository.updateLesson(lessonId, { title: result.data });
 		},
-		onSuccess: (updatedLesson) => {
+		onSuccess: async (updatedLesson) => {
 			queryClient.setQueryData<Lesson[]>(lessonsQueryKey, (current) =>
 				current?.map((lesson) =>
-					lesson.id === updatedLesson.id ? updatedLesson : lesson,
+					lesson.id === updatedLesson.id
+						? applyLessonMetadata(lesson, updatedLesson)
+						: lesson,
 				),
 			);
-			queryClient.setQueryData(
-				lessonQueries.detail(updatedLesson.id).queryKey,
-				updatedLesson,
-			);
+			await queryClient.invalidateQueries({
+				queryKey: lessonQueries.detail(updatedLesson.id).queryKey,
+				exact: true,
+			});
 			setEditingLessonId(undefined);
 			toast.success("Lesson renamed");
 		},

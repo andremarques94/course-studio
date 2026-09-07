@@ -24,7 +24,7 @@ const authSecret = integrationAuthSecret;
 const logger = createLogger("silent");
 
 type TestApp = ReturnType<typeof createApp>;
-type Account = { app: TestApp; email: string; id: string };
+type Account = { app: TestApp; cookie: string; email: string; id: string };
 type Delivery = Parameters<CourseInvitationDelivery>[0];
 const invitationDeliveries: Delivery[] = [];
 
@@ -38,6 +38,15 @@ test("course invitations enforce delivery, secrecy, lifecycle, and role access",
 	const db = createDatabase(databaseUrl);
 	const verificationLinks = new Map<string, string>();
 	invitationDeliveries.length = 0;
+	let failNextDelivery = false;
+	let serializedDelivery:
+		| {
+				email: string;
+				active: number;
+				overlapped: boolean;
+				release: Promise<void>;
+		  }
+		| undefined;
 	const auth = createAuth(db, {
 		baseURL: "http://localhost:3001",
 		secret: authSecret,
@@ -53,6 +62,19 @@ test("course invitations enforce delivery, secrecy, lifecycle, and role access",
 		webOrigin,
 		sendCourseInvitation: async (delivery) => {
 			invitationDeliveries.push(delivery);
+			if (failNextDelivery) {
+				failNextDelivery = false;
+				throw new Error("SMTP unavailable");
+			}
+			if (serializedDelivery?.email === delivery.to) {
+				serializedDelivery.active += 1;
+				serializedDelivery.overlapped ||= serializedDelivery.active > 1;
+				try {
+					await serializedDelivery.release;
+				} finally {
+					serializedDelivery.active -= 1;
+				}
+			}
 		},
 	});
 	const userIds: string[] = [];
@@ -100,6 +122,249 @@ test("course invitations enforce delivery, secrecy, lifecycle, and role access",
 		};
 		assert.equal(course.accessRole, "owner");
 		courseIds.push(course.id);
+
+		const throttledCourseResponse = await mutate(owner.app, "/api/courses", {
+			method: "POST",
+			body: JSON.stringify({ title: `Throttle contract ${suffix}` }),
+		});
+		assert.equal(throttledCourseResponse.status, 201);
+		const throttledCourse = (await throttledCourseResponse.json()) as {
+			id: string;
+		};
+		courseIds.push(throttledCourse.id);
+		const throttledRootApp = createApp(db, {
+			auth,
+			corsOrigins: [webOrigin],
+			logger,
+			webOrigin,
+			sendCourseInvitation: async (delivery) => {
+				invitationDeliveries.push(delivery);
+			},
+			invitationRateLimits: {
+				account: 2,
+				recipient: 1,
+				windowMs: 60_000,
+				maxEntries: 100,
+			},
+		});
+		const throttledOwner = withSession(throttledRootApp, owner.cookie);
+		const recipientLimitedEmail = `recipient-limit-${suffix}@example.com`;
+		const firstThrottledCreate = await mutate(
+			throttledOwner,
+			`/api/courses/${throttledCourse.id}/invitations`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					email: recipientLimitedEmail,
+					role: "viewer",
+				}),
+			},
+		);
+		assert.equal(firstThrottledCreate.status, 201);
+		const firstThrottledInvitation = (await firstThrottledCreate.json()) as {
+			id: string;
+		};
+		const firstThrottledToken = invitationToken(latestDelivery());
+		const deliveriesBeforeRecipientLimit = invitationDeliveries.length;
+		const recipientLimited = await mutate(
+			throttledOwner,
+			`/api/courses/${course.id}/invitations`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					email: recipientLimitedEmail,
+					role: "editor",
+				}),
+			},
+		);
+		assert.equal(recipientLimited.status, 429);
+		assert.equal(await errorCode(recipientLimited), "INVITATION_RATE_LIMITED");
+		assert.equal(recipientLimited.headers.get("retry-after"), "60");
+		assert.equal(invitationDeliveries.length, deliveriesBeforeRecipientLimit);
+		const [unchangedThrottledInvitation] = await db
+			.select({ tokenHash: courseInvitations.tokenHash })
+			.from(courseInvitations)
+			.where(eq(courseInvitations.id, firstThrottledInvitation.id));
+		assert.equal(
+			unchangedThrottledInvitation?.tokenHash,
+			hashInvitationToken(firstThrottledToken),
+		);
+
+		const secondAllowed = await mutate(
+			throttledOwner,
+			`/api/courses/${throttledCourse.id}/invitations`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					email: `account-limit-a-${suffix}@example.com`,
+					role: "viewer",
+				}),
+			},
+		);
+		assert.equal(secondAllowed.status, 201);
+		const deliveriesBeforeAccountLimit = invitationDeliveries.length;
+		const accountLimited = await mutate(
+			throttledOwner,
+			`/api/courses/${throttledCourse.id}/invitations`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					email: `account-limit-b-${suffix}@example.com`,
+					role: "viewer",
+				}),
+			},
+		);
+		assert.equal(accountLimited.status, 429);
+		assert.equal(await errorCode(accountLimited), "INVITATION_RATE_LIMITED");
+		assert.equal(invitationDeliveries.length, deliveriesBeforeAccountLimit);
+
+		failNextDelivery = true;
+		const failedCreateResponse = await mutate(
+			owner.app,
+			`/api/courses/${course.id}/invitations`,
+			{
+				method: "POST",
+				body: JSON.stringify({ email: editor.email, role: "editor" }),
+			},
+		);
+		assert.equal(failedCreateResponse.status, 502);
+		assert.equal(
+			await errorCode(failedCreateResponse),
+			"INVITATION_DELIVERY_FAILED",
+		);
+		const failedCreateToken = invitationToken(latestDelivery());
+		const failedCreatePendingResponse = await owner.app.request(
+			`/api/courses/${course.id}/invitations`,
+		);
+		assert.equal(failedCreatePendingResponse.status, 200);
+		const [failedCreatePending] =
+			(await failedCreatePendingResponse.json()) as Array<{
+				id: string;
+			}>;
+		assert.ok(failedCreatePending);
+
+		const createRetryResponse = await mutate(
+			owner.app,
+			`/api/courses/${course.id}/invitations/${failedCreatePending.id}/resend`,
+			{ method: "POST" },
+		);
+		assert.equal(createRetryResponse.status, 200);
+		const createRetryToken = invitationToken(latestDelivery());
+		assert.notEqual(createRetryToken, failedCreateToken);
+		await assertInvalidInvitation(editor.app, failedCreateToken);
+
+		failNextDelivery = true;
+		const failedResendResponse = await mutate(
+			owner.app,
+			`/api/courses/${course.id}/invitations/${failedCreatePending.id}/resend`,
+			{ method: "POST" },
+		);
+		assert.equal(failedResendResponse.status, 502);
+		assert.equal(
+			await errorCode(failedResendResponse),
+			"INVITATION_DELIVERY_FAILED",
+		);
+		const failedResendToken = invitationToken(latestDelivery());
+		const [afterFailedResend] = await db
+			.select({ tokenHash: courseInvitations.tokenHash })
+			.from(courseInvitations)
+			.where(eq(courseInvitations.id, failedCreatePending.id));
+		assert.equal(
+			afterFailedResend?.tokenHash,
+			hashInvitationToken(createRetryToken),
+		);
+		assert.notEqual(
+			afterFailedResend?.tokenHash,
+			hashInvitationToken(failedResendToken),
+		);
+
+		const resendRetryResponse = await mutate(
+			owner.app,
+			`/api/courses/${course.id}/invitations/${failedCreatePending.id}/resend`,
+			{ method: "POST" },
+		);
+		assert.equal(resendRetryResponse.status, 200);
+		const resendRetryToken = invitationToken(latestDelivery());
+		await assertInvalidInvitation(editor.app, createRetryToken);
+		const [afterResendRecovery] = await db
+			.select({ tokenHash: courseInvitations.tokenHash })
+			.from(courseInvitations)
+			.where(eq(courseInvitations.id, failedCreatePending.id));
+		assert.equal(
+			afterResendRecovery?.tokenHash,
+			hashInvitationToken(resendRetryToken),
+		);
+		assert.equal(
+			(
+				await mutate(
+					owner.app,
+					`/api/courses/${course.id}/invitations/${failedCreatePending.id}`,
+					{ method: "DELETE" },
+				)
+			).status,
+			204,
+		);
+
+		const serializedEmail = `serialized-${suffix}@example.com`;
+		const serializedInvitation = await createInvitation(
+			owner.app,
+			course.id,
+			serializedEmail,
+			"viewer",
+		);
+		const releaseSerializedDelivery = deferred<void>();
+		serializedDelivery = {
+			email: serializedEmail,
+			active: 0,
+			overlapped: false,
+			release: releaseSerializedDelivery.promise,
+		};
+		const deliveriesBeforeSerialization = invitationDeliveries.length;
+		const replacePromise = mutate(
+			owner.app,
+			`/api/courses/${course.id}/invitations`,
+			{
+				method: "POST",
+				body: JSON.stringify({ email: serializedEmail, role: "editor" }),
+			},
+		);
+		const resendPromise = mutate(
+			owner.app,
+			`/api/courses/${course.id}/invitations/${serializedInvitation.body.id}/resend`,
+			{ method: "POST" },
+		);
+		setTimeout(() => releaseSerializedDelivery.resolve(), 100);
+		const [replaceResponse, serializedResendResponse] = await Promise.all([
+			replacePromise,
+			resendPromise,
+		]);
+		assert.equal(replaceResponse.status, 201);
+		assert.equal(serializedResendResponse.status, 200);
+		assert.equal(serializedDelivery.overlapped, false);
+		const serializedDeliveries = invitationDeliveries.slice(
+			deliveriesBeforeSerialization,
+		);
+		assert.equal(serializedDeliveries.length, 2);
+		const latestSerializedToken = invitationToken(serializedDeliveries[1]);
+		const [latestSerializedInvitation] = await db
+			.select({ tokenHash: courseInvitations.tokenHash })
+			.from(courseInvitations)
+			.where(eq(courseInvitations.id, serializedInvitation.body.id));
+		assert.equal(
+			latestSerializedInvitation?.tokenHash,
+			hashInvitationToken(latestSerializedToken),
+		);
+		serializedDelivery = undefined;
+		assert.equal(
+			(
+				await mutate(
+					owner.app,
+					`/api/courses/${course.id}/invitations/${serializedInvitation.body.id}`,
+					{ method: "DELETE" },
+				)
+			).status,
+			204,
+		);
 
 		const createLessonResponse = await mutate(
 			owner.app,
@@ -521,7 +786,7 @@ async function createAccount(
 	const sessionResponse = await accountApp.request("/api/auth/get-session");
 	assert.equal(sessionResponse.status, 200);
 	const session = (await sessionResponse.json()) as { user: { id: string } };
-	return { app: accountApp, email, id: session.user.id };
+	return { app: accountApp, cookie, email, id: session.user.id };
 }
 
 function withSession(app: TestApp, cookie: string): TestApp {
@@ -563,6 +828,12 @@ function invitationToken(delivery: Delivery) {
 	const token = new URL(delivery.url).searchParams.get("token");
 	assert.ok(token);
 	return token;
+}
+
+function latestDelivery() {
+	const delivery = invitationDeliveries.at(-1);
+	assert.ok(delivery);
+	return delivery;
 }
 
 function acceptInvitation(app: TestApp, token: string) {
@@ -624,4 +895,17 @@ async function membershipCount(
 				),
 			)
 	).length;
+}
+
+type Deferred<T> = {
+	promise: Promise<T>;
+	resolve(value: T | PromiseLike<T>): void;
+};
+
+function deferred<T>(): Deferred<T> {
+	let resolve: Deferred<T>["resolve"] = () => undefined;
+	const promise = new Promise<T>((settle) => {
+		resolve = settle;
+	});
+	return { promise, resolve };
 }

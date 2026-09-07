@@ -2,8 +2,9 @@ import { strict as assert } from "node:assert";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { createAuth } from "@course-studio/auth";
-import { createDatabase } from "@course-studio/db";
+import { createDatabase, lessonDocuments } from "@course-studio/db";
 import { Hono } from "hono";
+import * as Y from "yjs";
 import { createApp } from "#api/app";
 import type { AppEnv } from "#api/http/context";
 import { createLogger } from "#api/logger";
@@ -216,15 +217,32 @@ test("courses and lessons persist through the API", {
 			id: string;
 			slug: string;
 		};
+		const collaborativeMarkdown = "# Persisted collaborative draft";
+		const collaborativeDocument = new Y.Doc();
+		collaborativeDocument.getText("markdown").insert(0, collaborativeMarkdown);
+		collaborativeDocument.getMap("metadata").set("themeId", "dark");
+		const collaborativeState = Y.encodeStateAsUpdate(collaborativeDocument);
+		await db.insert(lessonDocuments).values({
+			lessonId: lesson.id,
+			ydoc: Buffer.from(collaborativeState),
+		});
+		collaborativeDocument.destroy();
 		const lessonsResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
 		);
 		assert.equal(lessonsResponse.status, 200);
-		const lessonList = (await lessonsResponse.json()) as Array<{ id: string }>;
+		const lessonList = (await lessonsResponse.json()) as Array<{
+			id: string;
+			markdown: string;
+			themeId: string;
+		}>;
 		assert.equal(
 			lessonList.some((item) => item.id === lesson.id),
 			true,
 		);
+		const listedLesson = lessonList.find((item) => item.id === lesson.id);
+		assert.equal(listedLesson?.markdown, collaborativeMarkdown);
+		assert.equal(listedLesson?.themeId, "dark");
 
 		const duplicateLessonResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
@@ -236,7 +254,6 @@ test("courses and lessons persist through the API", {
 		);
 		assert.equal(duplicateLessonResponse.status, 409);
 
-		const initialMarkdown = `# ${lessonTitle}`;
 		const markdownUpdateResponse = await app.request(
 			`/api/lessons/${lesson.id}`,
 			{
@@ -246,25 +263,64 @@ test("courses and lessons persist through the API", {
 			},
 		);
 		assert.equal(markdownUpdateResponse.status, 400);
+		const themeUpdateResponse = await app.request(`/api/lessons/${lesson.id}`, {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ themeId: "academic" }),
+		});
+		assert.equal(themeUpdateResponse.status, 400);
 
 		const updateLessonResponse = await app.request(
 			`/api/lessons/${lesson.id}`,
 			{
 				method: "PATCH",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					title: "Updated introduction",
-					themeId: "academic",
-				}),
+				body: JSON.stringify({ title: "Updated introduction" }),
 			},
 		);
 		assert.equal(updateLessonResponse.status, 200);
 		const updatedLesson = (await updateLessonResponse.json()) as {
+			markdown: string;
 			slug: string;
+			themeId: string;
 			title: string;
 		};
 		assert.equal(updatedLesson.title, "Updated introduction");
 		assert.equal(updatedLesson.slug, lesson.slug);
+		assert.equal(updatedLesson.markdown, collaborativeMarkdown);
+		assert.equal(updatedLesson.themeId, "dark");
+		const storedDocument = await db.query.lessonDocuments.findFirst({
+			columns: { ydoc: true },
+			where: (table, { eq }) => eq(table.lessonId, lesson.id),
+		});
+		assert.deepEqual(
+			new Uint8Array(storedDocument?.ydoc ?? []),
+			collaborativeState,
+		);
+		const renamedLessonList = (await (
+			await app.request(`/api/courses/${courseId}/lessons`)
+		).json()) as Array<{
+			id: string;
+			markdown: string;
+			themeId: string;
+			title: string;
+		}>;
+		const renamedListedLesson = renamedLessonList.find(
+			({ id }) => id === lesson.id,
+		);
+		assert.ok(renamedListedLesson);
+		assert.deepEqual(
+			{
+				markdown: renamedListedLesson.markdown,
+				themeId: renamedListedLesson.themeId,
+				title: renamedListedLesson.title,
+			},
+			{
+				markdown: collaborativeMarkdown,
+				themeId: "dark",
+				title: "Updated introduction",
+			},
+		);
 
 		const secondLessonResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
@@ -421,7 +477,9 @@ test("courses and lessons persist through the API", {
 		assert.equal(reorderResponse.status, 200);
 		const reorderedLessons = (await reorderResponse.json()) as Array<{
 			id: string;
+			markdown: string;
 			position: number;
+			themeId: string;
 		}>;
 		assert.deepEqual(
 			reorderedLessons.map(({ id, position }) => ({ id, position })),
@@ -430,6 +488,11 @@ test("courses and lessons persist through the API", {
 				{ id: lesson.id, position: 1 },
 			],
 		);
+		const reorderedCollaborativeLesson = reorderedLessons.find(
+			({ id }) => id === lesson.id,
+		);
+		assert.equal(reorderedCollaborativeLesson?.markdown, collaborativeMarkdown);
+		assert.equal(reorderedCollaborativeLesson?.themeId, "dark");
 
 		await db.$client.end();
 		db = createDatabase(databaseUrl);
@@ -443,8 +506,8 @@ test("courses and lessons persist through the API", {
 			markdown: string;
 			themeId: string;
 		};
-		assert.equal(persistedLesson.markdown, initialMarkdown);
-		assert.equal(persistedLesson.themeId, "academic");
+		assert.equal(persistedLesson.markdown, collaborativeMarkdown);
+		assert.equal(persistedLesson.themeId, "dark");
 		const persistedOrderResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
 		);

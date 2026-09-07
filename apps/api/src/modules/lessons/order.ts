@@ -1,7 +1,8 @@
-import { type Database, lessons } from "@course-studio/db";
+import { type Database, lessonDocuments, lessons } from "@course-studio/db";
 import { asc, eq } from "drizzle-orm";
 import { ApiError } from "#api/http/errors/api-error";
 import { createCourseAccess } from "#api/modules/courses/access";
+import { applyPersistedLessonContent } from "#api/modules/lessons/lesson-ydoc";
 import type { ReorderLessonsInput } from "#api/modules/lessons/schema";
 
 export function createLessonOrderService(db: Database) {
@@ -39,11 +40,20 @@ export function createLessonOrderService(db: Database) {
 					.where(eq(lessons.id, id));
 			}
 
-			return tx
-				.select()
+			const rows = await tx
+				.select({ lesson: lessons, ydoc: lessonDocuments.ydoc })
 				.from(lessons)
+				.leftJoin(lessonDocuments, eq(lessonDocuments.lessonId, lessons.id))
 				.where(eq(lessons.courseId, courseId))
 				.orderBy(asc(lessons.position), asc(lessons.createdAt));
+
+			return Promise.all(
+				rows.map(({ lesson, ydoc }) =>
+					ydoc
+						? applyPersistedLessonContent(lesson, new Uint8Array(ydoc))
+						: lesson,
+				),
+			);
 		});
 	};
 }

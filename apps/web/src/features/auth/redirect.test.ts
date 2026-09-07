@@ -6,6 +6,7 @@ const token = "A".repeat(43);
 const invitationPath = `/invitations/accept?token=${token}`;
 
 test("accepts studio and exact invitation redirects", () => {
+	assert.equal(getSafeAuthRedirect("/studio"), "/studio");
 	assert.equal(
 		getSafeAuthRedirect("/studio/courses/one"),
 		"/studio/courses/one",
@@ -22,10 +23,16 @@ test("rejects external, malformed, and expanded invitation redirects", () => {
 		"/invitations/accept?token=short",
 		"/studioevil",
 		"/studio/../admin",
+		"/studio/%2e%2e/admin",
 		"/studio\\external.example",
 		"/studio/courses?next=/admin",
+		"/studio/courses#external.example",
+		"/studio/%",
+		"/studio/\u0000courses",
+		"/studio/\ud800",
 	]) {
 		assert.equal(getSafeAuthRedirect(value), "/studio");
 	}
+	assert.equal(getSafeAuthRedirect(undefined), "/studio");
 	assert.equal(getInvitationPath("not-valid"), undefined);
 });

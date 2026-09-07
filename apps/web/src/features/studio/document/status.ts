@@ -5,7 +5,8 @@ export type CollaborationStatus =
 	| "connected"
 	| "syncing"
 	| "synced"
-	| "offline";
+	| "offline"
+	| "access-revoked";
 
 export type CollaborationStatusStore = {
 	readonly getSnapshot: () => CollaborationStatus;
@@ -20,6 +21,7 @@ type CollaborationStatusStoreOptions = {
 
 type CollaborationStatusState = {
 	status: CollaborationStatus;
+	accessRevoked: boolean;
 	synced: boolean;
 	transportStatus: TransportStatus;
 	unsyncedChanges: number;
@@ -31,6 +33,7 @@ export function createCollaborationStatusStore({
 	syncedSettleDelayMs = DEFAULT_SYNCED_SETTLE_DELAY_MS,
 }: CollaborationStatusStoreOptions = {}): CollaborationStatusStore & {
 	destroy(): void;
+	revokeAccess(): void;
 	setSynced(synced: boolean): void;
 	setTransportStatus(status: TransportStatus): void;
 	setUnsyncedChanges(count: number): void;
@@ -39,6 +42,7 @@ export function createCollaborationStatusStore({
 	let syncedTimer: ReturnType<typeof setTimeout> | null = null;
 	const state: CollaborationStatusState = {
 		status: "connecting",
+		accessRevoked: false,
 		synced: false,
 		transportStatus: "connecting",
 		unsyncedChanges: 0,
@@ -90,6 +94,10 @@ export function createCollaborationStatusStore({
 			state.synced = synced;
 			publish();
 		},
+		revokeAccess() {
+			state.accessRevoked = true;
+			publish();
+		},
 		setTransportStatus(status) {
 			state.transportStatus = status;
 			if (status === "disconnected") {
@@ -119,14 +127,20 @@ export function useCollaborationStatus(
 }
 
 function deriveStatus({
+	accessRevoked,
 	transportStatus,
 	synced,
 	unsyncedChanges,
 }: {
+	accessRevoked: boolean;
 	transportStatus: TransportStatus;
 	synced: boolean;
 	unsyncedChanges: number;
 }): CollaborationStatus {
+	if (accessRevoked) {
+		return "access-revoked";
+	}
+
 	switch (transportStatus) {
 		case "disconnected":
 			return "offline";

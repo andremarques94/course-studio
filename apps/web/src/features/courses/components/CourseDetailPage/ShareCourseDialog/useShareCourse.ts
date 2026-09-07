@@ -36,6 +36,8 @@ export function useShareCourse(courseId: string, open: boolean) {
 		onSuccess: async () => {
 			setEmail("");
 			toast.success("Invitation sent");
+		},
+		onSettled: async () => {
 			await queryClient.invalidateQueries({
 				queryKey: courseQueries.invitations(courseId).queryKey,
 				exact: true,
@@ -47,15 +49,17 @@ export function useShareCourse(courseId: string, open: boolean) {
 		mutationFn: (invitationId: string) =>
 			courseRepository.resendInvitation(courseId, invitationId),
 		onMutate: (invitationId) => setResendingId(invitationId),
-		onSettled: () => setResendingId(undefined),
-		onSuccess: async () => {
+		onSuccess: () => {
 			toast.success("Invitation resent");
+		},
+		onSettled: async () => {
+			setResendingId(undefined);
 			await queryClient.invalidateQueries({
 				queryKey: courseQueries.invitations(courseId).queryKey,
 				exact: true,
 			});
 		},
-		onError: () => toast.error("Couldn't resend invitation"),
+		onError: (error) => toast.error(error.message),
 	});
 
 	const remove = useMutation({

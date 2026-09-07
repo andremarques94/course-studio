@@ -11,7 +11,6 @@ import { e2eEnvironment } from "./environment";
 import {
 	authenticate,
 	CollaborationProcess,
-	editor,
 	getInvitationURL,
 	getVerificationURL,
 	replaceMarkdown,
@@ -190,13 +189,27 @@ test("an owner shares a collaborative course and revokes access", async ({
 			).status(),
 		).toBe(404);
 
-		await editor(editorPage).press("ControlOrMeta+End");
-		await editorPage.keyboard.insertText(" revoked update");
+		const ownerMarkdown = `${collaborativeMarkdown}\n\nOwner retained access`;
+		await replaceMarkdown(ownerLessonPage, ownerMarkdown);
+		await waitForStatus(ownerLessonPage, "synced");
 		await expect.poll(() => editorSocketClosed).toBe(true);
-		await editorPage.reload();
+		await expect(
+			editorPage.getByText("Collaboration access revoked", { exact: true }),
+		).toBeVisible();
 		await expect(editorPage.getByRole("alert")).toContainText(
-			"Couldn't load this page",
+			"Your changes can no longer be saved.",
 		);
+		await expect(editorPage.getByTestId("markdown-editor")).toHaveCount(0);
+		await expect(
+			editorPage.getByRole("link", { name: "Return to courses" }),
+		).toHaveAttribute("href", "/studio/courses");
+		await editorPage.reload();
+		await expect(
+			editorPage.getByText("Course unavailable", { exact: true }),
+		).toBeVisible();
+		await expect(
+			editorPage.getByRole("link", { name: "Return to courses" }),
+		).toHaveAttribute("href", "/studio/courses");
 
 		await expect
 			.poll(async () => {
@@ -206,7 +219,7 @@ test("an owner shares a collaborative course and revokes access", async ({
 				}
 				return ((await response.json()) as { markdown: string }).markdown;
 			})
-			.toBe(collaborativeMarkdown);
+			.toBe(ownerMarkdown);
 
 		const viewerApi = await newApiContext();
 		apiContexts.push(viewerApi);

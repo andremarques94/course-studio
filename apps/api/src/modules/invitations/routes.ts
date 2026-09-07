@@ -1,8 +1,12 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import type { AppEnv } from "#api/http/context";
 import { validationHook } from "#api/http/validation";
 import { courseIdSchema } from "#api/modules/courses/schema";
+import {
+	InvitationDeliveryError,
+	InvitationRateLimitError,
+} from "#api/modules/invitations/errors";
 import {
 	acceptInvitationSchema,
 	createInvitationSchema,
@@ -52,15 +56,20 @@ export function createCourseInvitationRoutes(service: InvitationsService) {
 			"/:courseId/invitations",
 			zValidator("param", courseIdSchema, validationHook),
 			zValidator("json", createInvitationSchema, validationHook),
-			async (c) =>
-				c.json(
-					await service.create(
-						c.get("session").user.id,
-						c.req.valid("param").courseId,
-						c.req.valid("json"),
-					),
-					201,
-				),
+			async (c) => {
+				try {
+					return c.json(
+						await service.create(
+							c.get("session").user.id,
+							c.req.valid("param").courseId,
+							c.req.valid("json"),
+						),
+						201,
+					);
+				} catch (error) {
+					return invitationOperationError(c, error);
+				}
+			},
 		)
 		.post(
 			"/:courseId/invitations/:invitationId/resend",
@@ -71,13 +80,17 @@ export function createCourseInvitationRoutes(service: InvitationsService) {
 			),
 			async (c) => {
 				const { courseId, invitationId } = c.req.valid("param");
-				return c.json(
-					await service.resend(
-						c.get("session").user.id,
-						courseId,
-						invitationId,
-					),
-				);
+				try {
+					return c.json(
+						await service.resend(
+							c.get("session").user.id,
+							courseId,
+							invitationId,
+						),
+					);
+				} catch (error) {
+					return invitationOperationError(c, error);
+				}
 			},
 		)
 		.delete(
@@ -93,6 +106,23 @@ export function createCourseInvitationRoutes(service: InvitationsService) {
 				return c.body(null, 204);
 			},
 		);
+}
+
+function invitationOperationError(c: Context<AppEnv>, error: unknown) {
+	if (error instanceof InvitationRateLimitError) {
+		c.header("Retry-After", String(error.retryAfterSeconds));
+		return c.json(
+			{ error: { code: "INVITATION_RATE_LIMITED", message: error.message } },
+			429,
+		);
+	}
+	if (error instanceof InvitationDeliveryError) {
+		return c.json(
+			{ error: { code: "INVITATION_DELIVERY_FAILED", message: error.message } },
+			502,
+		);
+	}
+	throw error;
 }
 
 export function createInvitationAcceptanceRoutes(service: InvitationsService) {

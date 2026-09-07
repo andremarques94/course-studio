@@ -29,6 +29,8 @@ const persistence = createLessonDocumentPersistence({
 const server = createCollaborationServer({
 	host: env.host,
 	port: env.port,
+	authRevalidationIntervalMs: env.authRevalidationIntervalMs,
+	authRevalidationTimeoutMs: env.authRevalidationTimeoutMs,
 	logger,
 	authenticateToken: createJwtAuthenticator(env.betterAuthUrl),
 	authorizeLesson: createLessonAuthorizer(createPostgresLessonAccessFinder(db)),

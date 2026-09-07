@@ -98,7 +98,7 @@ test("Hocuspocus hooks authorize only the guarded JWT subject and strict room", 
 			documentName: `lesson:${lessonId}`,
 			token: "other",
 		} as never),
-		/Lesson not found/,
+		{ code: 4403, message: "Lesson access denied." },
 	);
 	await assert.rejects(
 		authenticate({ documentName: "course:unsafe", token: "owner" } as never),
@@ -278,6 +278,218 @@ test("every inbound message is reauthorized before updates are accepted", async 
 			"Timed out waiting for document persistence.",
 		);
 		assert.equal(storedMarkdown, "accepted");
+	} finally {
+		owner.destroy();
+		editor.destroy();
+		ownerDocument.destroy();
+		editorDocument.destroy();
+		await server.destroy();
+	}
+});
+
+test("a revoked silent lesson connection closes within the revalidation window", async () => {
+	const access = new Map([
+		[`editor:${lessonId}`, true],
+		[`editor:${secondLessonId}`, true],
+	]);
+	const server = createCollaborationServer({
+		host: "127.0.0.1",
+		port: 0,
+		authRevalidationIntervalMs: 25,
+		logger: pino({ level: "silent" }),
+		authenticateToken: async (token) => ({ userId: token }),
+		authorizeLesson: async (userId, id) =>
+			userId === "owner" || access.get(`${userId}:${id}`) === true,
+		loadDocument: async ({ document }) => document,
+		storeDocument: async () => undefined,
+	});
+	await server.listen();
+	const address = server.httpServer.address() as AddressInfo;
+	const url = `ws://127.0.0.1:${address.port}`;
+	const ownerPrivateDocument = new Y.Doc();
+	const editorPrivateDocument = new Y.Doc();
+	const editorActiveDocument = new Y.Doc();
+	const ownerPrivate = new HocuspocusProvider({
+		url,
+		name: `lesson:${lessonId}`,
+		token: "owner",
+		document: ownerPrivateDocument,
+	});
+	let editorPrivate: HocuspocusProvider | undefined;
+	let editorActive: HocuspocusProvider | undefined;
+
+	try {
+		await waitForProviderEvent(ownerPrivate, "synced");
+		editorPrivate = new HocuspocusProvider({
+			url,
+			name: `lesson:${lessonId}`,
+			token: "editor",
+			document: editorPrivateDocument,
+		});
+		await waitForProviderEvent(editorPrivate, "synced");
+		editorActive = new HocuspocusProvider({
+			url,
+			name: `lesson:${secondLessonId}`,
+			token: "editor",
+			document: editorActiveDocument,
+		});
+		await waitForProviderEvent(editorActive, "synced");
+
+		access.set(`editor:${lessonId}`, false);
+		const revokedAt = Date.now();
+		const privateRoomClosed = waitForProviderEvent(editorPrivate, "close");
+
+		// Traffic in another room must not refresh the silent revoked room.
+		editorActiveDocument.getText("markdown").insert(0, "still-authorized");
+		await waitFor(
+			() =>
+				server.hocuspocus.documents
+					.get(`lesson:${secondLessonId}`)
+					?.getText("markdown")
+					.toString() === "still-authorized",
+			"Timed out waiting for the active-room update.",
+		);
+		await privateRoomClosed;
+		assert.ok(Date.now() - revokedAt < 500);
+
+		ownerPrivateDocument.getText("markdown").insert(0, "private-after-revoke");
+		await new Promise((resolve) => setTimeout(resolve, 75));
+		assert.equal(editorPrivateDocument.getText("markdown").toString(), "");
+		assert.equal(
+			editorActiveDocument.getText("markdown").toString(),
+			"still-authorized",
+		);
+	} finally {
+		ownerPrivate.destroy();
+		editorPrivate?.destroy();
+		editorActive?.destroy();
+		ownerPrivateDocument.destroy();
+		editorPrivateDocument.destroy();
+		editorActiveDocument.destroy();
+		await server.destroy();
+	}
+});
+
+test("slow periodic authorization does not overlap and failures close the connection", async () => {
+	let failAuthorization = false;
+	let activeChecks = 0;
+	let maximumActiveChecks = 0;
+	let failedChecks = 0;
+	const server = createCollaborationServer({
+		host: "127.0.0.1",
+		port: 0,
+		authRevalidationIntervalMs: 50,
+		authRevalidationTimeoutMs: 250,
+		logger: pino({ level: "silent" }),
+		authenticateToken: async (token) => ({ userId: token }),
+		authorizeLesson: async () => {
+			if (!failAuthorization) {
+				return true;
+			}
+			activeChecks += 1;
+			failedChecks += 1;
+			maximumActiveChecks = Math.max(maximumActiveChecks, activeChecks);
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			activeChecks -= 1;
+			throw new Error("authorization backend unavailable");
+		},
+		loadDocument: async ({ document }) => document,
+		storeDocument: async () => undefined,
+	});
+	await server.listen();
+	const address = server.httpServer.address() as AddressInfo;
+	const document = new Y.Doc();
+	const provider = new HocuspocusProvider({
+		url: `ws://127.0.0.1:${address.port}`,
+		name: `lesson:${lessonId}`,
+		token: "editor",
+		document,
+	});
+
+	try {
+		await waitForProviderEvent(provider, "synced");
+		failAuthorization = true;
+		await waitForProviderEvent(provider, "close");
+		assert.equal(maximumActiveChecks, 1);
+		assert.equal(failedChecks, 1);
+	} finally {
+		provider.destroy();
+		document.destroy();
+		await server.destroy();
+	}
+});
+
+test("a stalled periodic check closes on deadline without overlap or later updates", async () => {
+	let stallEditorAuthorization = false;
+	let activeChecks = 0;
+	let maximumActiveChecks = 0;
+	let stalledChecks = 0;
+	const server = createCollaborationServer({
+		host: "127.0.0.1",
+		port: 0,
+		authRevalidationIntervalMs: 40,
+		authRevalidationTimeoutMs: 60,
+		logger: pino({ level: "silent" }),
+		authenticateToken: async (token) => ({ userId: token }),
+		authorizeLesson: async (userId) => {
+			if (userId !== "editor" || !stallEditorAuthorization) {
+				return true;
+			}
+			activeChecks += 1;
+			stalledChecks += 1;
+			maximumActiveChecks = Math.max(maximumActiveChecks, activeChecks);
+			return new Promise<boolean>(() => undefined);
+		},
+		loadDocument: async ({ document }) => document,
+		storeDocument: async () => undefined,
+	});
+	await server.listen();
+	const address = server.httpServer.address() as AddressInfo;
+	const url = `ws://127.0.0.1:${address.port}`;
+	const ownerDocument = new Y.Doc();
+	const editorDocument = new Y.Doc();
+	const owner = new HocuspocusProvider({
+		url,
+		name: `lesson:${lessonId}`,
+		token: "owner",
+		document: ownerDocument,
+	});
+	const editor = new HocuspocusProvider({
+		url,
+		name: `lesson:${lessonId}`,
+		token: "editor",
+		document: editorDocument,
+	});
+
+	try {
+		await Promise.all([
+			waitForProviderEvent(owner, "synced"),
+			waitForProviderEvent(editor, "synced"),
+		]);
+		stallEditorAuthorization = true;
+		const stalledAt = Date.now();
+		const closed = waitForProviderEvent(editor, "close");
+		await waitFor(
+			() => stalledChecks === 1,
+			"Timed out waiting for the stalled authorization check.",
+		);
+
+		ownerDocument.getText("markdown").insert(0, "before-deadline");
+		await waitFor(
+			() => editorDocument.getText("markdown").toString() === "before-deadline",
+			"Timed out waiting for the update before the deadline.",
+		);
+		await closed;
+		assert.ok(Date.now() - stalledAt < 400);
+
+		ownerDocument.getText("markdown").insert(15, "-after-max");
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		assert.equal(
+			editorDocument.getText("markdown").toString(),
+			"before-deadline",
+		);
+		assert.equal(maximumActiveChecks, 1);
+		assert.equal(stalledChecks, 1);
 	} finally {
 		owner.destroy();
 		editor.destroy();

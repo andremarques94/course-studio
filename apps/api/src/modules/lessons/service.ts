@@ -21,11 +21,20 @@ export function createLessonsService(db: Database) {
 			if (!(await access.findViewableCourse(userId, courseId))) {
 				throw new ApiError(404, "COURSE_NOT_FOUND", "Course not found.");
 			}
-			return db
-				.select()
+			const rows = await db
+				.select({ lesson: lessons, ydoc: lessonDocuments.ydoc })
 				.from(lessons)
+				.leftJoin(lessonDocuments, eq(lessonDocuments.lessonId, lessons.id))
 				.where(eq(lessons.courseId, courseId))
 				.orderBy(asc(lessons.position), asc(lessons.createdAt));
+
+			return Promise.all(
+				rows.map(({ lesson, ydoc }) =>
+					ydoc
+						? applyPersistedLessonContent(lesson, new Uint8Array(ydoc))
+						: lesson,
+				),
+			);
 		},
 
 		async findById(userId: string, id: string) {
@@ -105,7 +114,15 @@ export function createLessonsService(db: Database) {
 					throw new ApiError(404, "LESSON_NOT_FOUND", "Lesson not found.");
 				}
 
-				return lesson;
+				const [persisted] = await tx
+					.select({ ydoc: lessonDocuments.ydoc })
+					.from(lessonDocuments)
+					.where(eq(lessonDocuments.lessonId, id))
+					.limit(1);
+
+				return persisted
+					? applyPersistedLessonContent(lesson, new Uint8Array(persisted.ydoc))
+					: lesson;
 			});
 		},
 
