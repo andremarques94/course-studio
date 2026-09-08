@@ -48,6 +48,19 @@ test("keeps transport state authoritative over pending changes", () => {
 	status.destroy();
 });
 
+test("keeps revoked access terminal across transport updates", () => {
+	const status = createCollaborationStatusStore();
+	status.setTransportStatus("connected");
+	status.revokeAccess();
+
+	assert.equal(status.getSnapshot(), "access-revoked");
+	status.setTransportStatus("disconnected");
+	status.setTransportStatus("connecting");
+	status.setSynced(true);
+	assert.equal(status.getSnapshot(), "access-revoked");
+	status.destroy();
+});
+
 test("keeps Syncing visible until acknowledged changes remain settled", async () => {
 	const status = createCollaborationStatusStore({ syncedSettleDelayMs: 10 });
 	status.setTransportStatus("connected");

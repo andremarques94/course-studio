@@ -12,12 +12,14 @@ type CollaborationUser = Pick<AuthSession["user"], "id" | "name" | "image">;
 
 type CollaborativeLessonDocumentOptions = {
 	lessonId: string;
+	onAccessRevoked?: () => void;
 	url: string;
 	user: CollaborationUser;
 };
 
 export function createCollaborativeLessonDocument({
 	lessonId,
+	onAccessRevoked,
 	url,
 	user,
 }: CollaborativeLessonDocumentOptions): CollaborativeLessonDocument {
@@ -26,7 +28,13 @@ export function createCollaborativeLessonDocument({
 	const collaborationStatus = createCollaborationStatusStore();
 	document.setCollaborationStatus(collaborationStatus);
 
-	const provider = new HocuspocusProvider({
+	let provider: HocuspocusProvider;
+	const revokeAccess = () => {
+		collaborationStatus.revokeAccess();
+		provider.disconnect();
+		onAccessRevoked?.();
+	};
+	provider = new HocuspocusProvider({
 		url,
 		name: `lesson:${lessonId}`,
 		document: ydoc,
@@ -37,11 +45,21 @@ export function createCollaborativeLessonDocument({
 			}
 			return data.token;
 		},
+		onAuthenticationFailed({ reason }) {
+			if (reason === "Lesson access denied.") {
+				revokeAccess();
+			}
+		},
 		onOpen() {
 			collaborationStatus.setTransportStatus("connected");
 		},
 		onStatus({ status }) {
 			collaborationStatus.setTransportStatus(status);
+		},
+		onClose({ event }) {
+			if (event.code === 4403 || event.reason === "Lesson access revoked.") {
+				revokeAccess();
+			}
 		},
 		onSynced({ state }) {
 			collaborationStatus.setSynced(state);
@@ -75,6 +93,7 @@ export function createCollaborativeLessonDocument({
 
 export function useCollaborativeLessonDocument({
 	lessonId,
+	onAccessRevoked,
 	url,
 	user,
 }: CollaborativeLessonDocumentOptions): LessonDocument | null {
@@ -86,6 +105,7 @@ export function useCollaborativeLessonDocument({
 	useEffect(() => {
 		const nextDocument = createCollaborativeLessonDocument({
 			lessonId,
+			onAccessRevoked,
 			url,
 			user: { id, image, name },
 		});
@@ -95,7 +115,7 @@ export function useCollaborativeLessonDocument({
 			setDocument(null);
 			nextDocument.destroy();
 		};
-	}, [id, image, lessonId, name, url]);
+	}, [id, image, lessonId, name, onAccessRevoked, url]);
 
 	return document;
 }

@@ -4,10 +4,6 @@ import { z } from "zod";
 import type { AuthSession } from "./auth-client";
 
 const apiURL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
-const studioRedirectSchema = z
-	.union([z.literal("/studio"), z.string().startsWith("/studio/")])
-	.catch("/studio");
-
 const authSessionSchema: z.ZodType<AuthSession> = z.object({
 	user: z.object({
 		id: z.string(),
@@ -46,7 +42,3 @@ export const getSession = createServerFn({ method: "GET" }).handler(
 		return body === null ? null : authSessionSchema.parse(body);
 	},
 );
-
-export function getSafeStudioRedirect(value: unknown) {
-	return studioRedirectSchema.parse(value);
-}

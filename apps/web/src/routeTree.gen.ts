@@ -15,6 +15,7 @@ import { Route as publicSignInRouteImport } from './routes/(public)/sign-in'
 import { Route as publicSignUpRouteImport } from './routes/(public)/sign-up'
 import { Route as StudioIndexRouteImport } from './routes/studio/index'
 import { Route as StudioPrintRouteImport } from './routes/studio/print'
+import { Route as publicInvitationsAcceptRouteImport } from './routes/(public)/invitations/accept'
 import { Route as StudioCoursesIndexRouteImport } from './routes/studio/courses/index'
 import { Route as StudioCoursesCourseIdIndexRouteImport } from './routes/studio/courses/$courseId/index'
 import { Route as StudioCoursesCourseIdLessonsLessonIdRouteImport } from './routes/studio/courses/$courseId/lessons/$lessonId'
@@ -49,6 +50,11 @@ const StudioPrintRoute = StudioPrintRouteImport.update({
   path: '/print',
   getParentRoute: () => StudioRouteRoute,
 } as any)
+const publicInvitationsAcceptRoute = publicInvitationsAcceptRouteImport.update({
+  id: '/(public)/invitations/accept',
+  path: '/invitations/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioCoursesIndexRoute = StudioCoursesIndexRouteImport.update({
   id: '/courses/',
   path: '/courses/',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
+  '/invitations/accept': typeof publicInvitationsAcceptRoute
   '/studio/courses/': typeof StudioCoursesIndexRoute
   '/studio/courses/$courseId/': typeof StudioCoursesCourseIdIndexRoute
   '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/studio/print': typeof StudioPrintRoute
   '/': typeof publicIndexRoute
   '/studio': typeof StudioIndexRoute
+  '/invitations/accept': typeof publicInvitationsAcceptRoute
   '/studio/courses': typeof StudioCoursesIndexRoute
   '/studio/courses/$courseId': typeof StudioCoursesCourseIdIndexRoute
   '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/studio/print': typeof StudioPrintRoute
   '/(public)/': typeof publicIndexRoute
   '/studio/': typeof StudioIndexRoute
+  '/(public)/invitations/accept': typeof publicInvitationsAcceptRoute
   '/studio/courses/': typeof StudioCoursesIndexRoute
   '/studio/courses/$courseId/': typeof StudioCoursesCourseIdIndexRoute
   '/studio/courses/$courseId/lessons/$lessonId': typeof StudioCoursesCourseIdLessonsLessonIdRoute
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/studio/print'
     | '/'
     | '/studio/'
+    | '/invitations/accept'
     | '/studio/courses/'
     | '/studio/courses/$courseId/'
     | '/studio/courses/$courseId/lessons/$lessonId'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/studio/print'
     | '/'
     | '/studio'
+    | '/invitations/accept'
     | '/studio/courses'
     | '/studio/courses/$courseId'
     | '/studio/courses/$courseId/lessons/$lessonId'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/studio/print'
     | '/(public)/'
     | '/studio/'
+    | '/(public)/invitations/accept'
     | '/studio/courses/'
     | '/studio/courses/$courseId/'
     | '/studio/courses/$courseId/lessons/$lessonId'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   publicSignInRoute: typeof publicSignInRoute
   publicSignUpRoute: typeof publicSignUpRoute
   publicIndexRoute: typeof publicIndexRoute
+  publicInvitationsAcceptRoute: typeof publicInvitationsAcceptRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/studio/print'
       preLoaderRoute: typeof StudioPrintRouteImport
       parentRoute: typeof StudioRouteRoute
+    }
+    '/(public)/invitations/accept': {
+      id: '/(public)/invitations/accept'
+      path: '/invitations/accept'
+      fullPath: '/invitations/accept'
+      preLoaderRoute: typeof publicInvitationsAcceptRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/studio/courses/': {
       id: '/studio/courses/'
@@ -236,6 +256,7 @@ const rootRouteChildren: RootRouteChildren = {
   publicSignInRoute: publicSignInRoute,
   publicSignUpRoute: publicSignUpRoute,
   publicIndexRoute: publicIndexRoute,
+  publicInvitationsAcceptRoute: publicInvitationsAcceptRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

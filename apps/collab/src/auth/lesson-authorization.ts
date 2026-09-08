@@ -1,24 +1,47 @@
-import { canEditLesson } from "@course-studio/auth/authorization";
-import { courses, type Database, lessons } from "@course-studio/db";
-import { eq } from "drizzle-orm";
+import {
+	type CourseAccess,
+	canEditLesson,
+} from "@course-studio/auth/authorization";
+import {
+	courseMembers,
+	courses,
+	type Database,
+	lessons,
+} from "@course-studio/db";
+import { and, eq } from "drizzle-orm";
 
-type FindLessonOwner = (lessonId: string) => Promise<string | undefined>;
+export type FindLessonAccess = (
+	userId: string,
+	lessonId: string,
+) => Promise<CourseAccess | undefined>;
 
-export function createLessonAuthorizer(findLessonOwner: FindLessonOwner) {
+export function createLessonAuthorizer(findLessonAccess: FindLessonAccess) {
 	return async (userId: string, lessonId: string) => {
-		const ownerId = await findLessonOwner(lessonId);
-		return ownerId ? canEditLesson(userId, { course: { ownerId } }) : false;
+		const course = await findLessonAccess(userId, lessonId);
+		return course ? canEditLesson(userId, { course }) : false;
 	};
 }
 
-export function createPostgresLessonOwnerFinder(db: Database): FindLessonOwner {
-	return async (lessonId) => {
+export function createPostgresLessonAccessFinder(
+	db: Database,
+): FindLessonAccess {
+	return async (userId, lessonId) => {
 		const [lesson] = await db
-			.select({ ownerId: courses.ownerId })
+			.select({
+				ownerId: courses.ownerId,
+				membershipRole: courseMembers.role,
+			})
 			.from(lessons)
 			.innerJoin(courses, eq(lessons.courseId, courses.id))
+			.leftJoin(
+				courseMembers,
+				and(
+					eq(courseMembers.courseId, courses.id),
+					eq(courseMembers.userId, userId),
+				),
+			)
 			.where(eq(lessons.id, lessonId))
 			.limit(1);
-		return lesson?.ownerId;
+		return lesson;
 	};
 }

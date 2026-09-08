@@ -2,18 +2,19 @@ import { strict as assert } from "node:assert";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { createAuth } from "@course-studio/auth";
-import { createDatabase } from "@course-studio/db";
+import { createDatabase, lessonDocuments } from "@course-studio/db";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import * as Y from "yjs";
 import { createApp } from "#api/app";
 import type { AppEnv } from "#api/http/context";
 import { createLogger } from "#api/logger";
 import { createPrivateRoutes } from "#api/private-routes";
+import { integrationAuthSecret } from "./integration-auth.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const logger = createLogger("silent");
-const authSecret =
-	process.env.BETTER_AUTH_SECRET ??
-	"integration-test-secret-with-32-characters";
+const authSecret = integrationAuthSecret;
 const verificationLinks = new Map<string, string>();
 const webOrigin = "http://localhost:3000";
 
@@ -29,7 +30,13 @@ function createTestApp(
 			verificationLinks.set(user.email, url);
 		},
 	});
-	return createApp(db, { auth, corsOrigins: [webOrigin], logger });
+	return createApp(db, {
+		auth,
+		corsOrigins: [webOrigin],
+		logger,
+		webOrigin,
+		sendCourseInvitation: async () => undefined,
+	});
 }
 
 function withSession(app: ReturnType<typeof createTestApp>, cookie: string) {
@@ -63,7 +70,10 @@ test("courses and lessons persist through the API", {
 			"/private",
 			createPrivateRoutes(db, {
 				auth: alternateAuth,
+				logger,
 				trustedOrigins: [webOrigin],
+				webOrigin,
+				sendCourseInvitation: async () => undefined,
 			}),
 		);
 		assert.equal(
@@ -209,15 +219,51 @@ test("courses and lessons persist through the API", {
 			id: string;
 			slug: string;
 		};
+		const collaborativeMarkdown = "# Persisted collaborative draft";
+		const collaborativeDocument = new Y.Doc();
+		collaborativeDocument.getText("markdown").insert(0, collaborativeMarkdown);
+		collaborativeDocument.getMap("metadata").set("themeId", "dark");
+		const collaborativeState = Y.encodeStateAsUpdate(collaborativeDocument);
+		await db.insert(lessonDocuments).values({
+			lessonId: lesson.id,
+			ydoc: Buffer.from(collaborativeState),
+		});
+		collaborativeDocument.destroy();
+		await db
+			.update(lessonDocuments)
+			.set({ ydoc: Buffer.from([0xff]) })
+			.where(eq(lessonDocuments.lessonId, lesson.id));
 		const lessonsResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
 		);
 		assert.equal(lessonsResponse.status, 200);
-		const lessonList = (await lessonsResponse.json()) as Array<{ id: string }>;
+		const lessonList = (await lessonsResponse.json()) as Array<{
+			courseId: string;
+			createdAt: string;
+			id: string;
+			position: number;
+			slug: string;
+			title: string;
+			updatedAt: string;
+		}>;
 		assert.equal(
 			lessonList.some((item) => item.id === lesson.id),
 			true,
 		);
+		const listedLesson = lessonList.find((item) => item.id === lesson.id);
+		assert.deepEqual(Object.keys(listedLesson ?? {}).sort(), [
+			"courseId",
+			"createdAt",
+			"id",
+			"position",
+			"slug",
+			"title",
+			"updatedAt",
+		]);
+		await db
+			.update(lessonDocuments)
+			.set({ ydoc: Buffer.from(collaborativeState) })
+			.where(eq(lessonDocuments.lessonId, lesson.id));
 
 		const duplicateLessonResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
@@ -229,7 +275,6 @@ test("courses and lessons persist through the API", {
 		);
 		assert.equal(duplicateLessonResponse.status, 409);
 
-		const initialMarkdown = `# ${lessonTitle}`;
 		const markdownUpdateResponse = await app.request(
 			`/api/lessons/${lesson.id}`,
 			{
@@ -239,16 +284,19 @@ test("courses and lessons persist through the API", {
 			},
 		);
 		assert.equal(markdownUpdateResponse.status, 400);
+		const themeUpdateResponse = await app.request(`/api/lessons/${lesson.id}`, {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ themeId: "academic" }),
+		});
+		assert.equal(themeUpdateResponse.status, 400);
 
 		const updateLessonResponse = await app.request(
 			`/api/lessons/${lesson.id}`,
 			{
 				method: "PATCH",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					title: "Updated introduction",
-					themeId: "academic",
-				}),
+				body: JSON.stringify({ title: "Updated introduction" }),
 			},
 		);
 		assert.equal(updateLessonResponse.status, 200);
@@ -258,6 +306,29 @@ test("courses and lessons persist through the API", {
 		};
 		assert.equal(updatedLesson.title, "Updated introduction");
 		assert.equal(updatedLesson.slug, lesson.slug);
+		assert.equal("markdown" in updatedLesson, false);
+		assert.equal("themeId" in updatedLesson, false);
+		const storedDocument = await db.query.lessonDocuments.findFirst({
+			columns: { ydoc: true },
+			where: (table, { eq }) => eq(table.lessonId, lesson.id),
+		});
+		assert.deepEqual(
+			new Uint8Array(storedDocument?.ydoc ?? []),
+			collaborativeState,
+		);
+		const renamedLessonList = (await (
+			await app.request(`/api/courses/${courseId}/lessons`)
+		).json()) as Array<{
+			id: string;
+			title: string;
+		}>;
+		const renamedListedLesson = renamedLessonList.find(
+			({ id }) => id === lesson.id,
+		);
+		assert.ok(renamedListedLesson);
+		assert.equal(renamedListedLesson.title, "Updated introduction");
+		assert.equal("markdown" in renamedListedLesson, false);
+		assert.equal("themeId" in renamedListedLesson, false);
 
 		const secondLessonResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
@@ -403,6 +474,10 @@ test("courses and lessons persist through the API", {
 		);
 		assert.equal(incompleteOrderResponse.status, 400);
 
+		await db
+			.update(lessonDocuments)
+			.set({ ydoc: Buffer.from([0xff]) })
+			.where(eq(lessonDocuments.lessonId, lesson.id));
 		const reorderResponse = await app.request(
 			`/api/courses/${courseId}/lessons/order`,
 			{
@@ -423,6 +498,14 @@ test("courses and lessons persist through the API", {
 				{ id: lesson.id, position: 1 },
 			],
 		);
+		assert.equal(
+			reorderedLessons.some((item) => "markdown" in item || "themeId" in item),
+			false,
+		);
+		await db
+			.update(lessonDocuments)
+			.set({ ydoc: Buffer.from(collaborativeState) })
+			.where(eq(lessonDocuments.lessonId, lesson.id));
 
 		await db.$client.end();
 		db = createDatabase(databaseUrl);
@@ -436,8 +519,8 @@ test("courses and lessons persist through the API", {
 			markdown: string;
 			themeId: string;
 		};
-		assert.equal(persistedLesson.markdown, initialMarkdown);
-		assert.equal(persistedLesson.themeId, "academic");
+		assert.equal(persistedLesson.markdown, collaborativeMarkdown);
+		assert.equal(persistedLesson.themeId, "dark");
 		const persistedOrderResponse = await app.request(
 			`/api/courses/${courseId}/lessons`,
 		);

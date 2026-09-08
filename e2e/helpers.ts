@@ -10,6 +10,16 @@ const collaborationEntryPoint = resolve(
 	projectRoot,
 	"apps/collab/dist/index.js",
 );
+const mailpitURL = e2eEnvironment.mailpit;
+const verificationSubject = "Verify your email | Course Studio";
+
+export type TestAccount = {
+	email: string;
+	name: string;
+	password: string;
+};
+
+type CreateAccountOptions = Partial<TestAccount>;
 
 export class CollaborationProcess {
 	private child: ChildProcess | null = null;
@@ -79,31 +89,54 @@ export class CollaborationProcess {
 	}
 }
 
-export async function authenticate(request: APIRequestContext) {
-	const email = `playwright-${randomUUID()}@example.com`;
+export async function createAccount(
+	request: APIRequestContext,
+	options: CreateAccountOptions = {},
+) {
+	const account = {
+		email: options.email ?? `playwright-${randomUUID()}@example.com`,
+		name: options.name ?? "Playwright Author",
+		password: options.password ?? "playwright-password",
+	};
 	const response = await request.post(
 		`${e2eEnvironment.urls.api}/api/auth/sign-up/email`,
 		{
 			headers: { origin: e2eEnvironment.urls.web },
 			data: {
-				email,
-				name: "Playwright Author",
-				password: "playwright-password",
+				email: account.email,
+				name: account.name,
+				password: account.password,
 			},
 		},
 	);
 	expect(response.ok()).toBe(true);
-	const verificationURL = await getVerificationURL(request, email);
+	const verificationURL = await getVerificationURL(request, account.email);
 	const verified = await request.get(verificationURL, { maxRedirects: 0 });
 	expect(verified.status()).toBeLessThan(400);
+	return account;
+}
+
+export async function signInAccount(
+	request: APIRequestContext,
+	account: TestAccount,
+) {
 	const signedIn = await request.post(
 		`${e2eEnvironment.urls.api}/api/auth/sign-in/email`,
 		{
 			headers: { origin: e2eEnvironment.urls.web },
-			data: { email, password: "playwright-password" },
+			data: { email: account.email, password: account.password },
 		},
 	);
 	expect(signedIn.ok()).toBe(true);
+}
+
+export async function authenticate(
+	request: APIRequestContext,
+	options: CreateAccountOptions = {},
+) {
+	const account = await createAccount(request, options);
+	await signInAccount(request, account);
+	return account;
 }
 
 export function editor(page: Page) {
@@ -212,39 +245,103 @@ export async function getVerificationURL(
 	request: APIRequestContext,
 	email: string,
 ) {
-	let verificationURL: string | undefined;
+	const text = await getMailText(request, email, verificationSubject);
+	const verificationURL = text.match(
+		/https?:\/\/[^\s]+\/api\/auth\/verify-email\?[^\s]+/,
+	)?.[0];
+	if (!verificationURL) {
+		throw new Error("Verification email did not contain a verification URL");
+	}
+	return verificationURL;
+}
+
+export async function getInvitationURL(
+	request: APIRequestContext,
+	input: { courseTitle: string; email: string },
+) {
+	const text = await getMailText(
+		request,
+		input.email,
+		`Invitation to ${input.courseTitle} | Course Studio`,
+	);
+	const match = text.match(
+		/https?:\/\/[^\s]+\/invitations\/accept\?token=[A-Za-z0-9_-]{43}/,
+	)?.[0];
+	if (!match) {
+		throw new Error("Invitation email did not contain an acceptance URL");
+	}
+
+	const invitationURL = new URL(match);
+	if (
+		invitationURL.origin !== e2eEnvironment.urls.web ||
+		invitationURL.pathname !== "/invitations/accept"
+	) {
+		throw new Error("Invitation email contained an invalid acceptance URL");
+	}
+	return invitationURL.toString();
+}
+
+async function getMailText(
+	request: APIRequestContext,
+	recipient: string,
+	subject: string,
+) {
+	let messageId: string | undefined;
 	await expect
 		.poll(
 			async () => {
+				const query = `to:"${mailpitSearchValue(recipient)}" subject:"${mailpitSearchValue(subject)}"`;
 				const response = await request.get(
-					`http://127.0.0.1:8025/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
-					{ headers: { origin: "http://127.0.0.1:8025" } },
+					`${mailpitURL}/api/v1/search?query=${encodeURIComponent(query)}`,
+					{ headers: { origin: mailpitURL } },
 				);
 				if (!response.ok()) {
 					return false;
 				}
 				const body = (await response.json()) as {
-					messages: Array<{ ID: string }>;
+					messages: Array<{
+						ID: string;
+						Subject: string;
+						To: Array<{ Address: string }>;
+					}>;
 				};
-				const id = body.messages[0]?.ID;
-				if (!id) {
-					return false;
-				}
-				const message = await request.get(
-					`http://127.0.0.1:8025/api/v1/message/${id}`,
-					{ headers: { origin: "http://127.0.0.1:8025" } },
-				);
-				const content = (await message.json()) as { Text: string };
-				verificationURL = content.Text.match(
-					/https?:\/\/[^\s]+\/api\/auth\/verify-email\?[^\s]+/,
-				)?.[0];
-				return Boolean(verificationURL);
+				messageId = body.messages.find(
+					(message) =>
+						message.Subject === subject &&
+						message.To.some((address) => address.Address === recipient),
+				)?.ID;
+				return Boolean(messageId);
 			},
 			{ timeout: 15000 },
 		)
 		.toBe(true);
-	if (!verificationURL) {
-		throw new Error("Verification email was not delivered");
+	if (!messageId) {
+		throw new Error("Expected email was not delivered");
 	}
-	return verificationURL;
+
+	const message = await request.get(
+		`${mailpitURL}/api/v1/message/${encodeURIComponent(messageId)}`,
+		{ headers: { origin: mailpitURL } },
+	);
+	if (!message.ok()) {
+		throw new Error("Expected email could not be read");
+	}
+	const content = (await message.json()) as {
+		Subject: string;
+		Text: string;
+		To: Array<{ Address: string }>;
+	};
+	if (
+		content.Subject !== subject ||
+		!content.To.some((address) => address.Address === recipient)
+	) {
+		throw new Error(
+			"Delivered email did not match the expected recipient and subject",
+		);
+	}
+	return content.Text;
+}
+
+function mailpitSearchValue(value: string) {
+	return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }

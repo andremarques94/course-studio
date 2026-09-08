@@ -25,8 +25,8 @@
 		"lint": "biome lint",
 		"typecheck": "tsc --noEmit",
 		"pretest": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
-		"test": "tsx --conditions=source --env-file-if-exists=../../.env --test test/*.test.ts",
-		"test:integration": "tsx --conditions=source --env-file-if-exists=../../.env --test test/api.integration.test.ts"
+		"test": "tsx --conditions=source --env-file-if-exists=../../.env --test test/*.test.ts src/modules/invitations/*.test.ts",
+		"test:integration": "tsx --conditions=source --env-file-if-exists=../../.env --test test/*.integration.test.ts"
 	},
 	"dependencies": {
 		"@course-studio/auth": "workspace:*",
@@ -37,6 +37,8 @@
 		"hono": "^4.13.5",
 		"nodemailer": "^10.0.0",
 		"pino": "^9.7.0",
+		"rate-limiter-flexible": "^11.2.0",
+		"yjs": "^13.6.32",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {

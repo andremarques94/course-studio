@@ -1,14 +1,26 @@
 import { z } from "zod";
-import { lessonSchema, lessonsSchema } from "@/features/lessons/schemas";
+import {
+	lessonSchema,
+	lessonSummariesSchema,
+	lessonSummarySchema,
+} from "@/features/lessons/schemas";
 import { api as client } from "@/integrations/api/client";
 import {
+	acceptInvitationResponseSchema,
+	courseInvitationSchema,
+	courseInvitationsSchema,
+	courseMembersSchema,
 	courseSchema,
 	coursesSchema,
+	createInvitationInputSchema,
 	createTitleInputSchema,
+	invitationTokenSchema,
 } from "../schemas";
 import type {
+	AcceptInvitationInput,
 	CourseRepository,
 	CreateCourseInput,
+	CreateInvitationInput,
 	CreateLessonInput,
 	UpdateCourseInput,
 	UpdateLessonInput,
@@ -89,7 +101,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonsSchema.parse(await response.json());
+		return lessonSummariesSchema.parse(await response.json());
 	},
 
 	async getLesson(id: string) {
@@ -114,7 +126,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonSchema.parse(await response.json());
+		return lessonSummarySchema.parse(await response.json());
 	},
 
 	async updateLesson(id: string, input: UpdateLessonInput) {
@@ -125,7 +137,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonSchema.parse(await response.json());
+		return lessonSummarySchema.parse(await response.json());
 	},
 
 	async deleteLesson(id: string) {
@@ -145,6 +157,76 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonsSchema.parse(await response.json());
+		return lessonSummariesSchema.parse(await response.json());
+	},
+
+	async getMembers(courseId: string) {
+		const response = await client.api.courses[":courseId"].members.$get({
+			param: { courseId },
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return courseMembersSchema.parse(await response.json());
+	},
+
+	async removeMember(courseId: string, memberId: string) {
+		const response = await client.api.courses[":courseId"].members[
+			":memberId"
+		].$delete({ param: { courseId, memberId } });
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+	},
+
+	async getInvitations(courseId: string) {
+		const response = await client.api.courses[":courseId"].invitations.$get({
+			param: { courseId },
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return courseInvitationsSchema.parse(await response.json());
+	},
+
+	async createInvitation(courseId: string, input: CreateInvitationInput) {
+		const json = createInvitationInputSchema.parse(input);
+		const response = await client.api.courses[":courseId"].invitations.$post({
+			param: { courseId },
+			json,
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return courseInvitationSchema.parse(await response.json());
+	},
+
+	async resendInvitation(courseId: string, invitationId: string) {
+		const response = await client.api.courses[":courseId"].invitations[
+			":invitationId"
+		].resend.$post({ param: { courseId, invitationId } });
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return courseInvitationSchema.parse(await response.json());
+	},
+
+	async revokeInvitation(courseId: string, invitationId: string) {
+		const response = await client.api.courses[":courseId"].invitations[
+			":invitationId"
+		].$delete({ param: { courseId, invitationId } });
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+	},
+
+	async acceptInvitation(token: AcceptInvitationInput) {
+		const response = await client.api.invitations.accept.$post({
+			json: { token: invitationTokenSchema.parse(token) },
+		});
+		if (!response.ok) {
+			return throwRequestError(response);
+		}
+		return acceptInvitationResponseSchema.parse(await response.json());
 	},
 };

@@ -3,7 +3,7 @@ import pino from "pino";
 import { createJwtAuthenticator } from "./auth/jwt.js";
 import {
 	createLessonAuthorizer,
-	createPostgresLessonOwnerFinder,
+	createPostgresLessonAccessFinder,
 } from "./auth/lesson-authorization.js";
 import { loadEnv } from "./config/env.js";
 import {
@@ -29,9 +29,11 @@ const persistence = createLessonDocumentPersistence({
 const server = createCollaborationServer({
 	host: env.host,
 	port: env.port,
+	authRevalidationIntervalMs: env.authRevalidationIntervalMs,
+	authRevalidationTimeoutMs: env.authRevalidationTimeoutMs,
 	logger,
 	authenticateToken: createJwtAuthenticator(env.betterAuthUrl),
-	authorizeLesson: createLessonAuthorizer(createPostgresLessonOwnerFinder(db)),
+	authorizeLesson: createLessonAuthorizer(createPostgresLessonAccessFinder(db)),
 	loadDocument: persistence.load,
 	storeDocument: persistence.store,
 });

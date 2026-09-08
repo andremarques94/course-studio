@@ -36,6 +36,13 @@
       "when": 1788687765892,
       "tag": "0004_jazzy_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788719598520,
+      "tag": "0005_lethal_vanisher",
+      "breakpoints": true
     }
   ]
 }

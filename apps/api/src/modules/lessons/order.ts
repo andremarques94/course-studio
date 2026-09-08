@@ -1,8 +1,11 @@
-import { canEditCourse } from "@course-studio/auth/authorization";
-import { courses, type Database, lessons } from "@course-studio/db";
+import { type Database, lessons } from "@course-studio/db";
 import { asc, eq } from "drizzle-orm";
 import { ApiError } from "#api/http/errors/api-error";
-import type { ReorderLessonsInput } from "#api/modules/lessons/schema";
+import { createCourseAccess } from "#api/modules/courses/access";
+import {
+	lessonSummaryColumns,
+	type ReorderLessonsInput,
+} from "#api/modules/lessons/schema";
 
 export function createLessonOrderService(db: Database) {
 	return async function reorderLessons(
@@ -11,15 +14,9 @@ export function createLessonOrderService(db: Database) {
 		input: ReorderLessonsInput,
 	) {
 		return db.transaction(async (tx) => {
-			const [course] = await tx
-				.select()
-				.from(courses)
-				.where(eq(courses.id, courseId))
-				.limit(1);
-
-			if (!course || !canEditCourse(userId, course)) {
-				throw new ApiError(404, "COURSE_NOT_FOUND", "Course not found.");
-			}
+			const access = createCourseAccess(tx);
+			await access.lock(courseId);
+			await access.requireEditable(userId, courseId);
 
 			const currentLessons = await tx
 				.select({ id: lessons.id })
@@ -46,7 +43,7 @@ export function createLessonOrderService(db: Database) {
 			}
 
 			return tx
-				.select()
+				.select(lessonSummaryColumns)
 				.from(lessons)
 				.where(eq(lessons.courseId, courseId))
 				.orderBy(asc(lessons.position), asc(lessons.createdAt));

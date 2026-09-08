@@ -16,6 +16,7 @@ const collaborationStatusLabels: Record<CollaborationStatus, string> = {
 	syncing: "Syncing",
 	synced: "Synced",
 	offline: "Offline",
+	"access-revoked": "Access revoked",
 };
 
 export function StudioStatusBar({

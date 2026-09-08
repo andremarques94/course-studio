@@ -1,10 +1,14 @@
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export type ErrorCode =
+	| "ALREADY_HAS_ACCESS"
 	| "COURSE_NOT_FOUND"
+	| "INVALID_INVITATION"
 	| "INVALID_LESSON_ORDER"
 	| "INTERNAL_ERROR"
+	| "INVITATION_NOT_FOUND"
 	| "LESSON_NOT_FOUND"
+	| "MEMBER_NOT_FOUND"
 	| "NOT_FOUND"
 	| "SLUG_ALREADY_EXISTS"
 	| "UNAUTHORIZED"

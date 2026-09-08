@@ -1,19 +1,5 @@
-import nodemailer from "nodemailer";
+import { createSmtpEmailSender, escapeHtml } from "#api/email";
 import type { loadEnv } from "#api/env";
-
-function escapeHtml(value: string) {
-	return value.replace(
-		/[&<>"']/g,
-		(character) =>
-			({
-				"&": "&amp;",
-				"<": "&lt;",
-				">": "&gt;",
-				'"': "&quot;",
-				"'": "&#039;",
-			})[character] ?? character,
-	);
-}
 
 export function createVerificationMessage(url: string) {
 	const safeUrl = escapeHtml(url);
@@ -101,8 +87,8 @@ export function createVerificationMessage(url: string) {
 }
 
 export function createVerificationEmailSender(env: ReturnType<typeof loadEnv>) {
-	const smtp = env.smtp;
-	if (!smtp) {
+	const sendEmail = createSmtpEmailSender(env);
+	if (!sendEmail) {
 		if (env.nodeEnv === "production") {
 			throw new Error("Email verification requires SMTP in production.");
 		}
@@ -111,23 +97,9 @@ export function createVerificationEmailSender(env: ReturnType<typeof loadEnv>) {
 			console.info("Development email verification link:", url);
 		};
 	}
-	const transport = nodemailer.createTransport({
-		host: smtp.host,
-		port: smtp.port,
-		secure: smtp.secure,
-		requireTLS: env.nodeEnv === "production" && !smtp.secure,
-		auth:
-			smtp.user && smtp.password
-				? { user: smtp.user, pass: smtp.password }
-				: undefined,
-		connectionTimeout: 10_000,
-		greetingTimeout: 10_000,
-		socketTimeout: 20_000,
-	});
 	return async ({ user, url }: { user: { email: string }; url: string }) => {
 		const message = createVerificationMessage(url);
-		await transport.sendMail({
-			from: { name: "Course Studio", address: smtp.from },
+		await sendEmail({
 			to: user.email,
 			...message,
 		});

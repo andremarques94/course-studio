@@ -1,0 +1,1 @@
+export { ShareCourseDialog } from "./ShareCourseDialog";

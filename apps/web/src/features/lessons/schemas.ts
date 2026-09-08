@@ -7,20 +7,25 @@ const themeIdSchema = z.custom<BuiltinThemeId>(
 	"A valid presentation theme is required.",
 );
 
-export const lessonSchema = z.object({
-	id: z.string().min(1),
-	courseId: z.string().min(1),
-	title: titleSchema,
-	slug: z.string().min(1),
+export const lessonSummarySchema = z
+	.object({
+		id: z.string().min(1),
+		courseId: z.string().min(1),
+		title: titleSchema,
+		slug: z.string().min(1),
+		position: z.int().nonnegative(),
+		createdAt: entityDateSchema,
+		updatedAt: entityDateSchema,
+	})
+	.strict();
+
+export const lessonSchema = lessonSummarySchema.extend({
 	markdown: z.string(),
 	themeId: themeIdSchema,
-	position: z.int().nonnegative(),
-	createdAt: entityDateSchema,
-	updatedAt: entityDateSchema,
 });
 
-export const lessonsSchema = z.array(lessonSchema);
+export const lessonSummariesSchema = z.array(lessonSummarySchema);
 
-export const updateLessonInputSchema = lessonSchema
-	.pick({ title: true, themeId: true })
+export const updateLessonInputSchema = lessonSummarySchema
+	.pick({ title: true })
 	.partial();
