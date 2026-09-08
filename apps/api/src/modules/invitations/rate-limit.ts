@@ -1,3 +1,4 @@
+import { RateLimiterMemory } from "rate-limiter-flexible";
 import { InvitationRateLimitError } from "#api/modules/invitations/errors";
 
 export const defaultInvitationRateLimits = {
@@ -9,74 +10,70 @@ export const defaultInvitationRateLimits = {
 
 export type InvitationRateLimits = typeof defaultInvitationRateLimits;
 
-type Counter = { count: number; expiresAt: number };
-
 export function createInvitationRateLimiter(
 	limits: InvitationRateLimits = defaultInvitationRateLimits,
-	now: () => number = Date.now,
 ) {
-	const accounts = new Map<string, Counter>();
-	const recipients = new Map<string, Counter>();
+	const duration = limits.windowMs / 1000;
+	const accounts = new RateLimiterMemory({
+		keyPrefix: "invitation-account",
+		points: limits.account,
+		duration,
+	});
+	const recipients = new RateLimiterMemory({
+		keyPrefix: "invitation-recipient",
+		points: limits.recipient,
+		duration,
+	});
 
 	return {
-		consume(accountId: string, recipient: string) {
-			const currentTime = now();
-			cleanupExpired(accounts, currentTime);
-			cleanupExpired(recipients, currentTime);
-
-			const account = accounts.get(accountId);
-			const recipientCounter = recipients.get(recipient);
+		async consume(accountId: string, recipient: string) {
+			const currentTime = Date.now();
+			const accountState = snapshot(accounts, currentTime);
+			const recipientState = snapshot(recipients, currentTime);
+			const account = accountState.get(accountId);
+			const recipientRecord = recipientState.get(recipient);
 			const blockedUntil = Math.max(
-				account && account.count >= limits.account ? account.expiresAt : 0,
-				recipientCounter && recipientCounter.count >= limits.recipient
-					? recipientCounter.expiresAt
+				account && account.value >= limits.account
+					? (account.expiresAt ?? 0)
+					: 0,
+				recipientRecord && recipientRecord.value >= limits.recipient
+					? (recipientRecord.expiresAt ?? 0)
 					: 0,
 			);
 			if (blockedUntil > currentTime) {
-				throw rateLimitError(blockedUntil, currentTime);
+				throw rateLimitError(blockedUntil - currentTime);
 			}
-
 			if (
-				(!account && accounts.size >= limits.maxEntries) ||
-				(!recipientCounter && recipients.size >= limits.maxEntries)
+				(!account && accountState.size >= limits.maxEntries) ||
+				(!recipientRecord && recipientState.size >= limits.maxEntries)
 			) {
-				throw new InvitationRateLimitError(Math.ceil(limits.windowMs / 1000));
+				throw rateLimitError(limits.windowMs);
 			}
 
-			increment(accounts, accountId, account, currentTime + limits.windowMs);
-			increment(
-				recipients,
-				recipient,
-				recipientCounter,
-				currentTime + limits.windowMs,
-			);
+			// RateLimiterMemory mutates both counters before returning its promises.
+			// Preflighting both dimensions in this turn keeps accounting all-or-neither.
+			await Promise.all([
+				accounts.consume(accountId),
+				recipients.consume(recipient),
+			]);
 		},
 	};
 }
 
-function increment(
-	counters: Map<string, Counter>,
-	key: string,
-	counter: Counter | undefined,
-	expiresAt: number,
-) {
-	if (counter) {
-		counter.count += 1;
-		return;
-	}
-	counters.set(key, { count: 1, expiresAt });
+function snapshot(limiter: RateLimiterMemory, currentTime: number) {
+	return new Map(
+		limiter
+			.dump()
+			.storage.flatMap((record) =>
+				record.expiresAt === null || record.expiresAt > currentTime
+					? [[String(record.key), record] as const]
+					: [],
+			),
+	);
 }
 
-function cleanupExpired(counters: Map<string, Counter>, now: number) {
-	for (const [key, counter] of counters) {
-		if (counter.expiresAt <= now) {
-			counters.delete(key);
-		}
-	}
-}
-
-function rateLimitError(blockedUntil: number, now: number) {
+function rateLimitError(msBeforeNext: number) {
 	return new InvitationRateLimitError(
-		Math.max(1, Math.ceil((blockedUntil - now) / 1000)),
+		Math.max(1, Math.ceil(msBeforeNext / 1000)),
 	);
 }

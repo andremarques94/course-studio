@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { applyLessonMetadata } from "@/features/lessons/cache";
-import type { Lesson } from "@/features/lessons/types";
+import { applyLessonSummary } from "@/features/lessons/cache";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 
 const currentLesson: Lesson = {
 	id: "lesson-1",
@@ -16,18 +16,22 @@ const currentLesson: Lesson = {
 };
 
 test("rename cache updates preserve current collaborative content", () => {
-	const renamedLesson: Lesson = {
-		...currentLesson,
+	const renamedLesson: LessonSummary = {
+		id: currentLesson.id,
+		courseId: currentLesson.courseId,
 		title: "New title",
-		markdown: "# Stale persisted content",
-		themeId: "minimal",
+		slug: currentLesson.slug,
+		position: currentLesson.position,
+		createdAt: currentLesson.createdAt,
 		updatedAt: new Date("2026-01-02T00:00:00.000Z"),
 	};
 
-	assert.deepEqual(applyLessonMetadata(currentLesson, renamedLesson), {
+	assert.deepEqual(applyLessonSummary(currentLesson, renamedLesson), {
+		...currentLesson,
 		...renamedLesson,
 		markdown: currentLesson.markdown,
 		themeId: currentLesson.themeId,
 	});
-	assert.equal(applyLessonMetadata(undefined, currentLesson), currentLesson);
+	assert.equal(applyLessonSummary(undefined, renamedLesson), undefined);
+	assert.equal(applyLessonSummary(null, renamedLesson), null);
 });

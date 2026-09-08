@@ -498,3 +498,93 @@ test("a stalled periodic check closes on deadline without overlap or later updat
 		await server.destroy();
 	}
 });
+
+test("an edit waiting on a timed-out authorization check stays rejected", async () => {
+	let stallEditorAuthorization = false;
+	let resolveAuthorization: ((isAuthorized: boolean) => void) | undefined;
+	let stalledChecks = 0;
+	let storedMarkdown = "";
+	const server = createCollaborationServer({
+		host: "127.0.0.1",
+		port: 0,
+		authRevalidationIntervalMs: 40,
+		authRevalidationTimeoutMs: 60,
+		logger: pino({ level: "silent" }),
+		authenticateToken: async (token) => ({ userId: token }),
+		authorizeLesson: async (userId) => {
+			if (userId !== "editor" || !stallEditorAuthorization) {
+				return true;
+			}
+			stalledChecks += 1;
+			return new Promise<boolean>((resolve) => {
+				resolveAuthorization = resolve;
+			});
+		},
+		loadDocument: async ({ document }) => document,
+		storeDocument: async ({ document }) => {
+			storedMarkdown = document.getText("markdown").toString();
+		},
+	});
+	await server.listen();
+	const address = server.httpServer.address() as AddressInfo;
+	const url = `ws://127.0.0.1:${address.port}`;
+	const ownerDocument = new Y.Doc();
+	const editorDocument = new Y.Doc();
+	const owner = new HocuspocusProvider({
+		url,
+		name: `lesson:${lessonId}`,
+		token: "owner",
+		document: ownerDocument,
+	});
+	const editor = new HocuspocusProvider({
+		url,
+		name: `lesson:${lessonId}`,
+		token: "editor",
+		document: editorDocument,
+	});
+
+	try {
+		await Promise.all([
+			waitForProviderEvent(owner, "synced"),
+			waitForProviderEvent(editor, "synced"),
+		]);
+		ownerDocument.getText("markdown").insert(0, "accepted");
+		await waitFor(
+			() => editorDocument.getText("markdown").toString() === "accepted",
+			"Timed out waiting for the initial update.",
+		);
+
+		stallEditorAuthorization = true;
+		const closed = waitForProviderEvent(editor, "close");
+		await waitFor(
+			() => stalledChecks === 1,
+			"Timed out waiting for the stalled authorization check.",
+		);
+		editorDocument.getText("markdown").insert(8, "-rejected");
+		await closed;
+		assert.ok(resolveAuthorization);
+		resolveAuthorization(true);
+
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		server.hocuspocus.flushPendingStores();
+		await waitFor(
+			() => storedMarkdown.length > 0,
+			"Timed out waiting for document persistence.",
+		);
+		assert.equal(ownerDocument.getText("markdown").toString(), "accepted");
+		assert.equal(
+			server.hocuspocus.documents
+				.get(`lesson:${lessonId}`)
+				?.getText("markdown")
+				.toString(),
+			"accepted",
+		);
+		assert.equal(storedMarkdown, "accepted");
+	} finally {
+		owner.destroy();
+		editor.destroy();
+		ownerDocument.destroy();
+		editorDocument.destroy();
+		await server.destroy();
+	}
+});

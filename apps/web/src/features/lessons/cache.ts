@@ -1,14 +1,8 @@
-import type { Lesson } from "./types";
+import type { Lesson, LessonSummary } from "./types";
 
-export function applyLessonMetadata(
+export function applyLessonSummary(
 	current: Lesson | null | undefined,
-	updated: Lesson,
+	summary: LessonSummary,
 ) {
-	return current
-		? {
-				...updated,
-				markdown: current.markdown,
-				themeId: current.themeId,
-			}
-		: updated;
+	return current ? { ...current, ...summary } : current;
 }

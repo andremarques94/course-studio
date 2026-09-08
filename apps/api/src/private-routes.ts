@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import type { AppEnv } from "#api/http/context";
 import { createRequireAuth } from "#api/http/middleware/require-auth";
 import { createRequireTrustedOrigin } from "#api/http/middleware/require-trusted-origin";
+import type { Logger } from "#api/logger";
 import { createCoursesRoutes } from "#api/modules/courses/routes";
 import { createCoursesService } from "#api/modules/courses/service";
 import type { CourseInvitationDelivery } from "#api/modules/invitations/email";
@@ -20,6 +21,7 @@ export function createPrivateRoutes(
 	db: Database,
 	options: {
 		auth: Auth;
+		logger: Logger;
 		trustedOrigins: string[];
 		webOrigin: string;
 		sendCourseInvitation: CourseInvitationDelivery;
@@ -40,7 +42,10 @@ export function createPrivateRoutes(
 		.use("*", requireTrustedOrigin)
 		.use("*", requireAuth)
 		.route("/", createCoursesRoutes(createCoursesService(db), lessonsService))
-		.route("/", createCourseInvitationRoutes(invitationsService));
+		.route(
+			"/",
+			createCourseInvitationRoutes(invitationsService, options.logger),
+		);
 	const lessonsRoutes = new Hono<AppEnv>()
 		.use("*", requireTrustedOrigin)
 		.use("*", requireAuth)

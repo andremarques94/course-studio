@@ -102,7 +102,7 @@ export function createPendingInvitations(
 				}
 			}
 
-			options.rateLimiter.consume(userId, email);
+			await options.rateLimiter.consume(userId, email);
 			return invitationSerializer.run(
 				serializationKey(courseId, email),
 				async () => {
@@ -170,7 +170,7 @@ export function createPendingInvitations(
 			if (!existing) {
 				throw invitationNotFound();
 			}
-			options.rateLimiter.consume(userId, existing.email);
+			await options.rateLimiter.consume(userId, existing.email);
 			return invitationSerializer.run(
 				serializationKey(courseId, existing.email),
 				async () => {

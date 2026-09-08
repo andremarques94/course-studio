@@ -11,7 +11,7 @@ import { ShieldX } from "lucide-react";
 import { useReducer } from "react";
 import type { AuthSession } from "@/features/auth/auth-client";
 import type { Course } from "@/features/courses/types";
-import type { Lesson } from "@/features/lessons/types";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { collaborationConfig } from "@/integrations/collaboration/config";
 import { createWebStudioCommands } from "../../adapters";
 import {
@@ -25,7 +25,7 @@ import { StudioLoadingState } from "./StudioLoadingState";
 type WebStudioProps = {
 	course: Course;
 	lesson: Lesson;
-	lessons: Lesson[];
+	lessons: LessonSummary[];
 	user: AuthSession["user"];
 };
 

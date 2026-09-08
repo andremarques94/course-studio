@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { type Context, Hono } from "hono";
 import type { AppEnv } from "#api/http/context";
 import { validationHook } from "#api/http/validation";
+import type { Logger } from "#api/logger";
 import { courseIdSchema } from "#api/modules/courses/schema";
 import {
 	InvitationDeliveryError,
@@ -15,7 +16,10 @@ import {
 } from "#api/modules/invitations/schema";
 import type { InvitationsService } from "#api/modules/invitations/service/index";
 
-export function createCourseInvitationRoutes(service: InvitationsService) {
+export function createCourseInvitationRoutes(
+	service: InvitationsService,
+	logger: Logger,
+) {
 	return new Hono<AppEnv>()
 		.get(
 			"/:courseId/members",
@@ -67,7 +71,7 @@ export function createCourseInvitationRoutes(service: InvitationsService) {
 						201,
 					);
 				} catch (error) {
-					return invitationOperationError(c, error);
+					return invitationOperationError(c, error, logger);
 				}
 			},
 		)
@@ -89,7 +93,7 @@ export function createCourseInvitationRoutes(service: InvitationsService) {
 						),
 					);
 				} catch (error) {
-					return invitationOperationError(c, error);
+					return invitationOperationError(c, error, logger);
 				}
 			},
 		)
@@ -108,7 +112,11 @@ export function createCourseInvitationRoutes(service: InvitationsService) {
 		);
 }
 
-function invitationOperationError(c: Context<AppEnv>, error: unknown) {
+function invitationOperationError(
+	c: Context<AppEnv>,
+	error: unknown,
+	logger: Logger,
+) {
 	if (error instanceof InvitationRateLimitError) {
 		c.header("Retry-After", String(error.retryAfterSeconds));
 		return c.json(
@@ -117,12 +125,44 @@ function invitationOperationError(c: Context<AppEnv>, error: unknown) {
 		);
 	}
 	if (error instanceof InvitationDeliveryError) {
+		logger.error(
+			{
+				event: "invitation.delivery.failed",
+				requestId: c.get("requestId"),
+				method: c.req.method,
+				path: c.req.path,
+				diagnostic: safeDeliveryDiagnostic(error.cause),
+			},
+			"Invitation delivery failed",
+		);
 		return c.json(
 			{ error: { code: "INVITATION_DELIVERY_FAILED", message: error.message } },
 			502,
 		);
 	}
 	throw error;
+}
+
+function safeDeliveryDiagnostic(cause: unknown) {
+	if (!(cause instanceof Error)) {
+		return { name: "UnknownDeliveryError" };
+	}
+	const source = cause as Error & Record<string, unknown>;
+	return {
+		name:
+			safeDiagnosticValue(cause.name, /^[A-Za-z][A-Za-z0-9_.]{0,63}$/) ??
+			"Error",
+		code: safeDiagnosticValue(source.code, /^[A-Z][A-Z0-9_]{0,63}$/),
+		command: safeDiagnosticValue(source.command, /^[A-Z]{2,16}$/),
+		responseCode:
+			typeof source.responseCode === "number" ? source.responseCode : undefined,
+		errno: safeDiagnosticValue(source.errno, /^-?[A-Z0-9_]{1,32}$/),
+		syscall: safeDiagnosticValue(source.syscall, /^[a-z][a-z0-9_]{0,31}$/),
+	};
+}
+
+function safeDiagnosticValue(value: unknown, pattern: RegExp) {
+	return typeof value === "string" && pattern.test(value) ? value : undefined;
 }
 
 export function createInvitationAcceptanceRoutes(service: InvitationsService) {

@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { updateLessonInputSchema } from "@/features/lessons/schemas";
-import type { Lesson } from "@/features/lessons/types";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import type {
 	createInvitationInputSchema,
 	createTitleInputSchema,
@@ -21,12 +21,18 @@ export type CourseRepository = {
 	createCourse(input: CreateCourseInput): Promise<Course>;
 	updateCourse(id: string, input: UpdateCourseInput): Promise<Course>;
 	deleteCourse(id: string): Promise<void>;
-	getLessons(courseId: string): Promise<Lesson[]>;
+	getLessons(courseId: string): Promise<LessonSummary[]>;
 	getLesson(id: string): Promise<Lesson | undefined>;
-	createLesson(courseId: string, input: CreateLessonInput): Promise<Lesson>;
-	updateLesson(id: string, input: UpdateLessonInput): Promise<Lesson>;
+	createLesson(
+		courseId: string,
+		input: CreateLessonInput,
+	): Promise<LessonSummary>;
+	updateLesson(id: string, input: UpdateLessonInput): Promise<LessonSummary>;
 	deleteLesson(id: string): Promise<void>;
-	reorderLessons(courseId: string, lessonIds: string[]): Promise<Lesson[]>;
+	reorderLessons(
+		courseId: string,
+		lessonIds: string[],
+	): Promise<LessonSummary[]>;
 	getMembers(courseId: string): Promise<CourseMember[]>;
 	removeMember(courseId: string, memberId: string): Promise<void>;
 	getInvitations(courseId: string): Promise<CourseInvitation[]>;

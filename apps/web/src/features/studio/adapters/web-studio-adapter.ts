@@ -1,9 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { courseQueries } from "@/features/courses/queries";
 import { courseRepository } from "@/features/courses/repository";
-import { applyLessonMetadata } from "@/features/lessons/cache";
+import { applyLessonSummary } from "@/features/lessons/cache";
 import { lessonQueries } from "@/features/lessons/queries";
-import type { Lesson } from "@/features/lessons/types";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { openPdfExport } from "../export";
 import type { StudioCommands } from "../studio-commands";
 
@@ -24,19 +24,17 @@ export function createWebStudioCommands({
 			const updatedLesson = await courseRepository.updateLesson(lessonId, {
 				title: input.title,
 			});
-			queryClient.setQueryData<Lesson[]>(
+			queryClient.setQueryData<LessonSummary[]>(
 				courseQueries.lessons(courseId).queryKey,
 				(current) =>
 					current?.map((lesson) =>
-						lesson.id === updatedLesson.id
-							? applyLessonMetadata(lesson, updatedLesson)
-							: lesson,
+						lesson.id === updatedLesson.id ? updatedLesson : lesson,
 					),
 			);
-			await queryClient.invalidateQueries({
-				queryKey: lessonQueries.detail(lessonId).queryKey,
-				exact: true,
-			});
+			queryClient.setQueryData<Lesson | null>(
+				lessonQueries.detail(lessonId).queryKey,
+				(current) => applyLessonSummary(current, updatedLesson),
+			);
 		},
 		exportPresentation: openPdfExport,
 	};

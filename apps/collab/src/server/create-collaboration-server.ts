@@ -6,6 +6,15 @@ import { parseLessonDocumentName } from "../documents/lesson-document-loader.js"
 
 type CollaborationContext = Readonly<{ userId: string }>;
 
+type CollaborationCloseEvent = Readonly<{ code: number; reason: string }>;
+
+type AuthorizationLifecycle = {
+	active: boolean;
+	failure?: Error & CollaborationCloseEvent;
+	terminal: Promise<Error & CollaborationCloseEvent>;
+	terminate(event: CollaborationCloseEvent): void;
+};
+
 const LESSON_ACCESS_REVOKED = {
 	code: 4403,
 	reason: "Lesson access revoked.",
@@ -20,6 +29,29 @@ const LESSON_AUTHORIZATION_UNAVAILABLE = {
 	code: 1011,
 	reason: "Lesson authorization unavailable.",
 } as const;
+
+function createCloseError(event: CollaborationCloseEvent) {
+	return Object.assign(new Error(event.reason), event);
+}
+
+function createAuthorizationLifecycle(): AuthorizationLifecycle {
+	let resolveTerminal: (error: Error & CollaborationCloseEvent) => void;
+	const lifecycle: AuthorizationLifecycle = {
+		active: true,
+		terminal: new Promise((resolve) => {
+			resolveTerminal = resolve;
+		}),
+		terminate(event) {
+			if (!lifecycle.active) {
+				return;
+			}
+			lifecycle.active = false;
+			lifecycle.failure = createCloseError(event);
+			resolveTerminal(lifecycle.failure);
+		},
+	};
+	return lifecycle;
+}
 
 type CollaborationServerOptions = {
 	host: string;
@@ -75,7 +107,26 @@ export function createCollaborationServer({
 
 	const revalidationTimers = new Set<ReturnType<typeof setTimeout>>();
 	const pendingAuthorizationChecks = new WeakMap<object, Promise<boolean>>();
+	const authorizationLifecycles = new WeakMap<object, AuthorizationLifecycle>();
+	const activeAuthorizationLifecycles = new Set<AuthorizationLifecycle>();
 	let isDestroying = false;
+	const getAuthorizationLifecycle = (connection: object) => {
+		let lifecycle = authorizationLifecycles.get(connection);
+		if (!lifecycle) {
+			lifecycle = createAuthorizationLifecycle();
+			authorizationLifecycles.set(connection, lifecycle);
+			activeAuthorizationLifecycles.add(lifecycle);
+		}
+		return lifecycle;
+	};
+	const terminateAuthorization = (
+		connection: object,
+		event: CollaborationCloseEvent,
+	) => {
+		const lifecycle = getAuthorizationLifecycle(connection);
+		lifecycle.terminate(event);
+		activeAuthorizationLifecycles.delete(lifecycle);
+	};
 	const authorizeConnection = (
 		connection: object,
 		userId: string,
@@ -128,22 +179,40 @@ export function createCollaborationServer({
 		async beforeHandleMessage({ connection, context, documentName }) {
 			const userId = requireAuthenticatedUserId(context);
 			const lessonId = parseLessonDocumentName(documentName);
-			if (await authorizeConnection(connection, userId, lessonId)) {
+			const lifecycle = getAuthorizationLifecycle(connection);
+			if (!lifecycle.active || !connection.document.hasConnection(connection)) {
+				throw (
+					lifecycle.failure ??
+					createCloseError(LESSON_AUTHORIZATION_UNAVAILABLE)
+				);
+			}
+			const isAuthorized = await Promise.race([
+				authorizeConnection(connection, userId, lessonId),
+				lifecycle.terminal.then((error) => {
+					throw error;
+				}),
+			]);
+			if (!lifecycle.active || !connection.document.hasConnection(connection)) {
+				throw (
+					lifecycle.failure ??
+					createCloseError(LESSON_AUTHORIZATION_UNAVAILABLE)
+				);
+			}
+			if (isAuthorized) {
 				return;
 			}
 
 			// Revocation is enforced before Hocuspocus can apply or persist this message.
+			terminateAuthorization(connection, LESSON_ACCESS_REVOKED);
 			connection.close(LESSON_ACCESS_REVOKED);
-			throw Object.assign(
-				new Error(LESSON_ACCESS_REVOKED.reason),
-				LESSON_ACCESS_REVOKED,
-			);
+			throw createCloseError(LESSON_ACCESS_REVOKED);
 		},
 		onLoadDocument: loadDocument,
 		onStoreDocument: storeDocument,
 		async connected({ connection, context, documentName }) {
 			const userId = requireAuthenticatedUserId(context);
 			const lessonId = parseLessonDocumentName(documentName);
+			const lifecycle = getAuthorizationLifecycle(connection);
 			let intervalTimer: ReturnType<typeof setTimeout> | undefined;
 			let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
 			let isActive = true;
@@ -154,12 +223,15 @@ export function createCollaborationServer({
 					revalidationTimers.delete(timer);
 				}
 			};
-			const stopRevalidation = () => {
+			const stopRevalidation = (
+				event: CollaborationCloseEvent = LESSON_AUTHORIZATION_UNAVAILABLE,
+			) => {
 				isActive = false;
 				clearTimer(intervalTimer);
 				clearTimer(deadlineTimer);
 				intervalTimer = undefined;
 				deadlineTimer = undefined;
+				terminateAuthorization(connection, event);
 			};
 			const scheduleRevalidation = () => {
 				if (!isActive || isDestroying) {
@@ -187,7 +259,7 @@ export function createCollaborationServer({
 						{ documentName, userId },
 						"lesson access revalidation timed out",
 					);
-					stopRevalidation();
+					stopRevalidation(LESSON_AUTHORIZATION_UNAVAILABLE);
 					connection.close(LESSON_AUTHORIZATION_UNAVAILABLE);
 				}, authRevalidationTimeoutMs);
 				revalidationTimers.add(deadlineTimer);
@@ -200,11 +272,16 @@ export function createCollaborationServer({
 					);
 					clearTimer(deadlineTimer);
 					deadlineTimer = undefined;
-					if (!isActive || isDestroying) {
+					if (
+						!isActive ||
+						!lifecycle.active ||
+						!connection.document.hasConnection(connection) ||
+						isDestroying
+					) {
 						return;
 					}
 					if (!isAuthorized) {
-						stopRevalidation();
+						stopRevalidation(LESSON_ACCESS_REVOKED);
 						connection.close(LESSON_ACCESS_REVOKED);
 						return;
 					}
@@ -218,7 +295,7 @@ export function createCollaborationServer({
 						{ err: error, documentName, userId },
 						"lesson access revalidation failed",
 					);
-					stopRevalidation();
+					stopRevalidation(LESSON_AUTHORIZATION_UNAVAILABLE);
 					connection.close(LESSON_AUTHORIZATION_UNAVAILABLE);
 					return;
 				}
@@ -226,7 +303,7 @@ export function createCollaborationServer({
 				scheduleRevalidation();
 			};
 
-			connection.onClose(stopRevalidation);
+			connection.onClose(() => stopRevalidation());
 			scheduleRevalidation();
 		},
 		async onConnect({ documentName }) {
@@ -237,6 +314,10 @@ export function createCollaborationServer({
 		},
 		async onDestroy() {
 			isDestroying = true;
+			for (const lifecycle of activeAuthorizationLifecycles) {
+				lifecycle.terminate(LESSON_AUTHORIZATION_UNAVAILABLE);
+			}
+			activeAuthorizationLifecycles.clear();
 			for (const timer of revalidationTimers) {
 				clearTimeout(timer);
 			}

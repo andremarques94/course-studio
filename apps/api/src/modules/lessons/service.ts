@@ -6,10 +6,11 @@ import { ApiError } from "#api/http/errors/api-error";
 import { createLessonAccess } from "#api/modules/lessons/access";
 import { applyPersistedLessonContent } from "#api/modules/lessons/lesson-ydoc";
 import { createLessonOrderService } from "#api/modules/lessons/order";
-import type {
-	CreateLessonInput,
-	ReorderLessonsInput,
-	UpdateLessonInput,
+import {
+	type CreateLessonInput,
+	lessonSummaryColumns,
+	type ReorderLessonsInput,
+	type UpdateLessonInput,
 } from "#api/modules/lessons/schema";
 
 export function createLessonsService(db: Database) {
@@ -21,20 +22,11 @@ export function createLessonsService(db: Database) {
 			if (!(await access.findViewableCourse(userId, courseId))) {
 				throw new ApiError(404, "COURSE_NOT_FOUND", "Course not found.");
 			}
-			const rows = await db
-				.select({ lesson: lessons, ydoc: lessonDocuments.ydoc })
+			return db
+				.select(lessonSummaryColumns)
 				.from(lessons)
-				.leftJoin(lessonDocuments, eq(lessonDocuments.lessonId, lessons.id))
 				.where(eq(lessons.courseId, courseId))
 				.orderBy(asc(lessons.position), asc(lessons.createdAt));
-
-			return Promise.all(
-				rows.map(({ lesson, ydoc }) =>
-					ydoc
-						? applyPersistedLessonContent(lesson, new Uint8Array(ydoc))
-						: lesson,
-				),
-			);
 		},
 
 		async findById(userId: string, id: string) {
@@ -79,7 +71,7 @@ export function createLessonsService(db: Database) {
 							markdown: `# ${input.title}`,
 							position: (positionResult?.position ?? -1) + 1,
 						})
-						.returning();
+						.returning(lessonSummaryColumns);
 
 					if (!lesson) {
 						throw new Error("Lesson insert returned no row.");
@@ -108,21 +100,13 @@ export function createLessonsService(db: Database) {
 					.update(lessons)
 					.set({ ...input, updatedAt: new Date() })
 					.where(eq(lessons.id, id))
-					.returning();
+					.returning(lessonSummaryColumns);
 
 				if (!lesson) {
 					throw new ApiError(404, "LESSON_NOT_FOUND", "Lesson not found.");
 				}
 
-				const [persisted] = await tx
-					.select({ ydoc: lessonDocuments.ydoc })
-					.from(lessonDocuments)
-					.where(eq(lessonDocuments.lessonId, id))
-					.limit(1);
-
-				return persisted
-					? applyPersistedLessonContent(lesson, new Uint8Array(persisted.ydoc))
-					: lesson;
+				return lesson;
 			});
 		},
 

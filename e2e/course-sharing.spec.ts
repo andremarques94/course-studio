@@ -129,6 +129,9 @@ test("an owner shares a collaborative course and revokes access", async ({
 		await expect(
 			editorPage.getByText("Course invitation", { exact: true }),
 		).toBeVisible();
+		await expectCourseUnavailable(editorPage, courseId);
+		await expectCourseUnavailable(editorPage, courseId, lessonId);
+		await editorPage.goto(editorInvitationURL);
 		await editorPage.getByRole("button", { name: "Accept invitation" }).click();
 		await expect(
 			editorPage.getByRole("heading", { name: courseTitle }),
@@ -203,13 +206,8 @@ test("an owner shares a collaborative course and revokes access", async ({
 		await expect(
 			editorPage.getByRole("link", { name: "Return to courses" }),
 		).toHaveAttribute("href", "/studio/courses");
-		await editorPage.reload();
-		await expect(
-			editorPage.getByText("Course unavailable", { exact: true }),
-		).toBeVisible();
-		await expect(
-			editorPage.getByRole("link", { name: "Return to courses" }),
-		).toHaveAttribute("href", "/studio/courses");
+		await expectCourseUnavailable(editorPage, courseId, undefined, true);
+		await expectCourseUnavailable(editorPage, courseId, lessonId, true);
 
 		await expect
 			.poll(async () => {
@@ -322,4 +320,29 @@ function pathSegment(url: string, index: number) {
 		throw new Error("Expected URL path segment");
 	}
 	return segment;
+}
+
+async function expectCourseUnavailable(
+	page: Page,
+	courseId: string,
+	lessonId?: string,
+	clientNavigation = false,
+) {
+	const path = lessonId
+		? `/studio/courses/${courseId}/lessons/${lessonId}`
+		: `/studio/courses/${courseId}`;
+	if (clientNavigation) {
+		await page.evaluate((target) => {
+			window.history.pushState({}, "", target);
+			window.dispatchEvent(new PopStateEvent("popstate"));
+		}, path);
+	} else {
+		await page.goto(path);
+	}
+	await expect(
+		page.getByText("Course unavailable", { exact: true }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("link", { name: "Return to courses" }),
+	).toHaveAttribute("href", "/studio/courses");
 }

@@ -40,9 +40,9 @@ import {
 	TriangleAlert,
 } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
-import { applyLessonMetadata } from "@/features/lessons/cache";
+import { applyLessonSummary } from "@/features/lessons/cache";
 import { lessonQueries } from "@/features/lessons/queries";
-import type { Lesson } from "@/features/lessons/types";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { courseQueries } from "../../queries";
 import { courseRepository } from "../../repository";
 import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
@@ -50,7 +50,7 @@ import styles from "./CourseDetailPage.module.css";
 
 type LessonListProps = {
 	courseId: string;
-	lessons: readonly Lesson[];
+	lessons: readonly LessonSummary[];
 	canEdit: boolean;
 };
 
@@ -75,18 +75,16 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 			}
 			return courseRepository.updateLesson(lessonId, { title: result.data });
 		},
-		onSuccess: async (updatedLesson) => {
-			queryClient.setQueryData<Lesson[]>(lessonsQueryKey, (current) =>
+		onSuccess: (updatedLesson) => {
+			queryClient.setQueryData<LessonSummary[]>(lessonsQueryKey, (current) =>
 				current?.map((lesson) =>
-					lesson.id === updatedLesson.id
-						? applyLessonMetadata(lesson, updatedLesson)
-						: lesson,
+					lesson.id === updatedLesson.id ? updatedLesson : lesson,
 				),
 			);
-			await queryClient.invalidateQueries({
-				queryKey: lessonQueries.detail(updatedLesson.id).queryKey,
-				exact: true,
-			});
+			queryClient.setQueryData<Lesson | null>(
+				lessonQueries.detail(updatedLesson.id).queryKey,
+				(current) => applyLessonSummary(current, updatedLesson),
+			);
 			setEditingLessonId(undefined);
 			toast.success("Lesson renamed");
 		},
@@ -94,7 +92,7 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 	const deleteLesson = useMutation({
 		mutationFn: (lessonId: string) => courseRepository.deleteLesson(lessonId),
 		onSuccess: (_, lessonId) => {
-			queryClient.setQueryData<Lesson[]>(lessonsQueryKey, (current) =>
+			queryClient.setQueryData<LessonSummary[]>(lessonsQueryKey, (current) =>
 				current?.filter((lesson) => lesson.id !== lessonId),
 			);
 			queryClient.removeQueries({
@@ -109,6 +107,12 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 			courseRepository.reorderLessons(courseId, lessonIds),
 		onSuccess: (orderedLessons) => {
 			queryClient.setQueryData(lessonsQueryKey, orderedLessons);
+			for (const lesson of orderedLessons) {
+				queryClient.setQueryData<Lesson | null>(
+					lessonQueries.detail(lesson.id).queryKey,
+					(current) => applyLessonSummary(current, lesson),
+				);
+			}
 			toast.success("Lesson order updated", { id: "lesson-order" });
 		},
 	});
@@ -123,8 +127,8 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 		const nextLessons = [...lessons];
 		const targetIndex = index + offset;
 		[nextLessons[index], nextLessons[targetIndex]] = [
-			nextLessons[targetIndex] as Lesson,
-			nextLessons[index] as Lesson,
+			nextLessons[targetIndex],
+			nextLessons[index],
 		];
 		reorderLessons.mutate(nextLessons.map((lesson) => lesson.id));
 	};

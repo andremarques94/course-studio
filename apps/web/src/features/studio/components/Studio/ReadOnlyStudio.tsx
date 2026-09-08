@@ -5,14 +5,14 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Eye } from "lucide-react";
 import { AppHeader, AppShell, AppSidebar } from "@/components/app-shell";
 import type { Course } from "@/features/courses/types";
-import type { Lesson } from "@/features/lessons/types";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { PresentationPreview } from "../PresentationPreview";
 import styles from "./ReadOnlyStudio.module.css";
 
 type ReadOnlyStudioProps = {
 	course: Course;
 	lesson: Lesson;
-	lessons: Lesson[];
+	lessons: LessonSummary[];
 };
 
 export function ReadOnlyStudio({

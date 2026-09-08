@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { lessonSchema, lessonsSchema } from "@/features/lessons/schemas";
+import {
+	lessonSchema,
+	lessonSummariesSchema,
+	lessonSummarySchema,
+} from "@/features/lessons/schemas";
 import { api as client } from "@/integrations/api/client";
 import {
 	acceptInvitationResponseSchema,
@@ -97,7 +101,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonsSchema.parse(await response.json());
+		return lessonSummariesSchema.parse(await response.json());
 	},
 
 	async getLesson(id: string) {
@@ -122,7 +126,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonSchema.parse(await response.json());
+		return lessonSummarySchema.parse(await response.json());
 	},
 
 	async updateLesson(id: string, input: UpdateLessonInput) {
@@ -133,7 +137,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonSchema.parse(await response.json());
+		return lessonSummarySchema.parse(await response.json());
 	},
 
 	async deleteLesson(id: string) {
@@ -153,7 +157,7 @@ export const honoCourseRepository: CourseRepository = {
 		if (!response.ok) {
 			return throwRequestError(response);
 		}
-		return lessonsSchema.parse(await response.json());
+		return lessonSummariesSchema.parse(await response.json());
 	},
 
 	async getMembers(courseId: string) {

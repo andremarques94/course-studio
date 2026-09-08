@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 
 import { AppShell, AppSidebar } from "@/components/app-shell";
 import type { Course } from "@/features/courses/types";
-import type { Lesson } from "@/features/lessons/types";
+import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import {
 	type LessonDocument,
 	useCollaborationStatus,
@@ -34,7 +34,7 @@ const previewTransition = {
 type StudioProps = {
 	course: Course;
 	lesson: Lesson;
-	lessons: Lesson[];
+	lessons: LessonSummary[];
 	lessonDocument: LessonDocument;
 	draft: StudioDraft;
 	commands: StudioCommands;
