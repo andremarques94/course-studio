@@ -1,5 +1,6 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { InvitationRateLimitError } from "#api/modules/invitations/errors";
+import { createInvitationSerializer } from "#api/modules/invitations/serialization";
 
 export const defaultInvitationRateLimits = {
 	account: 20,
@@ -25,51 +26,68 @@ export function createInvitationRateLimiter(
 		duration,
 	});
 
-	return {
-		async consume(accountId: string, recipient: string) {
-			const currentTime = Date.now();
-			const accountState = snapshot(accounts, currentTime);
-			const recipientState = snapshot(recipients, currentTime);
-			const account = accountState.get(accountId);
-			const recipientRecord = recipientState.get(recipient);
-			const blockedUntil = Math.max(
-				account && account.value >= limits.account
-					? (account.expiresAt ?? 0)
-					: 0,
-				recipientRecord && recipientRecord.value >= limits.recipient
-					? (recipientRecord.expiresAt ?? 0)
-					: 0,
-			);
-			if (blockedUntil > currentTime) {
-				throw rateLimitError(blockedUntil - currentTime);
-			}
-			if (
-				(!account && accountState.size >= limits.maxEntries) ||
-				(!recipientRecord && recipientState.size >= limits.maxEntries)
-			) {
-				throw rateLimitError(limits.windowMs);
-			}
+	// Only admission bookkeeping lives here; the package owns quota counters.
+	const accountEntries = new Map<string, number>();
+	const recipientEntries = new Map<string, number>();
+	const quotaOperations = createInvitationSerializer();
 
-			// RateLimiterMemory mutates both counters before returning its promises.
-			// Preflighting both dimensions in this turn keeps accounting all-or-neither.
-			await Promise.all([
-				accounts.consume(accountId),
-				recipients.consume(recipient),
-			]);
+	return {
+		consume(accountId: string, recipient: string) {
+			// Serialize just the in-memory preflight/consume, never email delivery.
+			// A rejected request spends neither quota, even with concurrent callers.
+			return quotaOperations.run("quotas", async () => {
+				const now = Date.now();
+				pruneExpiredEntries(accountEntries, now);
+				pruneExpiredEntries(recipientEntries, now);
+				const [account, recipientRecord] = await Promise.all([
+					accounts.get(accountId),
+					recipients.get(recipient),
+				]);
+				const retryAfter = Math.max(
+					account && account.remainingPoints === 0 ? account.msBeforeNext : 0,
+					recipientRecord && recipientRecord.remainingPoints === 0
+						? recipientRecord.msBeforeNext
+						: 0,
+				);
+				if (retryAfter > 0) {
+					throw rateLimitError(retryAfter);
+				}
+				if (
+					(!accountEntries.has(accountId) &&
+						accountEntries.size >= limits.maxEntries) ||
+					(!recipientEntries.has(recipient) &&
+						recipientEntries.size >= limits.maxEntries)
+				) {
+					throw rateLimitError(limits.windowMs);
+				}
+
+				const [consumedAccount, consumedRecipient] = await Promise.all([
+					accounts.consume(accountId),
+					recipients.consume(recipient),
+				]);
+				const expiresAt = Date.now() + limits.windowMs;
+				if (consumedAccount.isFirstInDuration) {
+					accountEntries.delete(accountId);
+					accountEntries.set(accountId, expiresAt);
+				}
+				if (consumedRecipient.isFirstInDuration) {
+					recipientEntries.delete(recipient);
+					recipientEntries.set(recipient, expiresAt);
+				}
+			});
 		},
 	};
 }
 
-function snapshot(limiter: RateLimiterMemory, currentTime: number) {
-	return new Map(
-		limiter
-			.dump()
-			.storage.flatMap((record) =>
-				record.expiresAt === null || record.expiresAt > currentTime
-					? [[String(record.key), record] as const]
-					: [],
-			),
-	);
+function pruneExpiredEntries(entries: Map<string, number>, now: number) {
+	// Fixed windows are inserted in expiry order. Visit only expired entries;
+	// each admitted key is removed once instead of scanning every live quota.
+	for (const [key, expiresAt] of entries) {
+		if (expiresAt > now) {
+			break;
+		}
+		entries.delete(key);
+	}
 }
 
 function rateLimitError(msBeforeNext: number) {

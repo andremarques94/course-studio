@@ -3,17 +3,11 @@ import type { Logger } from "pino";
 import type * as Y from "yjs";
 import type { AuthenticateToken } from "../auth/jwt.js";
 import { parseLessonDocumentName } from "../documents/lesson-document-loader.js";
+import { waitForAuthorization } from "./wait-for-authorization.js";
 
 type CollaborationContext = Readonly<{ userId: string }>;
 
 type CollaborationCloseEvent = Readonly<{ code: number; reason: string }>;
-
-type AuthorizationLifecycle = {
-	active: boolean;
-	failure?: Error & CollaborationCloseEvent;
-	terminal: Promise<Error & CollaborationCloseEvent>;
-	terminate(event: CollaborationCloseEvent): void;
-};
 
 const LESSON_ACCESS_REVOKED = {
 	code: 4403,
@@ -32,25 +26,6 @@ const LESSON_AUTHORIZATION_UNAVAILABLE = {
 
 function createCloseError(event: CollaborationCloseEvent) {
 	return Object.assign(new Error(event.reason), event);
-}
-
-function createAuthorizationLifecycle(): AuthorizationLifecycle {
-	let resolveTerminal: (error: Error & CollaborationCloseEvent) => void;
-	const lifecycle: AuthorizationLifecycle = {
-		active: true,
-		terminal: new Promise((resolve) => {
-			resolveTerminal = resolve;
-		}),
-		terminate(event) {
-			if (!lifecycle.active) {
-				return;
-			}
-			lifecycle.active = false;
-			lifecycle.failure = createCloseError(event);
-			resolveTerminal(lifecycle.failure);
-		},
-	};
-	return lifecycle;
 }
 
 type CollaborationServerOptions = {
@@ -107,13 +82,13 @@ export function createCollaborationServer({
 
 	const revalidationTimers = new Set<ReturnType<typeof setTimeout>>();
 	const pendingAuthorizationChecks = new WeakMap<object, Promise<boolean>>();
-	const authorizationLifecycles = new WeakMap<object, AuthorizationLifecycle>();
-	const activeAuthorizationLifecycles = new Set<AuthorizationLifecycle>();
+	const authorizationLifecycles = new WeakMap<object, AbortController>();
+	const activeAuthorizationLifecycles = new Set<AbortController>();
 	let isDestroying = false;
 	const getAuthorizationLifecycle = (connection: object) => {
 		let lifecycle = authorizationLifecycles.get(connection);
 		if (!lifecycle) {
-			lifecycle = createAuthorizationLifecycle();
+			lifecycle = new AbortController();
 			authorizationLifecycles.set(connection, lifecycle);
 			activeAuthorizationLifecycles.add(lifecycle);
 		}
@@ -124,7 +99,7 @@ export function createCollaborationServer({
 		event: CollaborationCloseEvent,
 	) => {
 		const lifecycle = getAuthorizationLifecycle(connection);
-		lifecycle.terminate(event);
+		lifecycle.abort(createCloseError(event));
 		activeAuthorizationLifecycles.delete(lifecycle);
 	};
 	const authorizeConnection = (
@@ -141,18 +116,12 @@ export function createCollaborationServer({
 			authorizeLesson(userId, lessonId),
 		);
 		pendingAuthorizationChecks.set(connection, current);
-		void current.then(
-			() => {
-				if (pendingAuthorizationChecks.get(connection) === current) {
-					pendingAuthorizationChecks.delete(connection);
-				}
-			},
-			() => {
-				if (pendingAuthorizationChecks.get(connection) === current) {
-					pendingAuthorizationChecks.delete(connection);
-				}
-			},
-		);
+		const clearPendingCheck = () => {
+			if (pendingAuthorizationChecks.get(connection) === current) {
+				pendingAuthorizationChecks.delete(connection);
+			}
+		};
+		void current.then(clearPendingCheck, clearPendingCheck);
 		return current;
 	};
 
@@ -169,10 +138,7 @@ export function createCollaborationServer({
 			const userId = requireAuthenticatedUserId(await authenticateToken(token));
 			const lessonId = parseLessonDocumentName(documentName);
 			if (!(await authorizeLesson(userId, lessonId))) {
-				throw Object.assign(
-					new Error(LESSON_ACCESS_DENIED.reason),
-					LESSON_ACCESS_DENIED,
-				);
+				throw createCloseError(LESSON_ACCESS_DENIED);
 			}
 			return { userId };
 		},
@@ -180,21 +146,25 @@ export function createCollaborationServer({
 			const userId = requireAuthenticatedUserId(context);
 			const lessonId = parseLessonDocumentName(documentName);
 			const lifecycle = getAuthorizationLifecycle(connection);
-			if (!lifecycle.active || !connection.document.hasConnection(connection)) {
+			if (
+				lifecycle.signal.aborted ||
+				!connection.document.hasConnection(connection)
+			) {
 				throw (
-					lifecycle.failure ??
+					lifecycle.signal.reason ??
 					createCloseError(LESSON_AUTHORIZATION_UNAVAILABLE)
 				);
 			}
-			const isAuthorized = await Promise.race([
+			const isAuthorized = await waitForAuthorization(
 				authorizeConnection(connection, userId, lessonId),
-				lifecycle.terminal.then((error) => {
-					throw error;
-				}),
-			]);
-			if (!lifecycle.active || !connection.document.hasConnection(connection)) {
+				lifecycle.signal,
+			);
+			if (
+				lifecycle.signal.aborted ||
+				!connection.document.hasConnection(connection)
+			) {
 				throw (
-					lifecycle.failure ??
+					lifecycle.signal.reason ??
 					createCloseError(LESSON_AUTHORIZATION_UNAVAILABLE)
 				);
 			}
@@ -215,7 +185,6 @@ export function createCollaborationServer({
 			const lifecycle = getAuthorizationLifecycle(connection);
 			let intervalTimer: ReturnType<typeof setTimeout> | undefined;
 			let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
-			let isActive = true;
 
 			const clearTimer = (timer: ReturnType<typeof setTimeout> | undefined) => {
 				if (timer) {
@@ -226,7 +195,6 @@ export function createCollaborationServer({
 			const stopRevalidation = (
 				event: CollaborationCloseEvent = LESSON_AUTHORIZATION_UNAVAILABLE,
 			) => {
-				isActive = false;
 				clearTimer(intervalTimer);
 				clearTimer(deadlineTimer);
 				intervalTimer = undefined;
@@ -234,7 +202,7 @@ export function createCollaborationServer({
 				terminateAuthorization(connection, event);
 			};
 			const scheduleRevalidation = () => {
-				if (!isActive || isDestroying) {
+				if (lifecycle.signal.aborted || isDestroying) {
 					return;
 				}
 				intervalTimer = setTimeout(() => {
@@ -252,7 +220,7 @@ export function createCollaborationServer({
 						revalidationTimers.delete(deadlineTimer);
 						deadlineTimer = undefined;
 					}
-					if (!isActive || isDestroying) {
+					if (lifecycle.signal.aborted || isDestroying) {
 						return;
 					}
 					logger.error(
@@ -273,8 +241,7 @@ export function createCollaborationServer({
 					clearTimer(deadlineTimer);
 					deadlineTimer = undefined;
 					if (
-						!isActive ||
-						!lifecycle.active ||
+						lifecycle.signal.aborted ||
 						!connection.document.hasConnection(connection) ||
 						isDestroying
 					) {
@@ -288,7 +255,7 @@ export function createCollaborationServer({
 				} catch (error) {
 					clearTimer(deadlineTimer);
 					deadlineTimer = undefined;
-					if (!isActive || isDestroying) {
+					if (lifecycle.signal.aborted || isDestroying) {
 						return;
 					}
 					logger.error(
@@ -315,7 +282,7 @@ export function createCollaborationServer({
 		async onDestroy() {
 			isDestroying = true;
 			for (const lifecycle of activeAuthorizationLifecycles) {
-				lifecycle.terminate(LESSON_AUTHORIZATION_UNAVAILABLE);
+				lifecycle.abort(createCloseError(LESSON_AUTHORIZATION_UNAVAILABLE));
 			}
 			activeAuthorizationLifecycles.clear();
 			for (const timer of revalidationTimers) {
