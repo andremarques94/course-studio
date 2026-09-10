@@ -147,17 +147,30 @@ function safeDeliveryDiagnostic(cause: unknown) {
 	if (!(cause instanceof Error)) {
 		return { name: "UnknownDeliveryError" };
 	}
-	const source = cause as Error & Record<string, unknown>;
 	return {
 		name:
 			safeDiagnosticValue(cause.name, /^[A-Za-z][A-Za-z0-9_.]{0,63}$/) ??
 			"Error",
-		code: safeDiagnosticValue(source.code, /^[A-Z][A-Z0-9_]{0,63}$/),
-		command: safeDiagnosticValue(source.command, /^[A-Z]{2,16}$/),
+		code: safeDiagnosticValue(
+			"code" in cause ? cause.code : undefined,
+			/^[A-Z][A-Z0-9_]{0,63}$/,
+		),
+		command: safeDiagnosticValue(
+			"command" in cause ? cause.command : undefined,
+			/^[A-Z]{2,16}$/,
+		),
 		responseCode:
-			typeof source.responseCode === "number" ? source.responseCode : undefined,
-		errno: safeDiagnosticValue(source.errno, /^-?[A-Z0-9_]{1,32}$/),
-		syscall: safeDiagnosticValue(source.syscall, /^[a-z][a-z0-9_]{0,31}$/),
+			"responseCode" in cause && typeof cause.responseCode === "number"
+				? cause.responseCode
+				: undefined,
+		errno: safeDiagnosticValue(
+			"errno" in cause ? cause.errno : undefined,
+			/^-?[A-Z0-9_]{1,32}$/,
+		),
+		syscall: safeDiagnosticValue(
+			"syscall" in cause ? cause.syscall : undefined,
+			/^[a-z][a-z0-9_]{0,31}$/,
+		),
 	};
 }
 

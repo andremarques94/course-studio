@@ -1,7 +1,7 @@
 import { courseMembers, courses, type Database } from "@course-studio/db";
 import { and, asc, eq, or } from "drizzle-orm";
 import { slugify } from "#api/content-naming";
-import { findPostgresError } from "#api/database-errors";
+import { findPostgresErrorCode } from "#api/database-errors";
 import { ApiError } from "#api/http/errors/api-error";
 import {
 	createCourseAccess,
@@ -59,7 +59,7 @@ export function createCoursesService(db: Database) {
 
 				return { ...course, accessRole: "owner" as const };
 			} catch (error) {
-				if (findPostgresError(error)?.code === "23505") {
+				if (findPostgresErrorCode(error) === "23505") {
 					throw new ApiError(
 						409,
 						"SLUG_ALREADY_EXISTS",

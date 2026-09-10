@@ -72,10 +72,7 @@ export function InviteForm({
 							<ChevronDown data-icon="inline-end" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start">
-							<DropdownMenuRadioGroup
-								value={role}
-								onValueChange={(value) => onRoleChange(value as InvitationRole)}
-							>
+							<DropdownMenuRadioGroup value={role} onValueChange={onRoleChange}>
 								<DropdownMenuLabel>Course access</DropdownMenuLabel>
 								<DropdownMenuRadioItem value="editor" closeOnClick>
 									Can edit

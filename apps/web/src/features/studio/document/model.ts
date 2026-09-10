@@ -33,22 +33,19 @@ export function createLessonDocumentModel(
 	const markdown = ydoc.getText("markdown");
 	const metadata = ydoc.getMap<unknown>("metadata");
 	const listeners = new Set<() => void>();
-	const state = {
-		collaborationStatus: null as CollaborationStatusStore | null,
-		presence: null as CollaborationPresence | null,
-		snapshot: readSnapshot(markdown, metadata, ready),
-	};
+	let collaborationStatus: CollaborationStatusStore | null = null;
+	let presence: CollaborationPresence | null = null;
+	let snapshot = readSnapshot(markdown, metadata, ready);
 
 	const publish = () => {
-		const nextSnapshot = readSnapshot(markdown, metadata, state.snapshot.ready);
+		const nextSnapshot = readSnapshot(markdown, metadata, snapshot.ready);
 		if (
-			nextSnapshot.markdown === state.snapshot.markdown &&
-			nextSnapshot.themeId === state.snapshot.themeId &&
-			nextSnapshot.ready === state.snapshot.ready
+			nextSnapshot.markdown === snapshot.markdown &&
+			nextSnapshot.themeId === snapshot.themeId
 		) {
 			return;
 		}
-		state.snapshot = nextSnapshot;
+		snapshot = nextSnapshot;
 		for (const listener of listeners) {
 			listener();
 		}
@@ -61,12 +58,12 @@ export function createLessonDocumentModel(
 		ydoc,
 		markdown,
 		get presence() {
-			return state.presence;
+			return presence;
 		},
 		get collaborationStatus() {
-			return state.collaborationStatus;
+			return collaborationStatus;
 		},
-		getSnapshot: () => state.snapshot,
+		getSnapshot: () => snapshot,
 		subscribe(listener) {
 			listeners.add(listener);
 			return () => listeners.delete(listener);
@@ -75,19 +72,19 @@ export function createLessonDocumentModel(
 			metadata.set("themeId", themeId);
 		},
 		markReady() {
-			if (state.snapshot.ready) {
+			if (snapshot.ready) {
 				return;
 			}
-			state.snapshot = { ...state.snapshot, ready: true };
+			snapshot = { ...snapshot, ready: true };
 			for (const listener of listeners) {
 				listener();
 			}
 		},
 		setPresence(nextPresence) {
-			state.presence = nextPresence;
+			presence = nextPresence;
 		},
 		setCollaborationStatus(nextStatus) {
-			state.collaborationStatus = nextStatus;
+			collaborationStatus = nextStatus;
 		},
 		destroy() {
 			markdown.unobserve(publish);
