@@ -30,18 +30,11 @@ export function openPdfExport(payload: PdfExportPayload) {
 }
 
 export function readPdfExport(): PdfExportPayload | null {
-	let stored: string | null;
 	try {
-		stored = sessionStorage.getItem(PDF_EXPORT_STORAGE_KEY);
-	} catch {
-		return null;
-	}
-
-	if (!stored) {
-		return null;
-	}
-
-	try {
+		const stored = sessionStorage.getItem(PDF_EXPORT_STORAGE_KEY);
+		if (!stored) {
+			return null;
+		}
 		const payload: unknown = JSON.parse(stored);
 		if (
 			isPlainObject(payload) &&

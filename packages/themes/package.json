@@ -17,5 +17,8 @@
 		"@biomejs/biome": "2.4.5",
 		"@course-studio/typescript-config": "workspace:*",
 		"typescript": "^6.0.2"
+	},
+	"dependencies": {
+		"remeda": "^2.45.0"
 	}
 }
