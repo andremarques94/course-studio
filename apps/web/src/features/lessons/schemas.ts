@@ -1,6 +1,7 @@
 import { type BuiltinThemeId, isBuiltinThemeId } from "@course-studio/themes";
+import { titleSchema } from "@course-studio/validation";
 import { z } from "zod";
-import { entityDateSchema, titleSchema } from "@/features/courses/schemas";
+import { entityDateSchema } from "@/features/courses/schemas";
 
 const themeIdSchema = z.custom<BuiltinThemeId>(
 	isBuiltinThemeId,

@@ -1,9 +1,10 @@
 import { toast } from "@course-studio/ui/components/sonner";
+import { createInvitationInputSchema } from "@course-studio/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type SubmitEvent, useState } from "react";
 import { courseQueries } from "../../../queries";
 import { courseRepository } from "../../../repository";
-import { createInvitationInputSchema } from "../../../schemas";
+
 import type {
 	CourseInvitation,
 	CourseMember,

@@ -24,6 +24,7 @@
 		"@course-studio/presentation": "workspace:*",
 		"@course-studio/themes": "workspace:*",
 		"@course-studio/ui": "workspace:*",
+		"@course-studio/validation": "workspace:*",
 		"@hocuspocus/provider": "^4.6.0",
 		"@lezer/highlight": "^1.2.3",
 		"@tailwindcss/vite": "^4",

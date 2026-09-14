@@ -1,6 +1,6 @@
 import { lessons } from "@course-studio/db";
+import { createTitleInputSchema, titleSchema } from "@course-studio/validation";
 import { z } from "zod";
-import { titleSchema } from "#api/content-naming";
 
 export const lessonSummaryColumns = {
 	id: lessons.id,
@@ -13,7 +13,7 @@ export const lessonSummaryColumns = {
 };
 
 export const lessonIdSchema = z.object({ lessonId: z.uuid() });
-export const createLessonSchema = z.object({ title: titleSchema });
+export const createLessonSchema = createTitleInputSchema;
 export const reorderLessonsSchema = z.object({
 	lessonIds: z
 		.array(z.uuid())
@@ -30,6 +30,6 @@ export const updateLessonSchema = z
 		message: "At least one field is required.",
 	});
 
-export type CreateLessonInput = z.infer<typeof createLessonSchema>;
+export type CreateLessonInput = z.infer<typeof createTitleInputSchema>;
 export type ReorderLessonsInput = z.infer<typeof reorderLessonsSchema>;
 export type UpdateLessonInput = z.infer<typeof updateLessonSchema>;

@@ -26,6 +26,7 @@ import {
 } from "@course-studio/ui/components/empty";
 import { Input } from "@course-studio/ui/components/input";
 import { toast } from "@course-studio/ui/components/sonner";
+import { TITLE_MAX_LENGTH, titleSchema } from "@course-studio/validation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -45,7 +46,7 @@ import { lessonQueries } from "@/features/lessons/queries";
 import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { courseQueries } from "../../queries";
 import { courseRepository } from "../../repository";
-import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
+
 import styles from "./CourseDetailPage.module.css";
 
 type LessonListProps = {

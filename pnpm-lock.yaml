@@ -41,6 +41,9 @@ importers:
       '@course-studio/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@course-studio/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@hono/node-server':
         specifier: ^2.1.1
         version: 2.1.1(hono@4.13.5)
@@ -154,6 +157,9 @@ importers:
       '@course-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@course-studio/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@hocuspocus/provider':
         specifier: ^4.6.0
         version: 4.6.0(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32)
@@ -468,6 +474,28 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.3.3
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+
+  packages/validation:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@biomejs/biome':
+        specifier: 2.4.5
+        version: 2.4.5
+      '@course-studio/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.4.0
+      tsx:
+        specifier: ^4.23.0
+        version: 4.23.13
       typescript:
         specifier: ^6.0.2
         version: 6.0.3

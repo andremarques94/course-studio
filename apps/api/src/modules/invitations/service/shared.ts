@@ -20,7 +20,3 @@ export function invalidInvitation(): never {
 		"This invitation is invalid or no longer available.",
 	);
 }
-
-export function normalizeInvitationEmail(email: string) {
-	return email.trim().toLowerCase();
-}

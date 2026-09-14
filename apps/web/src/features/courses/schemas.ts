@@ -1,19 +1,5 @@
+import { invitationRoleSchema, titleSchema } from "@course-studio/validation";
 import { z } from "zod";
-
-export const TITLE_MAX_LENGTH = 80;
-
-export const titleSchema = z
-	.string()
-	.trim()
-	.min(1, "A title is required.")
-	.max(
-		TITLE_MAX_LENGTH,
-		`Titles must be ${TITLE_MAX_LENGTH} characters or fewer.`,
-	);
-
-export const createTitleInputSchema = z.object({
-	title: titleSchema,
-});
 
 export const entityDateSchema = z.preprocess(
 	(value) => (typeof value === "string" ? new Date(value) : value),
@@ -21,13 +7,6 @@ export const entityDateSchema = z.preprocess(
 );
 
 export const accessRoleSchema = z.enum(["owner", "editor", "viewer"]);
-export const invitationRoleSchema = z.enum(["editor", "viewer"]);
-export const normalizedEmailSchema = z
-	.string()
-	.trim()
-	.toLowerCase()
-	.pipe(z.email("Enter a valid email address."));
-
 export const courseSchema = z.object({
 	id: z.string().min(1),
 	title: titleSchema,
@@ -60,11 +39,6 @@ export const courseInvitationSchema = z.object({
 });
 
 export const courseInvitationsSchema = z.array(courseInvitationSchema);
-
-export const createInvitationInputSchema = z.object({
-	email: normalizedEmailSchema,
-	role: invitationRoleSchema,
-});
 
 export const invitationTokenSchema = z
 	.string()

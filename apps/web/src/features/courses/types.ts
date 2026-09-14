@@ -1,10 +1,10 @@
+import type { invitationRoleSchema } from "@course-studio/validation";
 import type { z } from "zod";
 import type {
 	accessRoleSchema,
 	courseInvitationSchema,
 	courseMemberSchema,
 	courseSchema,
-	invitationRoleSchema,
 } from "./schemas";
 
 export type Course = z.infer<typeof courseSchema>;

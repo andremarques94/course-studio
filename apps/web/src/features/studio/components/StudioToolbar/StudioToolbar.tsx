@@ -23,6 +23,7 @@ import {
 } from "@course-studio/ui/components/dropdown-menu";
 import { Input } from "@course-studio/ui/components/input";
 import { toast } from "@course-studio/ui/components/sonner";
+import { TITLE_MAX_LENGTH, titleSchema } from "@course-studio/validation";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -39,7 +40,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { type SubmitEvent, useRef, useState } from "react";
 import { AppHeader } from "@/components/app-shell";
 import { ModeToggle } from "@/features/appearance";
-import { TITLE_MAX_LENGTH, titleSchema } from "@/features/courses/schemas";
+
 import type { Course } from "@/features/courses/types";
 import type { Lesson } from "@/features/lessons/types";
 

@@ -1,20 +1,11 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { createCourseInvitationMessage } from "#api/modules/invitations/email";
-import { normalizedEmailSchema } from "#api/modules/invitations/schema";
 import {
 	createInvitationToken,
 	createInvitationUrl,
 	hashInvitationToken,
 } from "#api/modules/invitations/token";
-
-test("normalizes invitation email once and validates it", () => {
-	assert.equal(
-		normalizedEmailSchema.parse("  Person.Name@EXAMPLE.COM "),
-		"person.name@example.com",
-	);
-	assert.throws(() => normalizedEmailSchema.parse("not-an-email"));
-});
 
 test("creates high-entropy URL-safe invitation tokens and SHA-256 hashes", () => {
 	const { token, tokenHash } = createInvitationToken();

@@ -4,6 +4,7 @@ import {
 	type Database,
 	user,
 } from "@course-studio/db";
+import { normalizeInvitationEmail } from "@course-studio/validation";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { ApiError } from "#api/http/errors/api-error";
 import type { createCourseAccess } from "#api/modules/courses/access";
@@ -15,7 +16,6 @@ import { invitationSerializer } from "#api/modules/invitations/serialization";
 import {
 	invitationLifetimeMs,
 	invitationSelection,
-	normalizeInvitationEmail,
 } from "#api/modules/invitations/service/shared";
 import {
 	createInvitationToken,

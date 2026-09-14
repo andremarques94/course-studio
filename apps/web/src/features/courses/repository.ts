@@ -1,3 +1,7 @@
+import {
+	createInvitationInputSchema,
+	createTitleInputSchema,
+} from "@course-studio/validation";
 import type { z } from "zod";
 import {
 	lessonSchema,
@@ -14,8 +18,6 @@ import {
 	courseMembersSchema,
 	courseSchema,
 	coursesSchema,
-	createInvitationInputSchema,
-	createTitleInputSchema,
 	invitationTokenSchema,
 } from "./schemas";
 
