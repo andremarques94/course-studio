@@ -39,7 +39,6 @@ export function createApp(db: Database, options: AppOptions) {
 			"/",
 			createPrivateRoutes(db, {
 				auth: options.auth,
-				logger: options.logger,
 				trustedOrigins: options.corsOrigins,
 				webOrigin: options.webOrigin,
 				sendCourseInvitation: options.sendCourseInvitation,

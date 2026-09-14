@@ -70,7 +70,6 @@ test("courses and lessons persist through the API", {
 			"/private",
 			createPrivateRoutes(db, {
 				auth: alternateAuth,
-				logger,
 				trustedOrigins: [webOrigin],
 				webOrigin,
 				sendCourseInvitation: async () => undefined,
