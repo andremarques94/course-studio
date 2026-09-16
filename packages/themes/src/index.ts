@@ -1,3 +1,4 @@
+export { type BuiltinThemeId, isBuiltinThemeId } from "./ids";
 export type {
 	ThemeColors,
 	ThemeSpacing,
@@ -5,9 +6,7 @@ export type {
 	ThemeTypography,
 } from "./theme-types";
 export {
-	type BuiltinThemeId,
 	getBuiltinTheme,
-	isBuiltinThemeId,
 	PRESENTATION_THEMES,
 	type PresentationTheme,
 } from "./themes";

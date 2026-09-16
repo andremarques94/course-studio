@@ -1,9 +1,13 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
+import { BUILTIN_THEME_IDS } from "@course-studio/themes/ids";
 import {
 	createInvitationInputSchema,
 	createTitleInputSchema,
 	invitationTokenSchema,
+	lessonContentSchema,
+	lessonSchema,
+	lessonSummarySchema,
 	normalizedEmailSchema,
 	renameLessonInputSchema,
 	reorderLessonsInputSchema,
@@ -110,4 +114,40 @@ test("invitation tokens accept only the generated URL-safe format", () => {
 	]) {
 		assert.equal(invitationTokenSchema.safeParse(token).success, false);
 	}
+});
+
+test("portable lesson schemas preserve dates and distinguish summaries from content", () => {
+	const summary = {
+		id: "lesson-1",
+		courseId: "course-1",
+		title: "Lesson",
+		slug: "lesson",
+		position: 0,
+		createdAt: "2026-01-01T00:00:00.000Z",
+		updatedAt: "2026-01-02T00:00:00.000Z",
+	};
+	const parsed = lessonSchema.parse({
+		...summary,
+		markdown: "# Hello",
+		themeId: "dark",
+	});
+	assert.equal(parsed.createdAt.toISOString(), summary.createdAt);
+	assert.equal(parsed.updatedAt.toISOString(), summary.updatedAt);
+	assert.equal(lessonSummarySchema.safeParse(parsed).success, false);
+	for (const invalid of [null, 0, "not-a-date"]) {
+		assert.equal(
+			lessonSchema.safeParse({ ...parsed, createdAt: invalid }).success,
+			false,
+		);
+	}
+	for (const themeId of BUILTIN_THEME_IDS) {
+		assert.deepEqual(lessonContentSchema.parse({ markdown: "", themeId }), {
+			markdown: "",
+			themeId,
+		});
+	}
+	assert.equal(
+		lessonContentSchema.safeParse({ markdown: "", themeId: "unknown" }).success,
+		false,
+	);
 });

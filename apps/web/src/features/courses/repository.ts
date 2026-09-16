@@ -1,26 +1,22 @@
 import {
-	createInvitationInputSchema,
-	createTitleInputSchema,
-	invitationTokenSchema,
-	reorderLessonsInputSchema,
-} from "@course-studio/validation";
-import type { z } from "zod";
-import {
-	lessonSchema,
-	lessonSummariesSchema,
-	lessonSummarySchema,
-	updateLessonInputSchema,
-} from "@/features/lessons/schemas";
-import { api as client } from "@/integrations/api/client";
-import { ensureSuccess, readResponse } from "@/integrations/api/response";
-import {
 	acceptInvitationResponseSchema,
 	courseInvitationSchema,
 	courseInvitationsSchema,
 	courseMembersSchema,
 	courseSchema,
 	coursesSchema,
-} from "./schemas";
+	createInvitationInputSchema,
+	createTitleInputSchema,
+	invitationTokenSchema,
+	lessonSchema,
+	lessonSummariesSchema,
+	lessonSummarySchema,
+	renameLessonInputSchema,
+	reorderLessonsInputSchema,
+} from "@course-studio/validation";
+import type { z } from "zod";
+import { api as client } from "@/integrations/api/client";
+import { ensureSuccess, readResponse } from "@/integrations/api/response";
 
 export const courseRepository = {
 	async getCourses() {
@@ -94,11 +90,11 @@ export const courseRepository = {
 
 	async updateLesson(
 		id: string,
-		input: z.input<typeof updateLessonInputSchema>,
+		input: z.input<typeof renameLessonInputSchema>,
 	) {
 		const response = await client.api.lessons[":lessonId"].$patch({
 			param: { lessonId: id },
-			json: updateLessonInputSchema.parse(input),
+			json: renameLessonInputSchema.parse(input),
 		});
 		return readResponse(response, lessonSummarySchema);
 	},

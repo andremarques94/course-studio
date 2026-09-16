@@ -1,6 +1,7 @@
 import { mapValues } from "remeda";
 import { academicThemeRecipe } from "./academic/theme";
 import { darkThemeRecipe } from "./dark/theme";
+import type { BuiltinThemeId } from "./ids";
 import { minimalThemeRecipe } from "./minimal/theme";
 import type { ThemeTokens } from "./theme-types";
 
@@ -8,9 +9,7 @@ const BUILTIN_THEME_RECIPES = {
 	minimal: minimalThemeRecipe,
 	academic: academicThemeRecipe,
 	dark: darkThemeRecipe,
-};
-
-export type BuiltinThemeId = keyof typeof BUILTIN_THEME_RECIPES;
+} satisfies Record<BuiltinThemeId, { name: string; tokens: ThemeTokens }>;
 
 export type PresentationTheme = {
 	id: string;
@@ -38,10 +37,4 @@ export const PRESENTATION_THEMES: readonly BuiltinPresentationTheme[] =
 
 export function getBuiltinTheme(id: BuiltinThemeId): BuiltinPresentationTheme {
 	return presentationThemeById[id];
-}
-
-export function isBuiltinThemeId(value: unknown): value is BuiltinThemeId {
-	return (
-		typeof value === "string" && Object.hasOwn(BUILTIN_THEME_RECIPES, value)
-	);
 }

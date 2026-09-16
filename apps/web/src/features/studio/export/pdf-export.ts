@@ -1,12 +1,9 @@
-import { type BuiltinThemeId, isBuiltinThemeId } from "@course-studio/themes";
-import { isPlainObject } from "remeda";
+import { lessonContentSchema } from "@course-studio/validation";
+import type { z } from "zod";
 
 const PDF_EXPORT_STORAGE_KEY = "course-studio:pdf-export";
 
-export type PdfExportPayload = {
-	markdown: string;
-	themeId: BuiltinThemeId;
-};
+export type PdfExportPayload = z.infer<typeof lessonContentSchema>;
 
 export function openPdfExport(payload: PdfExportPayload) {
 	try {
@@ -35,20 +32,9 @@ export function readPdfExport(): PdfExportPayload | null {
 		if (!stored) {
 			return null;
 		}
-		const payload: unknown = JSON.parse(stored);
-		if (
-			isPlainObject(payload) &&
-			typeof payload.markdown === "string" &&
-			isBuiltinThemeId(payload.themeId)
-		) {
-			return {
-				markdown: payload.markdown,
-				themeId: payload.themeId,
-			};
-		}
+		const parsed = lessonContentSchema.safeParse(JSON.parse(stored));
+		return parsed.success ? parsed.data : null;
 	} catch {
 		return null;
 	}
-
-	return null;
 }

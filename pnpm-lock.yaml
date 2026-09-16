@@ -93,6 +93,9 @@ importers:
 
   apps/collab:
     dependencies:
+      '@course-studio/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@course-studio/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -480,6 +483,9 @@ importers:
 
   packages/validation:
     dependencies:
+      '@course-studio/themes':
+        specifier: workspace:*
+        version: link:../themes
       zod:
         specifier: ^4.4.3
         version: 4.4.3
