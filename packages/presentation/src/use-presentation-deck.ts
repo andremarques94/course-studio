@@ -1,7 +1,5 @@
-import { type Ref, type RefObject, useImperativeHandle, useRef } from "react";
-import { isNonNull } from "remeda";
+import { type Ref, useEffect, useImperativeHandle, useRef } from "react";
 import type { RevealApi } from "reveal.js";
-import { useResizeObserver, useUnmount } from "usehooks-ts";
 
 export type PresentationHandle = {
 	focus: () => void;
@@ -13,32 +11,34 @@ export function usePresentationDeck(
 ) {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const deckRef = useRef<RevealApi | null>(null);
-	const layoutFrameRef = useRef<number | null>(null);
 
-	useResizeObserver({
-		ref: containerRef as RefObject<HTMLDivElement>,
-		onResize: () => {
+	useEffect(() => {
+		const container = containerRef.current;
+		if (!container || typeof ResizeObserver === "undefined") {
+			return;
+		}
+		let layoutFrame: number | null = null;
+		const observer = new ResizeObserver(() => {
 			const deck = deckRef.current;
 			if (!deck || deck.getConfig().view === "print") {
 				return;
 			}
-
-			if (isNonNull(layoutFrameRef.current)) {
-				cancelAnimationFrame(layoutFrameRef.current);
+			if (layoutFrame !== null) {
+				cancelAnimationFrame(layoutFrame);
 			}
-
-			layoutFrameRef.current = requestAnimationFrame(() => {
-				layoutFrameRef.current = null;
+			layoutFrame = requestAnimationFrame(() => {
+				layoutFrame = null;
 				deck.layout();
 			});
-		},
-	});
-
-	useUnmount(() => {
-		if (isNonNull(layoutFrameRef.current)) {
-			cancelAnimationFrame(layoutFrameRef.current);
-		}
-	});
+		});
+		observer.observe(container);
+		return () => {
+			observer.disconnect();
+			if (layoutFrame !== null) {
+				cancelAnimationFrame(layoutFrame);
+			}
+		};
+	}, []);
 
 	const handleReady = (deck: RevealApi) => {
 		const isPrintView = deck.getConfig().view === "print";
