@@ -27,12 +27,14 @@ The current API/database package uses PostgreSQL. It cannot switch to SQLite by 
 
 The repository simplification does not block these steps. `LessonDocument` and `StudioCommands` already represent distinct implementations and should remain explicit boundaries.
 
-## Remaining cleanup after this follow-up
+## Shared contracts
 
-- Consolidate invitation token replacement/delivery/restoration with database integration coverage, especially concurrent acceptance and revocation.
-- Align TypeScript versions and replace floating dependency tags in a dedicated dependency change.
-- Resolve the presentation resize-ref type mismatch against the installed hook types.
+`@course-studio/validation` owns title constraints, invitation roles/email/token formats, strict lesson rename and ordering inputs, course/lesson/member/invitation response schemas, and lesson content validation. Response parsing retains Date conversion and the distinction between lesson summaries and full documents. The package depends on Zod and the lightweight `@course-studio/themes/ids` entry point; it does not import database, authentication or rendering code.
 
-This follow-up centralizes invitation HTTP errors in the application handler and replaces unsafe invitation route test casts with typed fixtures. It does not implement desktop storage or change invitation persistence.
+The theme package owns the built-in ID list. Theme recipes must satisfy that list, and the API, collaboration loader and PDF export use its shared validation. Adding a built-in theme therefore no longer requires separate hardcoded allowlists in each application.
 
-The shared validation package is now used by the API and web forms/repository. It owns title constraints, invitation roles and normalized invitation email inputs, and imports only Zod. The API now uses the same friendly invalid-email issue message as the form. Token checks remain separate: the web validates the generated 43-character token format, while the API accepts a bounded string and lets the invitation service reject invalid or expired tokens.
+`StudioCommands.renameLesson(title)` only renames metadata. Theme changes go through `LessonDocument`. The outline and studio reuse the same lesson-cache update, which preserves live collaborative content and does not create unloaded cache entries.
+
+The API continues to accept a bounded invitation-token string so the service owns invalid/expired-token responses. Browser redirects and invitation links share the strict generated-token format. Environment, HTTP parameter and Better Auth session schemas remain local to their integrations.
+
+Invitation replacement and resend share token replacement, delivery and conditional restoration. A first failed delivery retains the new invitation for retry. A failed replacement restores the previous pending invitation only if it is still using the attempted token and has not been accepted or revoked. Integration tests cover acceptance, revocation and another token replacement during delivery for both operations.
