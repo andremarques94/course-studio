@@ -40,10 +40,6 @@ export const courseInvitationSchema = z.object({
 
 export const courseInvitationsSchema = z.array(courseInvitationSchema);
 
-export const invitationTokenSchema = z
-	.string()
-	.regex(/^[A-Za-z0-9_-]{43}$/, "Invalid invitation token.");
-
 export const acceptInvitationResponseSchema = z.object({
 	courseId: z.string().min(1),
 	role: invitationRoleSchema,

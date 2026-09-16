@@ -3,7 +3,10 @@ import { test } from "node:test";
 import {
 	createInvitationInputSchema,
 	createTitleInputSchema,
+	invitationTokenSchema,
 	normalizedEmailSchema,
+	renameLessonInputSchema,
+	reorderLessonsInputSchema,
 	titleSchema,
 } from "../src/index.js";
 
@@ -64,5 +67,47 @@ test("invitations require a valid email and an editor or viewer role", () => {
 		{ email: "invalid", role: "viewer" },
 	]) {
 		assert.equal(createInvitationInputSchema.safeParse(input).success, false);
+	}
+});
+
+test("lesson renames require a title and reject unrelated fields", () => {
+	assert.deepEqual(renameLessonInputSchema.parse({ title: "  Renamed  " }), {
+		title: "Renamed",
+	});
+	for (const input of [
+		{},
+		{ title: undefined },
+		{ title: "" },
+		{ title: "Title", themeId: "dark" },
+	]) {
+		assert.equal(renameLessonInputSchema.safeParse(input).success, false);
+	}
+});
+
+test("lesson ordering accepts unique UUIDs and rejects duplicates", () => {
+	const id = "550e8400-e29b-41d4-a716-446655440000";
+	assert.deepEqual(reorderLessonsInputSchema.parse({ lessonIds: [id] }), {
+		lessonIds: [id],
+	});
+	assert.equal(
+		reorderLessonsInputSchema.safeParse({ lessonIds: [id, id] }).success,
+		false,
+	);
+	assert.equal(
+		reorderLessonsInputSchema.safeParse({ lessonIds: ["invalid"] }).success,
+		false,
+	);
+});
+
+test("invitation tokens accept only the generated URL-safe format", () => {
+	assert.equal(invitationTokenSchema.parse("a".repeat(43)), "a".repeat(43));
+	for (const token of [
+		"",
+		"a".repeat(42),
+		"a".repeat(44),
+		`${"a".repeat(42)}+`,
+		" a".repeat(22),
+	]) {
+		assert.equal(invitationTokenSchema.safeParse(token).success, false);
 	}
 });

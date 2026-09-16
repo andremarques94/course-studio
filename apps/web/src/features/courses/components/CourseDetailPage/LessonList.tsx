@@ -41,7 +41,10 @@ import {
 	TriangleAlert,
 } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
-import { applyLessonSummary } from "@/features/lessons/cache";
+import {
+	applyLessonSummary,
+	updateLessonCache,
+} from "@/features/lessons/cache";
 import { lessonQueries } from "@/features/lessons/queries";
 import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { courseQueries } from "../../queries";
@@ -77,15 +80,7 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 			return courseRepository.updateLesson(lessonId, { title: result.data });
 		},
 		onSuccess: (updatedLesson) => {
-			queryClient.setQueryData<LessonSummary[]>(lessonsQueryKey, (current) =>
-				current?.map((lesson) =>
-					lesson.id === updatedLesson.id ? updatedLesson : lesson,
-				),
-			);
-			queryClient.setQueryData<Lesson | null>(
-				lessonQueries.detail(updatedLesson.id).queryKey,
-				(current) => applyLessonSummary(current, updatedLesson),
-			);
+			updateLessonCache(queryClient, updatedLesson);
 			setEditingLessonId(undefined);
 			toast.success("Lesson renamed");
 		},

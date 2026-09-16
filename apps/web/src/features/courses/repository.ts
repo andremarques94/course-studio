@@ -1,13 +1,15 @@
 import {
 	createInvitationInputSchema,
 	createTitleInputSchema,
+	invitationTokenSchema,
+	reorderLessonsInputSchema,
 } from "@course-studio/validation";
 import type { z } from "zod";
 import {
 	lessonSchema,
 	lessonSummariesSchema,
 	lessonSummarySchema,
-	type updateLessonInputSchema,
+	updateLessonInputSchema,
 } from "@/features/lessons/schemas";
 import { api as client } from "@/integrations/api/client";
 import { ensureSuccess, readResponse } from "@/integrations/api/response";
@@ -18,7 +20,6 @@ import {
 	courseMembersSchema,
 	courseSchema,
 	coursesSchema,
-	invitationTokenSchema,
 } from "./schemas";
 
 export const courseRepository = {
@@ -97,7 +98,7 @@ export const courseRepository = {
 	) {
 		const response = await client.api.lessons[":lessonId"].$patch({
 			param: { lessonId: id },
-			json: input,
+			json: updateLessonInputSchema.parse(input),
 		});
 		return readResponse(response, lessonSummarySchema);
 	},
@@ -112,7 +113,7 @@ export const courseRepository = {
 	async reorderLessons(courseId: string, lessonIds: string[]) {
 		const response = await client.api.courses[":courseId"].lessons.order.$put({
 			param: { courseId },
-			json: { lessonIds },
+			json: reorderLessonsInputSchema.parse({ lessonIds }),
 		});
 		return readResponse(response, lessonSummariesSchema);
 	},

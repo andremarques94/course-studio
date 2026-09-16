@@ -30,3 +30,17 @@ export const createInvitationInputSchema = z.object({
 	email: normalizedEmailSchema,
 	role: invitationRoleSchema,
 });
+
+export const invitationTokenSchema = z
+	.string()
+	.regex(/^[A-Za-z0-9_-]{43}$/, "Invalid invitation token.");
+
+export const renameLessonInputSchema = createTitleInputSchema.strict();
+
+export const reorderLessonsInputSchema = z.object({
+	lessonIds: z
+		.array(z.uuid())
+		.refine((ids) => new Set(ids).size === ids.length, {
+			message: "Lesson IDs must be unique.",
+		}),
+});

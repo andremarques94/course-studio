@@ -80,7 +80,6 @@ function ConnectedWebStudio({
 	const queryClient = useQueryClient();
 	const commands = createWebStudioCommands({
 		queryClient,
-		courseId: course.id,
 		lessonId: lesson.id,
 	});
 	const draft = useStudioDraft({

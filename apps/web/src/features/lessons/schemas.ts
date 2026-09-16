@@ -1,5 +1,8 @@
 import { type BuiltinThemeId, isBuiltinThemeId } from "@course-studio/themes";
-import { titleSchema } from "@course-studio/validation";
+import {
+	renameLessonInputSchema,
+	titleSchema,
+} from "@course-studio/validation";
 import { z } from "zod";
 import { entityDateSchema } from "@/features/courses/schemas";
 
@@ -27,6 +30,4 @@ export const lessonSchema = lessonSummarySchema.extend({
 
 export const lessonSummariesSchema = z.array(lessonSummarySchema);
 
-export const updateLessonInputSchema = lessonSummarySchema
-	.pick({ title: true })
-	.partial();
+export const updateLessonInputSchema = renameLessonInputSchema;
