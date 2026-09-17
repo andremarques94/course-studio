@@ -1,9 +1,10 @@
 import { toast } from "@course-studio/ui/components/sonner";
+import { createInvitationInputSchema } from "@course-studio/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type SubmitEvent, useState } from "react";
 import { courseQueries } from "../../../queries";
 import { courseRepository } from "../../../repository";
-import { createInvitationInputSchema } from "../../../schemas";
+
 import type {
 	CourseInvitation,
 	CourseMember,
@@ -19,7 +20,6 @@ export function useShareCourse(courseId: string, open: boolean) {
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState<InvitationRole>("editor");
 	const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval>();
-	const [resendingId, setResendingId] = useState<string>();
 
 	const membersQuery = useQuery({
 		...courseQueries.members(courseId),
@@ -33,7 +33,7 @@ export function useShareCourse(courseId: string, open: boolean) {
 	const invite = useMutation({
 		mutationFn: () =>
 			courseRepository.createInvitation(courseId, { email, role }),
-		onSuccess: async () => {
+		onSuccess: () => {
 			setEmail("");
 			toast.success("Invitation sent");
 		},
@@ -48,12 +48,10 @@ export function useShareCourse(courseId: string, open: boolean) {
 	const resend = useMutation({
 		mutationFn: (invitationId: string) =>
 			courseRepository.resendInvitation(courseId, invitationId),
-		onMutate: (invitationId) => setResendingId(invitationId),
 		onSuccess: () => {
 			toast.success("Invitation resent");
 		},
 		onSettled: async () => {
-			setResendingId(undefined);
 			await queryClient.invalidateQueries({
 				queryKey: courseQueries.invitations(courseId).queryKey,
 				exact: true,
@@ -107,7 +105,7 @@ export function useShareCourse(courseId: string, open: boolean) {
 		changeEmail,
 		pendingRemoval,
 		setPendingRemoval,
-		resendingId,
+		resendingId: resend.isPending ? resend.variables : undefined,
 		membersQuery,
 		invitationsQuery,
 		invite,

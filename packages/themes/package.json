@@ -5,17 +5,27 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
-		"./styles.css": "./src/styles.css"
+		"./styles.css": "./src/styles.css",
+		"./ids": {
+			"types": "./src/ids.ts",
+			"source": "./src/ids.ts",
+			"development": "./src/ids.ts",
+			"default": "./dist/ids.js"
+		}
 	},
 	"scripts": {
 		"check": "biome check",
 		"format": "biome format",
 		"lint": "biome lint",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"build": "tsc -p tsconfig.build.json"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",
 		"@course-studio/typescript-config": "workspace:*",
-		"typescript": "^6.0.2"
+		"typescript": "^6.0.3"
+	},
+	"dependencies": {
+		"remeda": "^2.45.0"
 	}
 }

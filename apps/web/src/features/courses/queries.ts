@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { lessonKeys } from "@/features/lessons/query-keys";
 import { courseRepository } from "./repository";
 
 export const courseQueries = {
@@ -14,7 +15,7 @@ export const courseQueries = {
 		}),
 	lessons: (courseId: string) =>
 		queryOptions({
-			queryKey: ["courses", courseId, "lessons"] as const,
+			queryKey: lessonKeys.list(courseId),
 			queryFn: () => courseRepository.getLessons(courseId),
 		}),
 	members: (courseId: string) =>

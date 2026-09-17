@@ -1,10 +1,11 @@
 import { toast } from "@course-studio/ui/components/sonner";
+import { titleSchema } from "@course-studio/validation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { courseQueries } from "../../../queries";
 import { courseRepository } from "../../../repository";
-import { titleSchema } from "../../../schemas";
+
 import type { Course } from "../../../types";
 
 export function useCourseActions(course: Course) {

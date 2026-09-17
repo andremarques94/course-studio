@@ -1,9 +1,10 @@
 import { Button } from "@course-studio/ui/components/button";
 import { Input } from "@course-studio/ui/components/input";
+import { TITLE_MAX_LENGTH, titleSchema } from "@course-studio/validation";
 import { useMutation } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
-import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
+
 import styles from "./CreateTitleForm.module.css";
 
 type CreateTitleFormProps = {

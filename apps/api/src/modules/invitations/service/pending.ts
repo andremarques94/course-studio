@@ -4,6 +4,7 @@ import {
 	type Database,
 	user,
 } from "@course-studio/db";
+import { normalizeInvitationEmail } from "@course-studio/validation";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { ApiError } from "#api/http/errors/api-error";
 import type { createCourseAccess } from "#api/modules/courses/access";
@@ -15,7 +16,6 @@ import { invitationSerializer } from "#api/modules/invitations/serialization";
 import {
 	invitationLifetimeMs,
 	invitationSelection,
-	normalizeInvitationEmail,
 } from "#api/modules/invitations/service/shared";
 import {
 	createInvitationToken,
@@ -144,22 +144,10 @@ export function createPendingInvitations(
 							"Invitation changed concurrently. Refresh and try again.",
 						);
 					}
-					const invitation = await replaceToken(existing, {
+					return replaceAndDeliver(existing, course.title, {
 						role: input.role,
-						tokenHash,
 						invitedBy: userId,
-						expiresAt,
 					});
-					try {
-						await deliver(invitation, course.title, token);
-					} catch (error) {
-						await restore(existing, tokenHash);
-						throw new InvitationDeliveryError(
-							"Email could not be sent. The existing invitation was left unchanged; try again.",
-							{ cause: error },
-						);
-					}
-					return invitation;
 				},
 			);
 		},
@@ -178,22 +166,7 @@ export function createPendingInvitations(
 					if (!current) {
 						throw invitationNotFound();
 					}
-					const { token, tokenHash } = createInvitationToken();
-					const invitation = await replaceToken(current, {
-						tokenHash,
-						expiresAt: new Date(Date.now() + invitationLifetimeMs),
-					});
-
-					try {
-						await deliver(invitation, course.title, token);
-					} catch (error) {
-						await restore(current, tokenHash);
-						throw new InvitationDeliveryError(
-							"Email could not be sent. The existing invitation remains unchanged; try again.",
-							{ cause: error },
-						);
-					}
-					return invitation;
+					return replaceAndDeliver(current, course.title);
 				},
 			);
 		},
@@ -243,6 +216,29 @@ export function createPendingInvitations(
 				),
 			)
 			.limit(1);
+		return invitation;
+	}
+
+	async function replaceAndDeliver(
+		existing: NonNullable<Awaited<ReturnType<typeof findPending>>>,
+		courseTitle: string,
+		changes: { role?: CreateInvitationInput["role"]; invitedBy?: string } = {},
+	) {
+		const { token, tokenHash } = createInvitationToken();
+		const invitation = await replaceToken(existing, {
+			...changes,
+			tokenHash,
+			expiresAt: new Date(Date.now() + invitationLifetimeMs),
+		});
+		try {
+			await deliver(invitation, courseTitle, token);
+		} catch (error) {
+			await restore(existing, tokenHash);
+			throw new InvitationDeliveryError(
+				"Email could not be sent. The existing invitation remains unchanged; try again.",
+				{ cause: error },
+			);
+		}
 		return invitation;
 	}
 

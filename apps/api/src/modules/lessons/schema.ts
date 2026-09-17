@@ -1,6 +1,10 @@
 import { lessons } from "@course-studio/db";
+import {
+	createTitleInputSchema,
+	renameLessonInputSchema,
+	reorderLessonsInputSchema,
+} from "@course-studio/validation";
 import { z } from "zod";
-import { titleSchema } from "#api/content-naming";
 
 export const lessonSummaryColumns = {
 	id: lessons.id,
@@ -13,23 +17,10 @@ export const lessonSummaryColumns = {
 };
 
 export const lessonIdSchema = z.object({ lessonId: z.uuid() });
-export const createLessonSchema = z.object({ title: titleSchema });
-export const reorderLessonsSchema = z.object({
-	lessonIds: z
-		.array(z.uuid())
-		.refine((ids) => new Set(ids).size === ids.length, {
-			message: "Lesson IDs must be unique.",
-		}),
-});
-export const updateLessonSchema = z
-	.object({
-		title: titleSchema.optional(),
-	})
-	.strict()
-	.refine((input) => Object.keys(input).length > 0, {
-		message: "At least one field is required.",
-	});
+export const createLessonSchema = createTitleInputSchema;
+export const reorderLessonsSchema = reorderLessonsInputSchema;
+export const updateLessonSchema = renameLessonInputSchema;
 
-export type CreateLessonInput = z.infer<typeof createLessonSchema>;
+export type CreateLessonInput = z.infer<typeof createTitleInputSchema>;
 export type ReorderLessonsInput = z.infer<typeof reorderLessonsSchema>;
 export type UpdateLessonInput = z.infer<typeof updateLessonSchema>;

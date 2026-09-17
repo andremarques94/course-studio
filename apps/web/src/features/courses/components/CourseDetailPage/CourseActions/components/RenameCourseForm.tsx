@@ -1,7 +1,8 @@
 import { Button } from "@course-studio/ui/components/button";
 import { Input } from "@course-studio/ui/components/input";
+import { TITLE_MAX_LENGTH, titleSchema } from "@course-studio/validation";
 import type { SubmitEvent } from "react";
-import { TITLE_MAX_LENGTH, titleSchema } from "../../../../schemas";
+
 import styles from "../../CourseDetailPage.module.css";
 
 export function RenameCourseForm({

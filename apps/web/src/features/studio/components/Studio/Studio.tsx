@@ -85,9 +85,7 @@ export function Studio({
 							themeId: draft.themeId,
 						})
 					}
-					onRenameLesson={async (title) => {
-						await commands.updateLesson({ title });
-					}}
+					onRenameLesson={commands.renameLesson}
 					previewFocused={previewFocused}
 					onTogglePreview={togglePreview}
 				/>

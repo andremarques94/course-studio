@@ -4,11 +4,9 @@ import {
 	courses,
 	type Database,
 } from "@course-studio/db";
+import { normalizeInvitationEmail } from "@course-studio/validation";
 import { and, eq, gt, isNull } from "drizzle-orm";
-import {
-	invalidInvitation,
-	normalizeInvitationEmail,
-} from "#api/modules/invitations/service/shared";
+import { invalidInvitation } from "#api/modules/invitations/service/shared";
 import { hashInvitationToken } from "#api/modules/invitations/token";
 
 export function createInvitationAcceptance(db: Database) {

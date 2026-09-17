@@ -1,7 +1,7 @@
 import { type Database, lessonDocuments, lessons } from "@course-studio/db";
 import { asc, eq, max } from "drizzle-orm";
 import { slugify } from "#api/content-naming";
-import { findPostgresError } from "#api/database-errors";
+import { findPostgresErrorCode } from "#api/database-errors";
 import { ApiError } from "#api/http/errors/api-error";
 import { createLessonAccess } from "#api/modules/lessons/access";
 import { applyPersistedLessonContent } from "#api/modules/lessons/lesson-ydoc";
@@ -79,7 +79,7 @@ export function createLessonsService(db: Database) {
 
 					return lesson;
 				} catch (error) {
-					if (findPostgresError(error)?.code === "23505") {
+					if (findPostgresErrorCode(error) === "23505") {
 						throw new ApiError(
 							409,
 							"SLUG_ALREADY_EXISTS",

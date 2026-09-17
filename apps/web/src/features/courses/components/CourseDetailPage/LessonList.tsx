@@ -26,6 +26,7 @@ import {
 } from "@course-studio/ui/components/empty";
 import { Input } from "@course-studio/ui/components/input";
 import { toast } from "@course-studio/ui/components/sonner";
+import { TITLE_MAX_LENGTH, titleSchema } from "@course-studio/validation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -40,12 +41,15 @@ import {
 	TriangleAlert,
 } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
-import { applyLessonSummary } from "@/features/lessons/cache";
+import {
+	applyLessonSummary,
+	updateLessonCache,
+} from "@/features/lessons/cache";
 import { lessonQueries } from "@/features/lessons/queries";
 import type { Lesson, LessonSummary } from "@/features/lessons/types";
 import { courseQueries } from "../../queries";
 import { courseRepository } from "../../repository";
-import { TITLE_MAX_LENGTH, titleSchema } from "../../schemas";
+
 import styles from "./CourseDetailPage.module.css";
 
 type LessonListProps = {
@@ -76,15 +80,7 @@ export function LessonList({ courseId, lessons, canEdit }: LessonListProps) {
 			return courseRepository.updateLesson(lessonId, { title: result.data });
 		},
 		onSuccess: (updatedLesson) => {
-			queryClient.setQueryData<LessonSummary[]>(lessonsQueryKey, (current) =>
-				current?.map((lesson) =>
-					lesson.id === updatedLesson.id ? updatedLesson : lesson,
-				),
-			);
-			queryClient.setQueryData<Lesson | null>(
-				lessonQueries.detail(updatedLesson.id).queryKey,
-				(current) => applyLessonSummary(current, updatedLesson),
-			);
+			updateLessonCache(queryClient, updatedLesson);
 			setEditingLessonId(undefined);
 			toast.success("Lesson renamed");
 		},

@@ -3,7 +3,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"predev": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
+		"predev": "pnpm --filter @course-studio/collab^... build",
 		"dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
 		"build": "tsc -p tsconfig.build.json",
 		"start": "node --env-file-if-exists=../../.env dist/index.js",
@@ -11,12 +11,13 @@
 		"format": "biome format",
 		"lint": "biome lint",
 		"typecheck": "tsc --noEmit",
-		"pretest": "pnpm --filter @course-studio/db build && pnpm --filter @course-studio/auth build",
+		"pretest": "pnpm --filter @course-studio/collab^... build",
 		"test": "tsx --env-file-if-exists=../../.env --test test/*.test.ts"
 	},
 	"dependencies": {
 		"@course-studio/auth": "workspace:*",
 		"@course-studio/db": "workspace:*",
+		"@course-studio/validation": "workspace:*",
 		"@hocuspocus/server": "^4.6.0",
 		"drizzle-orm": "^0.45.2",
 		"jose": "^6.2.10",
@@ -30,6 +31,6 @@
 		"@course-studio/typescript-config": "workspace:*",
 		"@types/node": "^26.1.1",
 		"tsx": "^4.23.0",
-		"typescript": "^7.0.2"
+		"typescript": "^6.0.3"
 	}
 }

@@ -1,4 +1,5 @@
 import { type Database, lessons } from "@course-studio/db";
+import { lessonContentSchema } from "@course-studio/validation";
 import { eq } from "drizzle-orm";
 import type * as Y from "yjs";
 import { z } from "zod";
@@ -18,10 +19,6 @@ const lessonRoomSchema = z
 		/^lesson:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
 	)
 	.transform((room) => room.slice("lesson:".length));
-const lessonSchema = z.object({
-	markdown: z.string(),
-	themeId: z.enum(["minimal", "academic", "dark"]),
-});
 
 export function parseLessonDocumentName(documentName: string) {
 	return lessonRoomSchema.parse(documentName);
@@ -35,7 +32,9 @@ export function createLessonDocumentLoader({
 		documentName,
 	}: LoadLessonDocumentInput) {
 		const lessonId = parseLessonDocumentName(documentName);
-		const lesson = lessonSchema.optional().parse(await findLesson(lessonId));
+		const lesson = lessonContentSchema
+			.optional()
+			.parse(await findLesson(lessonId));
 		if (!lesson) {
 			throw new Error(
 				`Could not initialize ${documentName}: lesson not found.`,
