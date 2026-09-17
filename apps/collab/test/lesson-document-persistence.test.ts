@@ -25,7 +25,11 @@ function createMemoryStore(): LessonDocumentStore & {
 			return persistedState.slice();
 		},
 		async store(id, state) {
-			documents.set(id, state.slice());
+			const existing = documents.get(id);
+			documents.set(
+				id,
+				existing ? Y.mergeUpdates([existing, state]) : state.slice(),
+			);
 		},
 	};
 }
@@ -134,6 +138,35 @@ test("concurrent initializations converge on the first persisted state", async (
 	);
 	firstDocument.destroy();
 	secondDocument.destroy();
+});
+
+test("merges divergent writers instead of letting the last save win", async () => {
+	const store = createMemoryStore();
+	const persistence = createLessonDocumentPersistence({
+		store,
+		async initializeDocument({ document }) {
+			document.getText("markdown").insert(0, "Base");
+		},
+	});
+	const first = new Y.Doc();
+	const second = new Y.Doc();
+	await persistence.load({ document: first, documentName });
+	await persistence.load({ document: second, documentName });
+	first.getMap("writers").set("first", "A");
+	second.getMap("writers").set("second", "B");
+
+	await Promise.all([
+		persistence.store({ document: first, documentName }),
+		persistence.store({ document: second, documentName }),
+	]);
+	const restored = new Y.Doc();
+	await persistence.load({ document: restored, documentName });
+	assert.equal(restored.getMap("writers").get("first"), "A");
+	assert.equal(restored.getMap("writers").get("second"), "B");
+
+	first.destroy();
+	second.destroy();
+	restored.destroy();
 });
 
 test("rejects invalid room names before accessing persistence", async () => {

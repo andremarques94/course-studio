@@ -1,4 +1,5 @@
 import { type Database, lessonDocuments } from "@course-studio/db";
+import { eq, sql } from "drizzle-orm";
 import * as Y from "yjs";
 import { parseLessonDocumentName } from "./lesson-document-loader.js";
 
@@ -55,13 +56,25 @@ export function createPostgresLessonDocumentStore(
 		},
 
 		async store(lessonId, state) {
-			await db
-				.insert(lessonDocuments)
-				.values({ lessonId, ydoc: Buffer.from(state) })
-				.onConflictDoUpdate({
-					target: lessonDocuments.lessonId,
-					set: { ydoc: Buffer.from(state), updatedAt: new Date() },
-				});
+			await db.transaction(async (transaction) => {
+				await transaction.execute(
+					sql`select pg_advisory_xact_lock(hashtextextended(${lessonId}, 0))`,
+				);
+				const [existing] = await transaction
+					.select({ ydoc: lessonDocuments.ydoc })
+					.from(lessonDocuments)
+					.where(eq(lessonDocuments.lessonId, lessonId));
+				const mergedState = existing
+					? Y.mergeUpdates([new Uint8Array(existing.ydoc), state])
+					: state;
+				await transaction
+					.insert(lessonDocuments)
+					.values({ lessonId, ydoc: Buffer.from(mergedState) })
+					.onConflictDoUpdate({
+						target: lessonDocuments.lessonId,
+						set: { ydoc: Buffer.from(mergedState), updatedAt: new Date() },
+					});
+			});
 		},
 	};
 }
